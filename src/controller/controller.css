@@ -1,0 +1,660 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  overflow: hidden;
+  background-color: #000000;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  touch-action: none;
+}
+
+#app-container {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  overflow: hidden;
+}
+
+.dash-screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: max(4px, env(safe-area-inset-top, 4px)) max(10px, env(safe-area-inset-right, 10px)) max(4px, env(safe-area-inset-bottom, 4px)) max(10px, env(safe-area-inset-left, 10px));
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ================= 3-COLUMN PROPORTIONAL CONTROLLER GRID ================= */
+.controller-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1fr;
+  width: 100%;
+  height: 100%;
+  gap: clamp(4px, 1.2vw, 16px);
+}
+
+.zone-column {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ================= LEFT 1/3: BRAKE ZONE ================= */
+.zone-brake-col {
+  justify-content: center;
+  align-items: center;
+  border-right: 1px dashed rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.04) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.zone-watermark-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.65;
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.zone-pedal-svg {
+  width: clamp(54px, 14vw, 100px);
+  height: clamp(54px, 14vw, 100px);
+  transition: transform 0.08s ease, filter 0.08s ease;
+}
+
+.brake-svg {
+  color: #ef4444;
+  filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.3));
+}
+
+.throttle-svg {
+  color: #22c55e;
+  filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.3));
+}
+
+/* ================= RIGHT 1/3: THROTTLE ZONE ================= */
+.zone-throttle-col {
+  justify-content: center;
+  align-items: center;
+  border-left: 1px dashed rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  background: linear-gradient(-90deg, rgba(34, 197, 94, 0.04) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ================= CENTER 1/3: REAL F1 STEERING WHEEL CLUSTER ================= */
+.zone-center-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 clamp(4px, 1vw, 12px);
+  position: relative;
+  z-index: 10;
+}
+
+/* Real F1 Steering Wheel Bezel & Central Housing */
+.f1-wheel-screen-housing {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #0f1015;
+  border: 2px solid #27272a;
+  border-radius: 10px;
+  padding: clamp(4px, 1vh, 8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  margin-bottom: clamp(2px, 0.8vh, 6px);
+  flex-shrink: 0;
+}
+
+/* 15 Circular F1 Rev LEDs */
+.f1-led-bezel {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: clamp(4px, 0.8vh, 8px);
+}
+
+.f1-led-tray {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 380px;
+  padding: 4px 8px;
+  background: #090a0d;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.f1-circle-led {
+  width: clamp(10px, 2.3vh, 16px);
+  height: clamp(10px, 2.3vh, 16px);
+  border-radius: 50%;
+  background: #14161d;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
+  transition: background-color 0.04s, box-shadow 0.04s, border-color 0.04s;
+  flex-shrink: 0;
+}
+
+.f1-circle-led.led-green.active {
+  background: #22c55e;
+  border-color: #86efac;
+  box-shadow: 0 0 10px #22c55e, inset 0 0 3px #ffffff;
+}
+
+.f1-circle-led.led-red.active {
+  background: #ef4444;
+  border-color: #fca5a5;
+  box-shadow: 0 0 10px #ef4444, inset 0 0 3px #ffffff;
+}
+
+.f1-circle-led.led-blue.active {
+  background: #3b82f6;
+  border-color: #93c5fd;
+  box-shadow: 0 0 12px #3b82f6, inset 0 0 3px #ffffff;
+}
+
+.f1-circle-led.shift-strobe {
+  background: #f43f5e !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 16px #f43f5e !important;
+  animation: f1-flash 0.08s infinite alternate;
+}
+
+@keyframes f1-flash {
+  from { opacity: 0.8; }
+  to { opacity: 1.0; }
+}
+
+/* Central Segmented LCD Screen (MoTeC / Ferrari Style) */
+.f1-lcd-box {
+  width: 100%;
+  background: #090a0f;
+  border: 1.5px solid #27272a;
+  border-radius: 6px;
+  padding: clamp(4px, 1vh, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.9);
+}
+
+.f1-lcd-header-row {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  text-align: center;
+  font-size: clamp(8px, 1.6vh, 10px);
+  font-weight: 800;
+  color: #71717a;
+  letter-spacing: 1px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 2px;
+}
+
+.f1-lcd-main-row {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  align-items: center;
+  gap: 4px;
+}
+
+.f1-lcd-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.cell-speed .f1-speed-digits {
+  font-size: clamp(24px, 7.5vh, 42px);
+  font-weight: 900;
+  color: #f8fafc;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.f1-cell-unit {
+  font-size: clamp(7px, 1.4vh, 9px);
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  margin-top: 1px;
+}
+
+/* Central Gear Binnacle Box */
+.cell-gear {
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background: #111218;
+  min-height: clamp(46px, 12vh, 72px);
+  transition: background-color 0.1s, border-color 0.1s, box-shadow 0.1s;
+}
+
+.f1-gear-num {
+  font-size: clamp(38px, 11vh, 64px);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.cell-gear.gear-neutral {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: #22c55e;
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.35);
+}
+.cell-gear.gear-neutral .f1-gear-num {
+  color: #22c55e;
+  text-shadow: 0 0 12px rgba(34, 197, 94, 0.7);
+}
+
+.cell-gear.gear-reverse {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.35);
+}
+.cell-gear.gear-reverse .f1-gear-num {
+  color: #ef4444;
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+}
+
+.cell-gear.gear-drive .f1-gear-num {
+  color: #facc15;
+  text-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
+}
+
+/* Right Modular RPM Cell */
+.cell-rpm .f1-rpm-digits {
+  font-size: clamp(18px, 5.5vh, 28px);
+  font-weight: 800;
+  color: #e2e8f0;
+  font-variant-numeric: tabular-nums;
+  font-family: monospace;
+  line-height: 1;
+}
+
+/* Bottom Telemetry Row */
+.f1-lcd-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 3px;
+  margin-top: 2px;
+}
+
+.f1-assist-group, .f1-conn-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.f1-status-badge {
+  font-size: clamp(7px, 1.4vh, 9px);
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: #181920;
+  color: #475569;
+}
+
+.f1-status-badge#badge-abs.active {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 0 6px #3b82f6;
+}
+
+.f1-status-badge#badge-tc.active {
+  background: #eab308;
+  color: #000000;
+  box-shadow: 0 0 6px #eab308;
+}
+
+.f1-meta-text {
+  font-size: clamp(7px, 1.4vh, 9px);
+  font-weight: 700;
+  font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: #64748b;
+  white-space: nowrap;
+}
+.f1-meta-text.linked {
+  color: #22c55e;
+}
+.f1-meta-text.disconnected {
+  color: #ef4444;
+}
+
+#dash-conn-status {
+  display: inline-block;
+  width: 4.2ch;
+  text-align: center;
+}
+
+#dash-rtt {
+  display: inline-block;
+  width: 4.5ch;
+  text-align: right;
+}
+
+/* ================= MOMENTARY REAR-VIEW BUTTON (MIRROR ICON) ================= */
+.rear-view-control-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin: clamp(2px, 0.8vh, 6px) 0;
+  flex-shrink: 0;
+}
+
+.rear-view-btn {
+  width: clamp(100px, 24vw, 150px);
+  height: clamp(32px, 6.5vh, 44px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0c1524;
+  border: 1.5px solid #0284c7;
+  color: #38bdf8;
+  border-radius: 22px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+  transition: all 0.08s ease;
+  touch-action: none;
+}
+
+.rear-view-btn.active, .rear-view-btn:active {
+  background: #0284c7;
+  border-color: #ffffff;
+  color: #ffffff;
+  box-shadow: 0 0 18px #38bdf8;
+  transform: scale(0.95);
+}
+
+.mirror-svg {
+  width: clamp(34px, 7vw, 46px);
+  height: auto;
+}
+
+/* ================= BUTTERFLY STEERING WHEEL INDICATOR ================= */
+.steer-indicator-wrapper {
+  position: relative;
+  width: clamp(52px, 12vw, 76px);
+  height: clamp(34px, 7.5vh, 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: clamp(2px, 0.6vh, 6px) auto;
+  flex-shrink: 0;
+}
+
+.steer-horizon-bar {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 65%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 1px;
+}
+
+.steer-horizon-bar::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 5px;
+  background: #facc15;
+  border-radius: 1px;
+}
+
+.steer-wheel-svg {
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
+  transition: transform 0.04s linear;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.7));
+}
+
+/* Action Buttons Row: CAM & RESET Icons */
+.action-buttons-row {
+  display: flex;
+  gap: clamp(10px, 2.5vw, 18px);
+  margin-bottom: max(2px, env(safe-area-inset-bottom, 2px));
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  width: clamp(40px, 8vh, 52px);
+  height: clamp(40px, 8vh, 52px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #181920;
+  border: 1.5px solid #3f3f46;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.08s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  touch-action: manipulation;
+}
+
+.icon-btn svg {
+  width: clamp(18px, 3.8vh, 24px);
+  height: clamp(18px, 3.8vh, 24px);
+}
+
+.icon-btn:active, .icon-btn.active {
+  background: #27272a;
+  border-color: #facc15;
+  color: #ffffff;
+  transform: scale(0.92);
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
+}
+
+/* ================= IPAD PROPORTIONAL SCALING ================= */
+@media (min-width: 768px) and (min-height: 500px) {
+  .controller-layout-grid {
+    grid-template-columns: 1fr 1.8fr 1fr;
+    gap: 20px;
+  }
+
+  .zone-title-text {
+    font-size: 40px;
+  }
+
+  .zone-sub-text {
+    font-size: 14px;
+  }
+
+  .f1-led-container {
+    max-width: 520px;
+    margin: 8px 0;
+  }
+
+  .f1-led-bar {
+    height: 22px;
+    padding: 3px 6px;
+    gap: 8px;
+  }
+
+  .gear-numeral {
+    font-size: 96px;
+  }
+
+  .speed-digits {
+    font-size: 56px;
+  }
+
+  .rear-view-btn {
+    padding: 10px 20px;
+    max-width: 360px;
+  }
+
+  .rear-view-icon {
+    font-size: 16px;
+  }
+
+  .rear-view-sub {
+    font-size: 11px;
+  }
+
+  .ctrl-btn {
+    font-size: 12px;
+    padding: 8px 16px;
+  }
+}
+
+/* ================= AUTOMOTIVE RED ENGINE START / STOP PUSH BUTTON ================= */
+#gate-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #18181b 0%, #09090b 60%, #000000 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  text-align: center;
+  padding: 16px;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+#gate-overlay.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.engine-start-assembly {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.engine-start-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  border-radius: 50%;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), filter 0.15s ease;
+}
+
+.engine-start-btn:active,
+.engine-start-btn.is-pressed {
+  transform: scale(0.93);
+}
+
+/* Outer Machined Gunmetal / Knurled Bezel */
+.start-btn-outer-ring {
+  width: clamp(124px, 28vw, 168px);
+  height: clamp(124px, 28vw, 168px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  position: relative;
+  background: linear-gradient(135deg, #3f3f46 0%, #18181b 45%, #09090b 70%, #27272a 100%);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85),
+              inset 0 2px 3px rgba(255, 255, 255, 0.22),
+              inset 0 -3px 5px rgba(0, 0, 0, 0.9);
+  border: 2px solid #52525b;
+}
+
+/* Anodized Vibrant Red Core Push-Button */
+.start-btn-core {
+  width: clamp(92px, 21vw, 126px);
+  height: clamp(92px, 21vw, 126px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ef4444 0%, #dc2626 40%, #b91c1c 75%, #7f1d1d 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65),
+              inset 0 2px 4px rgba(255, 255, 255, 0.45),
+              inset 0 -3px 6px rgba(0, 0, 0, 0.6);
+  border: 1px solid #ef4444;
+  animation: engineStartPulse 2.4s ease-in-out infinite;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.engine-start-btn:active .start-btn-core,
+.engine-start-btn.is-pressed .start-btn-core {
+  background: radial-gradient(circle at 35% 35%, #f87171 0%, #ef4444 45%, #b91c1c 85%, #991b1b 100%);
+  box-shadow: 0 0 35px rgba(239, 68, 68, 1.0),
+              inset 0 2px 5px rgba(255, 255, 255, 0.7);
+  animation: none;
+}
+
+@keyframes engineStartPulse {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(220, 38, 38, 0.45),
+                inset 0 2px 4px rgba(255, 255, 255, 0.45),
+                inset 0 -3px 6px rgba(0, 0, 0, 0.6);
+    filter: drop-shadow(0 0 8px rgba(220, 38, 38, 0.4));
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(239, 68, 68, 0.85),
+                inset 0 2px 4px rgba(255, 255, 255, 0.65),
+                inset 0 -3px 6px rgba(0, 0, 0, 0.5);
+    filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.8));
+  }
+}
+
+/* Universal Engine Power / Ignition Symbol */
+.engine-power-symbol {
+  width: 50%;
+  height: 50%;
+  color: #ffffff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.85));
+  pointer-events: none;
+  transform: translateY(-1px);
+}
+
+.start-btn-inner-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, transparent 65%);
+}

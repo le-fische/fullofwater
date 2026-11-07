@@ -1,0 +1,454 @@
+{
+  "trackName": "Nürburgring Nordschleife",
+  "lengthMeters": 20832,
+  "chunkCount": 11,
+  "landmarks": [
+    {
+      "name": "T13 / Antoniusbuche (Start/Finish)",
+      "distanceM": 0,
+      "elevationM": 615,
+      "bankingDeg": 1.5,
+      "trackWidthM": 9
+    },
+    {
+      "name": "Hatzenbach",
+      "distanceM": 1100,
+      "elevationM": 585,
+      "bankingDeg": 3,
+      "trackWidthM": 8.5
+    },
+    {
+      "name": "Hocheichen",
+      "distanceM": 1950,
+      "elevationM": 562,
+      "bankingDeg": 4,
+      "trackWidthM": 8
+    },
+    {
+      "name": "Flugplatz",
+      "distanceM": 2550,
+      "elevationM": 574,
+      "bankingDeg": 3.5,
+      "trackWidthM": 8.5
+    },
+    {
+      "name": "Schwedenkreuz",
+      "distanceM": 3200,
+      "elevationM": 550,
+      "bankingDeg": 2,
+      "trackWidthM": 9
+    },
+    {
+      "name": "Aremberg",
+      "distanceM": 3800,
+      "elevationM": 520,
+      "bankingDeg": 5,
+      "trackWidthM": 8
+    },
+    {
+      "name": "Fuchsröhre (Compression)",
+      "distanceM": 4600,
+      "elevationM": 420,
+      "bankingDeg": 6,
+      "trackWidthM": 8
+    },
+    {
+      "name": "Adenauer Forst",
+      "distanceM": 5400,
+      "elevationM": 450,
+      "bankingDeg": 4.5,
+      "trackWidthM": 7.5
+    },
+    {
+      "name": "Metzgesfeld",
+      "distanceM": 6100,
+      "elevationM": 440,
+      "bankingDeg": 3,
+      "trackWidthM": 8
+    },
+    {
+      "name": "Kallenhard",
+      "distanceM": 7000,
+      "elevationM": 400,
+      "bankingDeg": 5,
+      "trackWidthM": 7.5
+    },
+    {
+      "name": "Wehrseifen",
+      "distanceM": 8200,
+      "elevationM": 350,
+      "bankingDeg": 6.5,
+      "trackWidthM": 7
+    },
+    {
+      "name": "Breidscheid (Lowest Point)",
+      "distanceM": 8900,
+      "elevationM": 320,
+      "bankingDeg": 3,
+      "trackWidthM": 8
+    },
+    {
+      "name": "Ex-Mühle",
+      "distanceM": 9400,
+      "elevationM": 355,
+      "bankingDeg": 5,
+      "trackWidthM": 7.5
+    },
+    {
+      "name": "Bergwerk",
+      "distanceM": 10400,
+      "elevationM": 410,
+      "bankingDeg": 5.5,
+      "trackWidthM": 7.5
+    },
+    {
+      "name": "Kesselchen",
+      "distanceM": 11500,
+      "elevationM": 475,
+      "bankingDeg": 3.5,
+      "trackWidthM": 8.5
+    },
+    {
+      "name": "Klostertal",
+      "distanceM": 12400,
+      "elevationM": 505,
+      "bankingDeg": 4,
+      "trackWidthM": 8
+    },
+    {
+      "name": "Caracciola-Karussell (Banked Concrete Bowl)",
+      "distanceM": 13150,
+      "elevationM": 525,
+      "bankingDeg": 33,
+      "trackWidthM": 8
+    },
+    {
+      "name": "Hohe Acht (Highest Point)",
+      "distanceM": 14100,
+      "elevationM": 618,
+      "bankingDeg": 3,
+      "trackWidthM": 8
+    },
+    {
+      "name": "Hedwigshöhe / Wippermann",
+      "distanceM": 14700,
+      "elevationM": 600,
+      "bankingDeg": 4.5,
+      "trackWidthM": 8
+    },
+    {
+      "name": "Eschbach",
+      "distanceM": 15300,
+      "elevationM": 575,
+      "bankingDeg": 5,
+      "trackWidthM": 7.5
+    },
+    {
+      "name": "Brünnchen",
+      "distanceM": 16100,
+      "elevationM": 540,
+      "bankingDeg": 6,
+      "trackWidthM": 8.5
+    },
+    {
+      "name": "Pflanzgarten I (Sprunghügel Jump)",
+      "distanceM": 16900,
+      "elevationM": 510,
+      "bankingDeg": 4,
+      "trackWidthM": 8.5
+    },
+    {
+      "name": "Pflanzgarten II",
+      "distanceM": 17600,
+      "elevationM": 495,
+      "bankingDeg": 5,
+      "trackWidthM": 8
+    },
+    {
+      "name": "Schwalbenschwanz",
+      "distanceM": 18300,
+      "elevationM": 525,
+      "bankingDeg": 4,
+      "trackWidthM": 8.5
+    },
+    {
+      "name": "Kleines Karussell",
+      "distanceM": 18750,
+      "elevationM": 540,
+      "bankingDeg": 18,
+      "trackWidthM": 7.5
+    },
+    {
+      "name": "Galgenkopf",
+      "distanceM": 19100,
+      "elevationM": 565,
+      "bankingDeg": 7,
+      "trackWidthM": 9
+    },
+    {
+      "name": "Döttinger Höhe (Long Straight)",
+      "distanceM": 19600,
+      "elevationM": 590,
+      "bankingDeg": 1,
+      "trackWidthM": 10
+    },
+    {
+      "name": "Tiergarten / Hohenrain Chicane",
+      "distanceM": 20400,
+      "elevationM": 610,
+      "bankingDeg": 3,
+      "trackWidthM": 8.5
+    },
+    {
+      "name": "T13 (Lap Finish)",
+      "distanceM": 20832,
+      "elevationM": 615,
+      "bankingDeg": 1.5,
+      "trackWidthM": 9
+    }
+  ],
+  "chunks": [
+    {
+      "index": 0,
+      "name": "chunk_00",
+      "startDistanceM": 0,
+      "endDistanceM": 1893.8181818181818,
+      "collisionStartDistanceM": 0,
+      "collisionEndDistanceM": 1993.8181818181818,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_00.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_00.col.glb"
+    },
+    {
+      "index": 1,
+      "name": "chunk_01",
+      "startDistanceM": 1893.8181818181818,
+      "endDistanceM": 3787.6363636363635,
+      "collisionStartDistanceM": 1793.8181818181818,
+      "collisionEndDistanceM": 3887.6363636363635,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_01.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_01.col.glb"
+    },
+    {
+      "index": 2,
+      "name": "chunk_02",
+      "startDistanceM": 3787.6363636363635,
+      "endDistanceM": 5681.454545454545,
+      "collisionStartDistanceM": 3687.6363636363635,
+      "collisionEndDistanceM": 5781.454545454545,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_02.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_02.col.glb"
+    },
+    {
+      "index": 3,
+      "name": "chunk_03",
+      "startDistanceM": 5681.454545454545,
+      "endDistanceM": 7575.272727272727,
+      "collisionStartDistanceM": 5581.454545454545,
+      "collisionEndDistanceM": 7675.272727272727,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_03.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_03.col.glb"
+    },
+    {
+      "index": 4,
+      "name": "chunk_04",
+      "startDistanceM": 7575.272727272727,
+      "endDistanceM": 9469.090909090908,
+      "collisionStartDistanceM": 7475.272727272727,
+      "collisionEndDistanceM": 9569.090909090908,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_04.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_04.col.glb"
+    },
+    {
+      "index": 5,
+      "name": "chunk_05",
+      "startDistanceM": 9469.090909090908,
+      "endDistanceM": 11362.90909090909,
+      "collisionStartDistanceM": 9369.090909090908,
+      "collisionEndDistanceM": 11462.90909090909,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_05.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_05.col.glb"
+    },
+    {
+      "index": 6,
+      "name": "chunk_06",
+      "startDistanceM": 11362.90909090909,
+      "endDistanceM": 13256.727272727272,
+      "collisionStartDistanceM": 11262.90909090909,
+      "collisionEndDistanceM": 13356.727272727272,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_06.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_06.col.glb"
+    },
+    {
+      "index": 7,
+      "name": "chunk_07",
+      "startDistanceM": 13256.727272727272,
+      "endDistanceM": 15150.545454545454,
+      "collisionStartDistanceM": 13156.727272727272,
+      "collisionEndDistanceM": 15250.545454545454,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_07.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_07.col.glb"
+    },
+    {
+      "index": 8,
+      "name": "chunk_08",
+      "startDistanceM": 15150.545454545454,
+      "endDistanceM": 17044.363636363636,
+      "collisionStartDistanceM": 15050.545454545454,
+      "collisionEndDistanceM": 17144.363636363636,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_08.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_08.col.glb"
+    },
+    {
+      "index": 9,
+      "name": "chunk_09",
+      "startDistanceM": 17044.363636363636,
+      "endDistanceM": 18938.181818181816,
+      "collisionStartDistanceM": 16944.363636363636,
+      "collisionEndDistanceM": 19038.181818181816,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_09.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_09.col.glb"
+    },
+    {
+      "index": 10,
+      "name": "chunk_10",
+      "startDistanceM": 18938.181818181816,
+      "endDistanceM": 20832,
+      "collisionStartDistanceM": 18838.181818181816,
+      "collisionEndDistanceM": 20832,
+      "bounds": {
+        "min": [
+          -2000,
+          300,
+          -2000
+        ],
+        "max": [
+          2000,
+          650,
+          2000
+        ]
+      },
+      "visualMesh": "/assets/track/chunks/chunk_10.glb",
+      "collisionMesh": "/assets/track/chunks/chunk_10.col.glb"
+    }
+  ]
+}

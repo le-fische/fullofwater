@@ -1,0 +1,110 @@
+{
+  "$schema": "./car-schema.json",
+  "id": "porsche_911_rsr_19_992",
+  "name": "Porsche 911 RSR-19 (992)",
+  "class": "GTE",
+  "specs": {
+    "engine": "4.2L Naturally Aspirated Flat-6",
+    "powerPS": 515,
+    "torqueNm": 470,
+    "weightKg": 1242,
+    "topSpeedKmh": 298.0,
+    "topSpeedDrsKmh": 318.0
+  },
+  "chassis": {
+    "massKg": 1242,
+    "cgHeightM": 0.40,
+    "frontWeightFraction": 0.43,
+    "wheelbaseM": 2.513,
+    "trackFrontM": 1.705,
+    "trackRearM": 1.670,
+    "inertiaTensor": [1650, 420, 1850]
+  },
+  "suspension": {
+    "front": {
+      "springNPerM": 125000,
+      "bumpNsPerM": 14000,
+      "reboundNsPerM": 16000,
+      "travelM": 0.095,
+      "antiRollNmPerRad": 95000
+    },
+    "rear": {
+      "springNPerM": 145000,
+      "bumpNsPerM": 16000,
+      "reboundNsPerM": 18000,
+      "travelM": 0.095,
+      "antiRollNmPerRad": 105000
+    }
+  },
+  "tires": {
+    "compound": "slick_medium",
+    "front": {
+      "radiusM": 0.342,
+      "widthM": 0.305,
+      "pacejkaLat": { "B": 12.5, "C": 1.85, "D": 1.68, "E": 0.95 },
+      "pacejkaLong": { "B": 14.5, "C": 1.65, "D": 1.55, "E": 0.95 }
+    },
+    "rear": {
+      "radiusM": 0.354,
+      "widthM": 0.315,
+      "pacejkaLat": { "B": 12.5, "C": 1.85, "D": 1.75, "E": 0.95 },
+      "pacejkaLong": { "B": 14.5, "C": 1.65, "D": 1.55, "E": 0.95 }
+    }
+  },
+  "steering": {
+    "maxWheelAngleDeg": 34.0,
+    "maxRateDegPerS": 340.0,
+    "highSpeedLockFraction": 0.35,
+    "speedSensitivityStartKmh": 65.0
+  },
+  "engine": {
+    "type": "ice",
+    "idleRpm": 2000,
+    "redlineRpm": 9000,
+    "limiterRpm": 9250,
+    "inertiaKgM2": 0.11,
+    "engineBrakeNm": 85,
+    "torqueCurve": [
+      [2000, 280],
+      [3500, 360],
+      [5500, 440],
+      [7200, 470],
+      [8200, 460],
+      [9000, 420],
+      [9250, 370]
+    ]
+  },
+  "transmission": {
+    "type": "sequential",
+    "auto": true,
+    "ratios": [3.18, 2.25, 1.78, 1.48, 1.26, 1.10],
+    "reverse": 3.40,
+    "finalDrive": 3.44,
+    "shiftTimeS": 0.045,
+    "upshiftRpm": 8800,
+    "downshiftRpm": 5400
+  },
+  "brakes": {
+    "maxTorqueNm": 6800,
+    "frontBias": 0.57,
+    "padFrictionCoeff": 0.45,
+    "initialTempC": 25.0
+  },
+  "aero": {
+    "dragCdA": 0.88,
+    "downforceClA": 2.85,
+    "aeroBalanceFront": 0.42,
+    "drs": {
+      "dragReduction": 0.28,
+      "downforceReduction": 0.35
+    }
+  },
+  "assists": {
+    "tractionControl": 0.65,
+    "abs": true,
+    "stability": 0.45,
+    "counterSteer": 0.30,
+    "throttleRampS": 0.05,
+    "brakeRampS": 0.05
+  }
+}

@@ -1,0 +1,108 @@
+Category,Subsystem,Variable Name,Property Path,Unit,Editable Status,Default Value (911 RSR),Tunable Min,Tunable Max,Mapped Module / Function,Description
+Global,World,Gravity,world.gravity,m/s^2,Constant,-9.81,-,-,Rapier.World(new Vector3(0,-9.81,0)),Universal vertical gravitational acceleration
+Global,World,Physics Timestep,world.physicsTickHz,Hz,Constant,240,-,-,RapierVehicle.step(1/240),Fixed physics simulation frequency
+Global,World,Air Density,world.airDensity,kg/m^3,Constant,1.225,-,-,RaycastVehicle.stepAeroDynamics(),Standard sea-level air density rho
+Global,World,Speed of Sound,world.speedOfSound,m/s,Constant,343.0,-,-,EngineAudioSynth.calcDoppler(),Acoustic propagation speed for Doppler shifts
+Global,World,Ambient Temperature,world.ambientTempC,deg C,Constant,20.0,-,-,BrakeSystem.stepThermals(),Baseline ambient environmental temperature
+Global,Network,Telemetry Frequency,network.telemetryRateHz,Hz,Constant,60,-,-,HostNetworkBridge.broadcastTelemetry(),Binary WebSocket transmission rate to phone
+Global,Materials,Asphalt Friction Multiplier,surface.asphalt.friction,ratio,Constant,1.00,-,-,Pacejka.calcTireForces(),Baseline tarmac grip scale
+Global,Materials,Concrete Friction Multiplier,surface.concrete.friction,ratio,Constant,0.90,-,-,Pacejka.calcTireForces(),Kerb and rumble strip grip scale
+Global,Materials,Grass Friction Multiplier,surface.grass.friction,ratio,Constant,0.35,-,-,Pacejka.calcTireForces(),Off-track grass verge grip scale
+Global,Materials,Gravel Friction Multiplier,surface.gravel.friction,ratio,Constant,0.45,-,-,Pacejka.calcTireForces(),Gravel trap surface grip scale
+Global,Materials,Gravel Rolling Resistance,surface.gravel.rollingResistance,ratio,Constant,0.280,-,-,RaycastVehicle.step(),Heavy displacement drag in gravel traps
+Chassis,Blueprint,Total Curb Mass,chassis.massKg,kg,Homologated,1242,-,-,Rapier.RigidBodyDesc.setMass(),Total dry curb vehicle mass
+Chassis,Blueprint,Center of Gravity Height,chassis.cgHeightM,m,Homologated,0.40,-,-,RaycastVehicle.initChassisBody(),Vertical height of mass center above ground
+Chassis,Blueprint,Front Weight Distribution,chassis.frontWeightFraction,fraction,Homologated,0.43,-,-,RaycastVehicle.calcStaticWheelLoads(),Static front axle weight fraction (43% front / 57% rear)
+Chassis,Blueprint,Wheelbase,chassis.wheelbaseM,m,Homologated,2.513,-,-,RaycastVehicle.initSuspensionRays(),Distance between front and rear axle centers
+Chassis,Blueprint,Front Track Width,chassis.trackFrontM,m,Homologated,1.705,-,-,RaycastVehicle.initSuspensionRays(),Distance between left and right front tire centers
+Chassis,Blueprint,Rear Track Width,chassis.trackRearM,m,Homologated,1.670,-,-,RaycastVehicle.initSuspensionRays(),Distance between left and right rear tire centers
+Chassis,Blueprint,Moment of Inertia X (Roll),chassis.inertiaTensor[0],kg*m^2,Homologated,1650,-,-,chassisBody.setMassProperties(),Rotational inertia around longitudinal axis
+Chassis,Blueprint,Moment of Inertia Y (Pitch),chassis.inertiaTensor[1],kg*m^2,Homologated,420,-,-,chassisBody.setMassProperties(),Rotational inertia around lateral axis
+Chassis,Blueprint,Moment of Inertia Z (Yaw),chassis.inertiaTensor[2],kg*m^2,Homologated,1850,-,-,chassisBody.setMassProperties(),Polar rotational inertia around vertical yaw axis
+Chassis,Blueprint,Linear Translation Damping,chassis.linearDamping,ratio,Homologated,0.01,-,-,chassisBody.setLinearDamping(),Chassis aerodynamic/rolling body damping
+Chassis,Blueprint,Angular Velocity Damping,chassis.angularDamping,ratio,Homologated,0.05,-,-,chassisBody.setAngularDamping(),Chassis pitch/roll/yaw damping
+Engine,Blueprint,Powertrain Architecture,engine.type,enum,Homologated,ice,-,-,Drivetrain.constructor(),Powertrain layout: ice / hybrid / electric
+Engine,Blueprint,Engine Displacement,engine.displacementL,L,Homologated,4.2,-,-,EngineAudioSynth.constructor(),Engine swept volumetric capacity
+Engine,Blueprint,Cylinder Count,engine.cylinders,count,Homologated,6,-,-,EngineAudioSynth.update(),Number of combustion cylinders (flat-six = 6)
+Engine,Blueprint,Engine Idle Speed,engine.idleRpm,RPM,Homologated,2000,-,-,Drivetrain.step(),Minimum stationary engine crankshaft idle speed
+Engine,Blueprint,Engine Peak Redline,engine.redlineRpm,RPM,Homologated,9000,-,-,Drivetrain.step(),Rated maximum continuous operating engine speed
+Engine,Blueprint,Engine Hard Rev Limiter,engine.limiterRpm,RPM,Homologated,9250,-,-,Drivetrain.step(),Hard fuel/ignition cut electronic rev limit
+Engine,Blueprint,Maximum Brake Horsepower,specs.powerPS,PS,Homologated,515,-,-,CarProfile.specs,Manufacturer rated peak horsepower
+Engine,Blueprint,Peak Crankshaft Torque,specs.torqueNm,Nm,Homologated,470,-,-,Drivetrain.getEngineTorque(),Maximum mechanical crankshaft torque at 7200 RPM
+Engine,Blueprint,Engine Rotational Inertia,engine.inertiaKgM2,kg*m^2,Homologated,0.11,-,-,Drivetrain.step(),Rotating flywheel and crank assembly inertia
+Engine,Blueprint,Engine Compression Braking,engine.engineBrakeNm,Nm,Homologated,85,-,-,Drivetrain.step(),Quadratic compression drag torque on throttle release
+Engine,Blueprint,Hybrid MGU-K Regen Torque,engine.regenBrakeNm,Nm,Homologated,0,-,-,Drivetrain.step(),Electric regenerative braking motor torque clamp
+Engine,Blueprint,Torque Curve Lookup Table,engine.torqueCurve,RPM:Nm array,Homologated,[[2000,280]..[9250,370]],-,-,Drivetrain.getEngineTorque(),Crankshaft torque versus engine RPM curve
+Transmission,Blueprint,Transmission Architecture,transmission.type,enum,Homologated,sequential,-,-,Drivetrain.constructor(),Gearbox type: sequential / manual_h / dual_clutch
+Transmission,Blueprint,Automated Shifting,transmission.auto,boolean,Homologated,true,-,-,Drivetrain.step(),Automatic sequential electro-pneumatic gear shifting
+Transmission,Blueprint,Gear Ratios (1 to 6),transmission.ratios,ratio array,Homologated,[3.18,2.25,1.78,1.48,1.26,1.10],-,-,Drivetrain.getGearRatio(),Individual forward gear cog mechanical ratios
+Transmission,Blueprint,Reverse Gear Ratio,transmission.reverse,ratio,Homologated,-3.20,-,-,Drivetrain.getGearRatio(),Reverse mechanical gear ratio
+Transmission,Blueprint,Base Final Drive Ratio,transmission.finalDrive,ratio,Homologated,3.44,-,-,Drivetrain.getGearRatio(),Differential ring and pinion reduction ratio
+Transmission,Blueprint,Shift Actuator Duration,transmission.shiftTimeS,s,Homologated,0.045,-,-,Drivetrain.step(),Pneumatic gearshift ignition cut duration
+Transmission,Blueprint,Upshift Target RPM,transmission.upshiftRpm,RPM,Tunable,8800,8600,8900,Drivetrain.step(),Engine RPM target triggering sequential upshift
+Transmission,Blueprint,Downshift Target RPM,transmission.downshiftRpm,RPM,Tunable,6200,5800,6600,Drivetrain.step(),Engine RPM target triggering sequential downshift
+Transmission,Blueprint,Launch Clutch Slip Speed,transmission.clutchEngageKmh,km/h,Homologated,8.0,-,-,Drivetrain.step(),Low-speed forward clutch engagement speed ramp
+Transmission,Blueprint,Auto-Reverse Hold Time,transmission.autoReverseHoldTimeS,s,Homologated,0.30,-,-,Drivetrain.step(),Brake pedal standstill duration required to engage R
+Suspension,Blueprint,Front Coil Spring Rate,suspension.front.springNPerM,N/m,Tunable,145000,120000,180000,RaycastVehicle.stepSuspension(),Front axle coilover spring stiffness
+Suspension,Blueprint,Front Damper Bump Clicks,suspension.front.bumpNsPerM,N*s/m,Tunable,7500,5500,10500,RaycastVehicle.stepSuspension(),Front damper jounce/compression rate
+Suspension,Blueprint,Front Damper Rebound Clicks,suspension.front.reboundNsPerM,N*s/m,Tunable,10500,8000,14000,RaycastVehicle.stepSuspension(),Front damper rebound/extension rate
+Suspension,Blueprint,Front Suspension Travel,suspension.front.travelM,m,Homologated,0.065,-,-,RaycastVehicle.stepSuspension(),Front strut maximum compression stroke
+Suspension,Blueprint,Front Anti-Roll Bar,suspension.front.antiRollNmPerRad,N*m/rad,Tunable,95000,70000,120000,RaycastVehicle.stepAntiRoll(),Front ARB torsional lateral spring rate
+Suspension,Blueprint,Rear Coil Spring Rate,suspension.rear.springNPerM,N/m,Tunable,165000,140000,200000,RaycastVehicle.stepSuspension(),Rear axle coilover spring stiffness
+Suspension,Blueprint,Rear Damper Bump Clicks,suspension.rear.bumpNsPerM,N*s/m,Tunable,8500,6500,11500,RaycastVehicle.stepSuspension(),Rear damper jounce/compression rate
+Suspension,Blueprint,Rear Damper Rebound Clicks,suspension.rear.reboundNsPerM,N*s/m,Tunable,11500,9000,15000,RaycastVehicle.stepSuspension(),Rear damper rebound/extension rate
+Suspension,Blueprint,Rear Suspension Travel,suspension.rear.travelM,m,Homologated,0.065,-,-,RaycastVehicle.stepSuspension(),Rear strut maximum compression stroke
+Suspension,Blueprint,Rear Anti-Roll Bar,suspension.rear.antiRollNmPerRad,N*m/rad,Tunable,75000,50000,100000,RaycastVehicle.stepAntiRoll(),Rear ARB torsional lateral spring rate
+Suspension,Setup,Ride Height Offset,setup.rideHeightOffsetM,m,Tunable,0.000,-0.010,+0.015,RaycastVehicle.stepSuspension(),Suspension spring perch height adjustment
+Tires,Blueprint,Tire Compound Selection,tires.compound,enum,Tunable,slick_medium,-,-,Pacejka.calcTireForces(),Compound: slick_soft / slick_medium / slick_hard / wet
+Tires,Blueprint,Front Tire Radius,tires.front.radiusM,m,Homologated,0.342,-,-,RaycastVehicle.stepWheelAngularVelocity(),Front wheel rolling radius (18 inch rim)
+Tires,Blueprint,Front Tire Tread Width,tires.front.widthM,m,Homologated,0.305,-,-,Pacejka.calcTireForces(),Front tire contact patch tread width
+Tires,Blueprint,Front Pacejka Lat Stiffness B,tires.front.pacejkaLat.B,ratio,Homologated,12.5,-,-,Pacejka.calcLateralForce(),Front tire cornering stiffness factor
+Tires,Blueprint,Front Pacejka Lat Shape C,tires.front.pacejkaLat.C,ratio,Homologated,1.85,-,-,Pacejka.calcLateralForce(),Front tire lateral curve shape factor
+Tires,Blueprint,Front Pacejka Lat Peak D,tires.front.pacejkaLat.D,ratio,Homologated,1.45,1.20,1.80,Pacejka.calcLateralForce(),Front tire peak lateral friction coefficient
+Tires,Blueprint,Front Pacejka Lat Curvature E,tires.front.pacejkaLat.E,ratio,Homologated,0.95,-,-,Pacejka.calcLateralForce(),Front tire lateral curve curvature factor
+Tires,Blueprint,Front Pacejka Long Peak D,tires.front.pacejkaLong.D,ratio,Homologated,1.55,1.30,1.90,Pacejka.calcLongitudinalForce(),Front tire peak longitudinal braking/traction mu
+Tires,Blueprint,Rear Tire Radius,tires.rear.radiusM,m,Homologated,0.354,-,-,RaycastVehicle.stepWheelAngularVelocity(),Rear wheel rolling radius (18 inch rim)
+Tires,Blueprint,Rear Tire Tread Width,tires.rear.widthM,m,Homologated,0.315,-,-,Pacejka.calcTireForces(),Rear tire contact patch tread width
+Tires,Blueprint,Rear Pacejka Lat Peak D,tires.rear.pacejkaLat.D,ratio,Homologated,1.75,1.40,2.10,Pacejka.calcLateralForce(),Rear tire peak lateral friction coefficient
+Tires,Blueprint,Rear Pacejka Long Peak D,tires.rear.pacejkaLong.D,ratio,Homologated,1.75,1.40,2.10,Pacejka.calcLongitudinalForce(),Rear tire peak longitudinal traction/braking mu
+Tires,Setup,Cold Tire Pressure Front,setup.tirePressureBarFront,bar,Tunable,1.70,1.40,2.20,Pacejka.calcTireForces(),Front cold tire inflation pressure
+Tires,Setup,Cold Tire Pressure Rear,setup.tirePressureBarRear,bar,Tunable,1.70,1.40,2.20,Pacejka.calcTireForces(),Rear cold tire inflation pressure
+Brakes,Blueprint,Maximum Caliper Torque,brakes.maxTorqueNm,N*m,Tunable,6800,5000,7500,BrakeSystem.calcClampingForce(),Total mechanical caliper clamping torque clamp
+Brakes,Blueprint,Brake Balance Bias Front,brakes.frontBias,fraction,Tunable,0.57,0.50,0.64,BrakeSystem.calcClampingForce(),Hydraulic brake bias percentage to front axle
+Brakes,Blueprint,Brake Pad Friction Coeff,brakes.padFrictionCoeff,ratio,Homologated,0.48,-,-,BrakeSystem.calcClampingForce(),Friction coefficient between pad and carbon/iron rotor
+Brakes,Blueprint,Front Rotor Heat Capacity,brakes.rotorThermalMassJPerK[0],J/K,Homologated,4100,-,-,BrakeSystem.stepThermals(),Front brake disc thermal capacity
+Brakes,Blueprint,Rear Rotor Heat Capacity,brakes.rotorThermalMassJPerK[1],J/K,Homologated,3200,-,-,BrakeSystem.stepThermals(),Rear brake disc thermal capacity
+Brakes,Blueprint,Brake Forced Air Cooling,brakes.coolingFactor,ratio,Homologated,1.00,-,-,BrakeSystem.stepThermals(),Duct convective air cooling multiplier (1 + v/22)
+Aero,Blueprint,Aerodynamic Drag Area,aero.dragCdA,m^2,Homologated,0.88,-,-,RaycastVehicle.stepAeroDynamics(),Total vehicle frontal area drag product Cd * A
+Aero,Blueprint,Aerodynamic Downforce Area,aero.downforceClA,m^2,Homologated,2.85,-,-,RaycastVehicle.stepAeroDynamics(),Total vehicle ground downforce product Cl * A
+Aero,Blueprint,Aero Center of Pressure Front,aero.aeroBalanceFront,fraction,Homologated,0.42,-,-,RaycastVehicle.stepAeroDynamics(),Front aerodynamic downforce balance (42% front / 58% rear)
+Aero,Blueprint,DRS Drag Reduction Fraction,aero.drs.dragReduction,fraction,Homologated,0.28,-,-,RaycastVehicle.stepAeroDynamics(),Drag area percentage reduction when DRS flap opens (28%)
+Aero,Blueprint,DRS Downforce Reduction Fraction,aero.drs.downforceReduction,fraction,Homologated,0.35,-,-,RaycastVehicle.stepAeroDynamics(),Downforce percentage reduction when DRS flap opens (35%)
+Aero,Setup,Rear Wing Angle,setup.rearWingAngleDeg,deg,Tunable,10.0,5.0,18.0,RaycastVehicle.stepAeroDynamics(),Rear wing angle of attack trading top speed for downforce
+Aero,Setup,DRS Operational Enablement,setup.drsEnabled,boolean,Tunable,true,-,-,RaycastVehicle.stepAeroDynamics(),Whether DRS flap can open on straightaways
+Aero,Performance,Top Speed Baseline,specs.topSpeedKmh,km/h,Homologated,298,-,-,CarProfile.specs,Aero drag limited top speed with standard wing
+Aero,Performance,Top Speed Low Drag / DRS,specs.topSpeedDrsKmh,km/h,Homologated,318,-,-,CarProfile.specs,Maximum top speed achieved with DRS flap open
+Steering,Blueprint,Max Road Wheel Steering Lock,steering.maxWheelAngleDeg,deg,Homologated,22.0,-,-,Assists.calculateSteering(),Maximum mechanical wheel turning angle at slow speed
+Steering,Blueprint,Steering Rack Slew Rate,steering.maxRateDegPerS,deg/s,Homologated,320.0,-,-,Assists.calculateSteering(),Maximum angular steering wheel transition speed
+Steering,Blueprint,High Speed Lock Clamp,steering.highSpeedLockFraction,fraction,Tunable,0.35,0.25,0.50,Assists.calculateSteering(),Steering lock clamp at 250+ km/h (prevents rollover)
+Steering,Blueprint,Speed Sensitivity Threshold,steering.speedSensitivityStartKmh,km/h,Homologated,18.0,-,-,Assists.calculateSteering(),Vehicle speed where steering ratio progressively stiffens
+Assists,Setup,Traction Control Intervention,assists.tractionControl,ratio,Tunable,0.65,0.00,1.00,Assists.stepTractionControl(),TC slip threshold cutting engine torque to prevent spin
+Assists,Setup,Anti-Lock Braking System,assists.abs,boolean,Tunable,true,-,-,Assists.stepAbs(),Motorsport ABS M5 modulation holding slip at peak mu
+Assists,Setup,Electronic Stability Yaw Damping,assists.stability,gain,Tunable,0.45,0.00,1.00,Assists.stepEsp(),Active yaw damping opposing sudden chassis spin moments
+Assists,Setup,Dynamic Counter-Steer Assist,assists.counterSteer,gain,Tunable,0.30,0.00,1.00,Assists.stepCounterSteer(),Assists driver in holding and catching power oversteer drifts
+Sound,Blueprint,Gear Mesh Tooth Count,sound.gearMeshTeeth,teeth,Homologated,32,-,-,EngineAudioSynth.setupTransmissionSound(),Spur gear teeth creating straight-cut transmission whine
+Sound,Blueprint,Differential Whine Multiplier,sound.diffWhineRatio,Hz/(km/h),Homologated,11.2,-,-,EngineAudioSynth.setupTransmissionSound(),Ground speed proportional driveshaft/diff whine ratio
+Sound,Blueprint,Cockpit Wind Gain,sound.cockpitWindVolume,volume,Homologated,0.0,-,-,EngineAudioSynth.update(),Wind noise inside sealed cockpit view (strictly 0.0)
+Sound,Blueprint,Chase Cam Wind Gain,sound.chaseWindVolume,volume,Homologated,0.30,-,-,EngineAudioSynth.update(),Maximum wind rush noise in external chase camera view
+Cockpit,Blueprint,Driver Eye Seating Offset,cockpit.driverEyeOffset,vector3 m,Homologated,[-0.35,0.72,-0.28],-,-,CockpitRig.update(),Driver eye position in Left-Hand Drive bucket seat
+Cockpit,Blueprint,Cockpit Vertical FOV,cockpit.verticalFov,deg,Homologated,82.0,60.0,95.0,DynamicCameraController.update(),Cockpit camera field of view (~115 deg horizontal)
+Cockpit,Blueprint,Rev LED Shift Threshold,cockpit.shiftLedRpm,RPM,Homologated,8800,-,-,GtCockpit.render(),RPM threshold triggering full-bank strobe shift flash
+Telemetry,Runtime,Vehicle Ground Speed,telemetry.speedKmh,km/h,Runtime,Dynamic,-,-,RaycastVehicle.getTelemetry(),Instantaneous ground vehicle speed
+Telemetry,Runtime,Engine Live RPM,telemetry.rpm,RPM,Runtime,Dynamic,-,-,RaycastVehicle.getTelemetry(),Instantaneous engine rotational crankshaft speed
+Telemetry,Runtime,Selected Gear,telemetry.gear,int,Runtime,Dynamic,-,-,RaycastVehicle.getTelemetry(),Current transmission gear (-1=R, 0=N, 1..6)
+Telemetry,Runtime,Wheel Slip Angles,telemetry.wheelSlipAngle,rad array,Runtime,Dynamic,-,-,RaycastVehicle.getTelemetry(),Tire slip angle per wheel [FL, FR, RL, RR]
+Telemetry,Runtime,Wheel Slip Ratios,telemetry.wheelSlipRatio,ratio array,Runtime,Dynamic,-,-,RaycastVehicle.getTelemetry(),Longitudinal tire slip ratio per wheel [FL, FR, RL, RR]
+Telemetry,Runtime,Brake Disc Temperatures,telemetry.brakeTempsC,deg C array,Runtime,Dynamic,-,-,RaycastVehicle.getTelemetry(),Brake rotor thermal status [FL, FR, RL, RR]
+Telemetry,Runtime,Chassis Lateral G-Force,telemetry.lateralG,G,Runtime,Dynamic,-,-,RaycastVehicle.getTelemetry(),Cornering lateral gravitational acceleration
+Telemetry,Runtime,Chassis Longitudinal G-Force,telemetry.longitudinalG,G,Runtime,Dynamic,-,-,RaycastVehicle.getTelemetry(),Acceleration and braking longitudinal G-force

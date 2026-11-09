@@ -9,3 +9,9 @@
 3. Agent suggestions go in the Idea Parking Lot, clearly marked as not accepted, until the user accepts them.
 4. When the user answers an open question from `spec.md`, record it in the Decision Log in `idea.md` and update `spec.md` to match.
 5. If a new idea raises feasibility concerns, add them to `spec.md` and mention them to the user.
+
+## Release & Publishing Policy
+
+- **No releases unless explicitly allowed by the user.**
+- The repository is strictly capped up to **Phase 2** right now.
+- Do not create GitHub releases, git tags, or production deployments without explicit user authorization.

@@ -204,25 +204,148 @@ Transition the physics engine and renderer from the flat proving ground to the f
 
 ---
 
-## 4. Phase 3: Advanced Systems (Future Scope)
+## 4. Phase 3: Advanced Motorsport Systems (Paused & Merged into Phase 5)
 
-1. **Pit Lane & Vehicle Setup:**
-   - Detect entry into T13 / GP pit lane box.
-   - Auto-brake car to stop.
-   - Host screen transitions to interactive setup page (mouse/keyboard on Mac): adjust brake bias, downforce level, tire compound, gear ratios.
-2. **Tyre Degradation & Fuel Consumption:**
-   - Temperature accumulation based on slip energy: $E_{\text{slip}} = \int |F_{\text{tire}} \cdot v_{\text{slip}}| dt$.
-   - Wear coefficient reducing peak Pacejka friction multiplier $D$ over laps.
-   - Fuel mass depletion reducing chassis mass ($0.75\text{ kg/L}$).
-3. **Dynamic Environment:**
-   - Modular day/night lighting cycle via directional sun progression and ambient sky dome.
-   - Rain system: particle emitter around camera + windshield droplet distortion shader + 40% surface grip multiplier reduction.
-4. **Multiplayer:**
-   - WebRTC DataChannel peer-to-peer lobby for time-attack ghosting and wheel-to-wheel racing.
+> **Status:** Paused per user directive. Core vehicle physical simulation systems (tyre degradation, dynamic fuel depletion, thermal brake efficiency) are directly merged into Phase 5: Nürburgring & Simulation Realism.
 
 ---
 
-## 5. System Prompts & Specsheets for Autonomous Subagents
+## 5. Phase 5: Nürburgring & Simulation Realism (Assetto Corsa Competizione Level) Implementation Architecture
+
+### Objective
+Elevate the Nürburgring circuit and Porsche 911 RSR simulation to Assetto Corsa Competizione (ACC) standards of visual fidelity, trackside atmosphere, and physical authenticity.
+
+### Step-by-Step Architecture & Deliverables
+#### Step 5.1: Topographical Elevation Recalibration & Vertical Dynamics
+- Ingest and un-flatten authentic surveyed elevation profile in `tracks/nordschleife/` with genuine $306.8\text{ m}$ vertical drop (Breidscheid $320.0\text{ m}$ to Hohe Acht $626.8\text{ m}$).
+- Restore sustained $11.7\%$ Fuchsröhre plunge with massive vertical G-compression at the valley trough, climbing up to Adenauer Forst.
+- Restore continuous $300\text{ m}$ Bergwerk mountain climb and authentic banking (33.0° Karussell bowl, 22.0° Kleines Karussell).
+- Calibrate vertical spline curvature at Flugplatz and Pflanzgarten to produce authentic chassis unweighting without raycast contact loss.
+
+#### Step 5.2: Multi-Layer Dense Forest Immersion & Roadside Canopy Engine
+- Enhance `ForestFoliage` in `src/host/render/` to generate dense multi-layer forest walls lining both sides of the circuit:
+  - Layer 1: Roadside shrubs, grass tufts, and young spruce behind Armco ($5.5\text{ m} \dots 10.0\text{ m}$).
+  - Layer 2: Mature Scots pine, Norway spruce, and European beech trees ($10.0\text{ m} \dots 28.0\text{ m}$) with foliage canopies overhanging track edges.
+  - Layer 3: Mountain forest backdrop extending $28.0\text{ m} \dots 75.0\text{ m}$ up mountain ridges.
+- Global 2D spatial clearance hash grid strictly enforcing $|d_{\text{lateral}}| \ge w_{\text{track}} / 2 + 5.5\text{ m}$ clearance from all track segments, eliminating loop bleed-through.
+- GPU instancing via `THREE.InstancedMesh` with distance-based cross-quad billboard LODs beyond $150\text{ m}$ maintaining locked 60–120 FPS on Apple M4 Pro hardware.
+
+#### Step 5.3: Trackside Asset Expansion (Catch Fencing, Red/White Barriers & Sponsor Bridges)
+- Construct FIA debris catch fences: $2.5\text{ m}$ steel vertical support stanchions supporting dark steel wire mesh safety cages mounted directly atop Armco barriers.
+- Place red-and-white striped tire barriers and Tecpro energy-absorbing blocks at acute-angle runoff zones (Aremberg, Adenauer Forst, Wehrseifen, Brünnchen, Hohenrain).
+- Ingest overhead sponsor bridges: Bilstein Bridge at Döttinger Höhe ($s \approx 19,200\text{ m}$), Audi, Yokohama, and Dunlop overhead bridges on Grand Prix straight and Nordschleife approaches.
+
+#### Step 5.4: Thickened Safety Barriers & Continuous Collision Detection (CCD)
+- Extrude barrier colliders as continuous 3D collision volumes with minimum depth $t \ge 0.50\text{ m}$ behind the Armco face.
+- Enable Continuous Collision Detection on the Rapier chassis rigid body:
+  ```typescript
+  bodyDesc.setCcdEnabled(true);
+  ```
+- Swept-sphere time-of-impact (TOI) calculations eliminate barrier noclipping and tunneling on high-speed ($300+\text{ km/h}$) impacts.
+
+#### Step 5.5: Authentic Dedicated Drivable Pit Lane, Pit Wall Divider & Pit Box Architecture
+- Construct physically dedicated pit lane geometry running parallel to Start-Ziel straight, partitioned by continuous concrete pit wall ($h = 1.05\text{ m}, w = 0.45\text{ m}$) with safety fencing and team pit perches.
+- Distinct angled deceleration entry lane with painted chevrons, $7.5\text{ m}$ concrete pit apron, 10+ marked team pit stalls ($6.5\text{ m} \times 3.2\text{ m}$) with overhead fuel/air lollipop gantries, and acceleration exit blend lane.
+- Automated $60\text{ km/h}$ pit speed limiter trigger volume with controller/HUD toggle (`[L]`), staccato engine cut audio, and stationary pit service timer.
+
+#### Step 5.6: HUD Radar & Flag Cleanup
+- Remove broken placeholder yellow flag triggers and flashing sector warnings from HUD.
+- Remove synthetic moving AI competitor dots from HUD radar and cockpit micro-radar.
+- Strictly retain player's own personal best ghost car blip/silhouette on radar during timed hotlaps.
+
+#### Step 5.7: Full Vehicle Physical Realism (Assetto Corsa Standard)
+- Slip-energy tyre wear model in `RaycastVehicle.ts` reducing peak Pacejka friction coefficient $D$ progressively over laps:
+  $$D(t) = D_{\text{fresh}} \cdot \left(1.0 - k_{\text{wear}} \cdot \frac{E_{\text{accum}}}{E_{\max}}\right)$$
+- Dynamic fuel mass depletion: fuel burn rate ($\sim 0.75\text{ L/min}$) depleting a $60.0\text{ L}$ tank ($0.75\text{ kg/L}$), reducing total vehicle mass and shifting weight balance over endurance stints.
+- Dynamic brake thermal efficiency in `brakes.ts`: cold bite ($<200^\circ\text{C}$, $\mu = 0.32$), optimal thermal friction window ($350\text{–}650^\circ\text{C}$, $\mu = 0.44$), and thermal brake fade above $750^\circ\text{C}$ degrading pad friction down to $\mu = 0.19$ at $1,100^\circ\text{C}$.
+
+#### Step 5.8: Visual & Atmospheric Lighting Realism
+- Tone down rear taillights and brake lights to realistic diffuse red glow (`emissiveIntensity = 1.8`) with localized pavement bounce and zero unnatural forward/global light spill.
+- Physically based sunset and dawn atmospheric scattering (Rayleigh and Mie scattering) with golden hour low-angle sunlight and soft dusk transitions.
+- Continuous 24-hour day/night endurance cycle with configurable time compression ($1\times, 12\times, 24\times, 48\times$).
+
+#### Step 5.9: Standardized Asset Creation & Pipeline Documentation (`docs/skills.md`)
+- Authoritative engineering manual published in [`docs/skills.md`](docs/skills.md) detailing end-to-end procedures for procedural track creation, vehicle 3D model ingestion, rigging, livery unwrapping, and headphone-safe sound design.
+
+#### Step 5.10: Anti-Nausea Cockpit Camera Horizon Stabilization & Chassis Bump Vibration
+- Implement $85\text{–}90\%$ Vestibulo-Ocular Reflex (VOR) horizon lock in `DynamicCameraController.updateCockpitView`.
+- Heavily low-pass filter camera pitch and roll rotations against world horizontal plane so driver sightlines onto apexes remain smooth and stable, eliminating motion sickness.
+- Translate suspension compression $\Delta z$ and kerb strike impulses into high-frequency vertical and angular displacement of the car body mesh, dashboard, and steering column relative to the stabilized camera.
+- Clamp micro-displacement to $\le 2.5\text{ mm}$ to prevent unnatural geometry clipping.
+
+#### Step 5.11: Smooth C2 Spline Geometry & Micro-Undulation Bump Dynamics
+- Ensure track extrusion runs along an 8-pass Taubin faired cubic spline with $C^2$ second-derivative continuity, completely free of polygonal kinks, angular facets, or DEM staircasing.
+- Overlay multi-band physical undulations directly into the 240 Hz Rapier suspension raycast queries:
+  - Long-wave surveyed macro-gradients (Fuchsröhre plunge, Bergwerk ascent).
+  - Medium-wave asphalt settling Perlin displacement ($\lambda = 8\text{–}25\text{ m}$, amplitude $\pm 18\text{ mm}$).
+  - Short-wave micro-bumps and tar expansion seams ($\lambda = 0.5\text{–}1.2\text{ m}$, amplitude $\pm 8\text{ mm}$).
+- Drive authentic wheel travel, tire load variation, and chassis vibration without polygonal jaggedness.
+
+#### Step 5.12: Dedicated Sound Design Pipeline & Headphone-Safe Gearbox Filtering
+- Codify audio synthesis engineering standards in [`docs/skills.md`](docs/skills.md) Section 4.
+- Overhaul transmission whine synthesis in `src/host/audio/engine-synth.ts`:
+  - Replace raw high-Q bandpass with a 2nd-order Butterworth low-pass filter at $3,200\text{ Hz}$ ($-12\text{ dB/octave}$).
+  - Insert a static parametric notch filter centered at $3,500\text{ Hz}$ ($Q = 3.0$, gain $-8.0\text{ dB}$) to remove harsh ear-canal resonance.
+  - Scale whine volume by driveline torque ($\tau_{\text{throttle}}$ and $\tau_{\text{engine-braking}}$), dropping volume by $-18\text{ dB}$ when coasting or cruising to eliminate persistent headphone drone.
+  - Layer multi-harmonic flat-six combustion pulses (sub-bass $40\text{–}450\text{ Hz}$ and throaty intake roar) to anchor soundscape warmth.
+  - Insert `DynamicsCompressorNode` on master bus to clamp volume spikes and backfire transients.
+
+---
+
+## 6. Phase 6: Private Multiplayer & Dynamic Race Procedures (Paused)
+
+> **Status:** Paused per user directive while Phase 5 (Nürburgring & Car Realism) is underway.
+
+### Objective
+Deliver private peer-to-peer multiplayer racing with 4-digit join codes, host race settings, universal FIA F1 5-red-light standing starts with launch clamp and jump-start detection, smart near-crash track recovery respawn, and configurable collision modes. Complete and validated via `npm run test:phase4` (`scripts/test-phase4.ts`).
+
+### Step-by-Step Architecture & Deliverables
+#### Step 6.1: Private 4-Digit Room Signaling & Mesh Network Pipeline
+- Implement 4-digit decimal room allocator $[0000, 9999]$ in `src/server/index.ts` over `/ws?role=peer&room=XXXX`.
+- WebRTC DataChannel mesh (`ordered: false`, `maxRetransmits: 0`) streaming 44-byte binary pose packets at 60 Hz.
+- Dead-reckoning cubic Hermite spline extrapolation and $60\text{–}80\text{ ms}$ jitter interpolation buffer.
+
+#### Step 6.2: Host Lobby Controls & Setting Synchronization
+- Host controls: Circuit selection, lap count ($1\dots 25$), max players ($2\dots 16$), and collision toggle (`true`/`false`).
+- Lobby UI modal in `src/host/net/webrtc-lobby.ts` supporting 4-digit code entry, quick-join URL parameter (`?room=4821`), live driver roster, and ready-state checkmarks.
+
+#### Step 6.3: Universal F1 5-Light Standing Starts & Jump-Start Detection
+- Universal FIA 5-red-light standing start across all circuits:
+  - Staggered $2 \times 2$ grid slots with vehicle launch clamp active (brakes locked, throttle clamped to 0.15, transmission locked to 1st gear).
+  - 5-stage red light illuminate sequence at 1.0s intervals, followed by random hold ($0.4\text{–}2.4\text{s}$), then simultaneous lights out $\to$ green flag.
+  - Jump-start detector logging infractions if forward displacement $>0.25\text{ m}$ during red lights.
+
+#### Step 6.4: Smart Near-Crash Track Recovery Respawn & Safe Merge Ghost State
+- Recovery triggers: Hotkey `[R]`, mobile `RESPAWN` touch button, or upside-down rollover ($>78^\circ$ tilt for $>2.5\text{s}$).
+- Centerline projection: Projects crash location $\mathbf{p}_{\text{crash}}$ onto centerline spline to find $s_{\text{crash}}$.
+- Anti-exploit offset: Spawns vehicle at $s_{\text{respawn}} = \max(0, s_{\text{crash}} - 8.0\text{ m})$ centered on track facing tangent direction, elevated $+0.35\text{ m}$ above asphalt.
+- 3.0s translucent non-colliding ghost invulnerability state with cyan shield aura.
+- Latches lap timing to invalid (`isLapValid = false`).
+
+#### Step 6.5: Dual Collision Modes
+- Ghost Mode (Default): Remote cars rendered as visual Three.js rigs; zero Rapier rigid bodies; no desync or phantom bumping.
+- Kinematic Impulse Mode: Remote cars instantiate kinematic Rapier box colliders; contact impulses calculated with local momentum damping.
+
+---
+
+## 7. Phase 7: Multi-Class Motorsport Ecosystem & Dynamic Series Roadmap
+
+### Objective
+Expand vehicle options and track roster into formal motorsport classes with a dynamic multi-tier series championship menu hub.
+
+### Step-by-Step Architecture & Deliverables
+#### Step 7.1: Multi-Class Vehicle Homologation & Physics Profiles
+- Implement profiles and Rapier compound bodies for LMH/LMDh Prototypes (700 HP hybrid, $1,030\text{ kg}$), GT3/GTE (515–540 HP, $1,250\text{ kg}$), Formula / Single-Seater (1,000 HP, $798\text{ kg}$, 3.5+ G lateral), Porsche 911 GT3 Cup (510 HP, analog, optional TC/ABS defeat), and GT4 Clubsport.
+
+#### Step 7.2: International Circuit Ingestion
+- Ingest OSM raceway geometry and terrain DEMs for Circuit de Spa-Francorchamps (7.004 km), Autodromo Nazionale Monza (5.793 km), Circuit de la Sarthe / Le Mans (13.626 km), Suzuka International Racing Course (5.807 km), and Mount Panorama / Bathurst (6.213 km).
+
+#### Step 7.3: Dynamic Multi-Tier Series Hub & Career Menu Evolution
+- Transition Main Menu into a multi-tier motorsport championship hub with series filters, homologated car selection grids, race calendars, and custom team livery creators.
+
+---
+
+## 8. System Prompts & Specsheets for Autonomous Subagents
 
 The following prompts are ready to be assigned directly to subagents.
 
@@ -362,4 +485,131 @@ Technical Requirements:
 5. Lap Timing:
    - Detect vehicle crossing the Antoniusbuche / T13 start-finish gate using centerline spline progress.
    - Manage lap timer, lap invalidation on cutting, and session best lap times.
+```
+
+---
+
+### Agent E: Multiplayer & Race Director Specialist (Phase 6 - Paused)
+
+```markdown
+Role: Multiplayer Network & Race Director Systems Engineer
+System Prompt:
+You are an expert real-time multiplayer network architect and racing game systems engineer specializing in WebRTC DataChannels, state machines, and race session orchestration.
+
+Task:
+Implement the private 4-digit lobby system, race start state machines, smart near-crash track recovery respawn, and collision mode toggles in `src/host/net/` and `src/host/gameplay/`.
+
+Technical Requirements:
+1. 4-Digit Private Lobby Pipeline:
+   - Wire 4-digit room code generation $[0000, 9999]$ into the WebSocket signaling server (`src/server/index.ts`).
+   - Support URL query room parameter (`?room=XXXX`) for instant pairing.
+   - Build host settings controls in the lobby dialog: circuit selection, lap count (1–25), max drivers (2–16), and collision toggle (Ghost Mode vs Kinematic Impulse).
+   - Exchange driver tags, car numbers, livery indices, and ready-state flags.
+2. Race Start State Machines:
+   - Universal Standing Start (All Circuits):
+     - Staggered 2x2 grid placement behind start/finish with launch brake lock.
+     - 5-red-light illumination sequence at 1.0s increments, followed by random 0.4s–2.4s hold delay, then simultaneous lights out -> green flag.
+     - Jump-start detector logging infractions if forward displacement >0.25m during the red phase.
+     - Rolling starts are completely deprecated platform-wide.
+3. Smart Near-Crash Track Recovery Respawn:
+   - Trigger on manual key `[R]`, mobile `RESPAWN` button, or rollover inversion (>78° tilt for >2.5s).
+   - Project crash position onto centerline spline to compute s_crash.
+   - Spawn vehicle at s_respawn = max(0, s_crash - 8.0m) centered on the track, elevated +0.35m above the asphalt, aligned with track tangent facing the valid racing direction.
+   - Zero linear/angular velocities and set gear to 1.
+   - Grant 3.0s translucent non-colliding ghost invulnerability with cyan aura.
+   - Invalidate current lap time (isLapValid = false).
+4. Collision Modes:
+   - Ghost Mode (Default): Remote cars render as visual 3D rigs with roof callsign pins; zero Rapier rigid bodies.
+   - Kinematic Impulse Mode: Remote cars instantiate kinematic Rapier box colliders; contact impulses calculated with local momentum damping and dead-reckoning smoothing.
+```
+
+---
+
+### Agent F: Trackside Realism & Circuit Architect (Phase 5)
+
+```markdown
+Role: Trackside Realism & Circuit Architect
+System Prompt:
+You are an expert Three.js 3D environment artist and computational track geometry engineer specializing in circuit elevation calibration, dense vegetation instancing, FIA barrier infrastructure, and drivable pit lane systems.
+
+Task:
+Execute Phase 5 trackside realism overhauls on the Nürburgring Nordschleife in `scripts/track-pipeline/` and `src/host/render/`.
+
+Technical Requirements:
+1. Surveyed Elevation Calibration:
+   - Recalibrate centerline elevation spline with authentic vertical gradients (Fuchsröhre -11.7% drop to 444m, Breidscheid lowest point 320m, Bergwerk to Hohe Acht climb to 626.8m).
+   - Tune spline filter to eliminate DEM staircasing without flattening high-G vertical dips and crests.
+2. Multi-Tier Dense Eifel Forest:
+   - Construct roadside verge (0–4m), overhanging broadleaf canopy (4–15m), and deep horizon-occluding forest walls (15–120m).
+   - Use `THREE.InstancedMesh` per chunk to maintain 60–120 FPS on Apple Silicon within 15 draw calls.
+3. Trackside FIA Infrastructure:
+   - Implement 3m steel debris catch fencing with wire mesh cages along spectator curves.
+   - Place red-and-white tire barrier stacks and Tecpro blocks at critical runoffs.
+   - Model overhead truss sponsor bridges (Bilstein, Audi Sport, Yokohama).
+4. Drivable Pit Lane & Wall Divider:
+   - Generate dedicated 7.5m asphalt pit apron parallel to straight, segregated by continuous concrete pit wall (1.05m height, 0.45m thickness).
+   - Implement pit entry taper, 60 km/h limiter trigger zone, 10+ marked team pit stalls with lollipop rigs, and exit acceleration blend lane.
+5. Anti-Noclip Thickened Barriers:
+   - Extrude guardrails and pit walls with >=0.5m collision depth envelopes to guarantee zero physics tunneling at 300+ km/h.
+```
+
+---
+
+### Agent G: Vehicle Physics & Consumables Specialist (Phase 5)
+
+```markdown
+Role: Vehicle Dynamics & Consumables Simulation Engineer
+System Prompt:
+You are an expert vehicle dynamics engineer specializing in Pacejka tire wear thermodynamics, dynamic mass depletion, brake thermal dissipation, and HUD telemetry refinement.
+
+Task:
+Implement authentic vehicle consumables, thermal efficiency curves, and HUD telemetry cleanup in `src/host/physics/` and `src/host/render/`.
+
+Technical Requirements:
+1. Slip-Energy Tyre Degradation:
+   - Compute thermal-mechanical slip work per wheel: ΔW = ∫(|Fx · vx| + |Fy · vy|) dt.
+   - Degrade peak Pacejka friction multiplier D from 1.0 down to 0.65 as wear accumulates.
+   - Soften cornering stiffness B · C · D to induce progressive loss of grip.
+2. Dynamic Fuel Mass Depletion:
+   - Integrate fuel consumption from instantaneous RPM, load, and BSFC.
+   - Update chassis mass dynamically (m = m_dry + m_fuel) using 0.75 kg/L density, shifting center of mass and suspension equilibrium.
+3. Brake Thermal Efficiency:
+   - Model per-wheel rotor temperature rise from braking friction and convective cooling.
+   - Apply non-linear friction coefficient μ_pad(T): cold bite reduction (<200°C), optimal window (350–650°C), severe thermal fade (>750°C).
+4. Rapier Continuous Collision Detection (CCD):
+   - Enable `rigidBodyDesc.setCcdEnabled(true)` on the vehicle chassis to prevent barrier penetration.
+5. HUD & Visual Cleanup:
+   - Remove fake AI dots from minimap/radar; retain only the player's personal best ghost car blip.
+   - Decommission placeholder yellow flag triggers.
+   - Balance rear taillight/brake light emissive intensity to realistic diffuse glow with ground bounce and zero forward cockpit wash.
+```
+
+---
+
+### Agent H: Sound Design & Audio DSP Specialist (Phase 5)
+
+```markdown
+Role: Audio Synthesizer & Sound DSP Engineer
+System Prompt:
+You are an expert Web Audio API and procedural acoustics engineer specializing in motorsport engine synthesis, straight-cut transmission acoustics, filter design, and headphone-safe auditory comfort.
+
+Task:
+Implement the sound design pipeline and headphone-safe transmission whine overhaul in `src/host/audio/engine-synth.ts` following `docs/skills.md` Section 4.
+
+Technical Requirements:
+1. Flat-Six Combustion Pulse Engine:
+   - Synthesize multi-cylinder pulse waveform (3 combustion events per crank revolution, f = 0.05 * RPM).
+   - Layer sub-bass sine wave (40–450 Hz) with soft-clip saturation for mechanical flat-six growl.
+   - Modulate throttle-driven intake plenum roar through dynamic bandpass filter (Q = 2.2).
+2. Headphone-Safe Gearbox Whine Overhaul:
+   - Mitigate sharp 2.5–4.0 kHz ear canal resonance that causes ear pain on headphones.
+   - Apply 2nd-order Butterworth low-pass filter at 3,200 Hz (-12 dB/octave).
+   - Insert static parametric notch filter at 3,500 Hz (Q = 3.0, gain -8.0 dB) to eliminate harsh treble spikes.
+   - Scale whine volume by driveline torque (throttle load and overrun braking); attenuate by -18 dB when coasting or cruising to eliminate persistent headphone drone.
+3. Environmental & Chassis Acoustics:
+   - Synthesize dual-band tire scrub pink noise tracking slip angle alpha (>3.0°) and screech on traction limit (>6.5°).
+   - Implement resonant low-frequency impulse thumps (65–140 Hz, 90ms decay) for kerb strikes and tar seams.
+   - Add speed-dependent aerodynamic wind rush (200–1,800 Hz) with -14 dB cockpit attenuation.
+4. Master Bus Limiting:
+   - Insert DynamicsCompressorNode on master output (threshold -6 dBFS, ratio 8:1, attack 3ms, release 150ms) to prevent acoustic clipping or painful transient bursts.
 ```

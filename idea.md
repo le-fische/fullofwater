@@ -4,8 +4,8 @@
 > Technical review, spec sheet and open questions are in [spec.md](spec.md).
 > Implementation roadmap and agent prompts are in [implementation.md](implementation.md).
 
-**Status:** Phase 1 Complete; Phase 2 Authentic Surveyed Nürburgring Nordschleife & 24h Layout Live (The Green Hell: Dense 3D Forest Foliage, Dashed Line Eradication, Fan Graffiti & Concrete Patches, 3-Tier Armco Barriers, Gravel Runoff Traps, 306.8m Surveyed Topographical Elevation Profile, Razor-Sharp Surveyed Corner Curvatures, Dedicated Sim-Racing Main Menu, Interactive 3D Turntable Showroom, Porsche 911 RSR-19 GTE Specs, Concentric Wheel Hub Alignment, Standardized Flat Wrap UV Pipeline, 1:1 Rexy AO Racing GT3 R Competition Livery, Dynamic Car Number Selector #0–#999, Authentic 5.148 km FIA Grand Prix Circuit Geometry, Zero-Noclip Stadium DEM Terrain, 3D Grandstand & Stadium Architecture, In-Cockpit Micro Radar & Proximity Spotter, F1 Broadcast Competitor Dots & Dynamic FIA Flag State Machine, Official Porsche 911 RSR Steering Wheel & 1:1 LCD Telemetry Display Replica, GPS North-Locked HUD Minimap, Long-Term Trackside Logic Engine & 1:1 Physics Surface Parity, Natural Direct-Manipulation 3D Showroom Controls, Eradication of Flying Tracks via DEM Corridor Sculpting, True Driver Right-Hand Minimap & Radar Orientation, Low-Profile Dashboard Screens for 100% Windshield Visibility, Rear-Exterior Mounted Camera Systems, Grand Prix Circuit Front Straight Stadium Alignment, Authentic Inside-Bowl Karussell Banking, Grounded Embankments & Strict Tree Barrier Enclosure, Elimination of Triangle-Step Bumpiness via C1/C2 Spline Fairing, Karussell Hairpin Voronoi Embankment Clamping & 2D Elevation Shelf Harmonization, Minimalist Luxury Motorsport Showroom Landing Page Polish).
-**Last updated:** 2026-11-07 (Phase 2 Verified & Version Control Automated)
+**Status:** Phase 1 Complete; Phase 2 Authentic Surveyed Nürburgring Nordschleife & 24h Layout Live; Phase 3 Paused (physics merged into Phase 5); Phase 4 Paused (moved to Phase 6); Phase 5 Nürburgring & Car Ultra-Realism (Assetto Corsa Competizione Level) Active; Phase 6 Private Multiplayer Planned; Phase 7 Multi-Class & Global Tracks Roadmap.
+**Last updated:** 2026-11-09 (Phase 5 ACC Realism Active: Anti-Nausea Cockpit VOR Horizon Lock, Smooth Spline Bumps, Sound Design Skill & Headphone-Safe Gearbox Synthesis, Dedicated Pit Lane, CCD Barriers)
 
 ---
 
@@ -403,7 +403,7 @@ User request: *"can we now get a better steering wheel. this is the official 911
 ### 3.17 Long-Term Trackside Architecture & Holistic Trackside Logic Engine
 User proposal: *"please really think about all the trackside logic long term"*
 
-A comprehensive, long-term trackside architecture unifying physics ground-truth parity, spatial anti-encroachment clearance, dynamic environmental zoning, surface material friction modeling, and trackside race control infrastructure:
+A thorough, long-term trackside architecture unifying physics ground-truth parity, spatial anti-encroachment clearance, dynamic environmental zoning, surface material friction modeling, and trackside race control infrastructure:
 
 1. **Physical Surface Ground Truth Parity (Zero Chord Sagitta Discrepancy & Eradication of White Line Hitboxes):**
    - **1:1 Mathematical Vertex Parity (`TrackMeshGenerator`):** The Rapier 3D trimesh collider uses the exact same centripetal Catmull-Rom Hermite cubic spline sub-sampling (`COL_SUB_STEPS = 6`, ~0.83m longitudinal slice spacing) as the visual asphalt mesh. Every single collision vertex (`pRoadLeft`, `pCenter`, `pRoadRight`, `pKerbLeft`, `pKerbRight`, `pGrassLeft`, `pGrassRight`, `pBarrierTopLeft`, `pBarrierTopRight`) is mathematically identical to the rendered asphalt surface.
@@ -510,25 +510,83 @@ User request: *"also a lot of the banking is off and around the carousel im stil
 
 ---
 
-## 4. Phase 3: Advanced Systems (Future Scope)
+## 4. Phase 3: Advanced Motorsport Systems (Paused & Merged into Phase 5)
 
-### 4.1 Pit Lane Interactive Setup & Screen Transition
-- **Detection:** Driving into the pit box stops the vehicle and activates an interactive setup interface on both screens:
-  - **Host Display:** 3D garage bay and telemetry page (mouse/keyboard-driven).
-  - **Controller Display:** Touch-based options clicking menu (tires, fuel, wing angle, brake bias, assists).
-  - **Bidirectional Sync:** Selections update physics parameters in real time over WebSocket.
+> **Status:** Paused per user directive. Core vehicle physical simulation systems (tyre degradation, dynamic fuel depletion, thermal brake efficiency) are directly merged into Phase 5: Nürburgring & Simulation Realism.
 
-### 4.2 Tyre Degradation, Thermal Fade & Consumables
-- **Tyre Wear:** Temperature and slip energy accumulation gradually reduces peak Pacejka friction multiplier $D$ over multiple laps. (Phase 1 and 2 assume infinite tyre life).
-- **Thermal Brake Fade:** Live rotor temperatures $[FL, FR, RL, RR]^\circ\text{C}$ reduce pad friction coefficient $\mu_{\text{pad}}$ above $750^\circ\text{C}$.
-- **Fuel Consumption:** Burnoff dynamically reduces vehicle curb weight by $0.75\text{ kg/L}$. (Phase 1 and 2 assume infinite fuel).
+User request:
+```
+Phase 3: Advanced Motorsport Systems
+├── 3.1: Interactive Pit Lane & Garage Setup UI
+│   ├── Pit box entry detection & auto-stop
+│   ├── Host 3D garage bay & telemetry page (mouse-driven)
+│   ├── Controller touch setup menu (tires, fuel, wing angle, brake bias, assists)
+│   └── Bidirectional WebSocket parameter synchronization
+├── 3.2: Tyre Degradation, Thermal Fade & Consumables
+│   ├── Slip energy wear accumulation reducing peak Pacejka friction (D)
+│   ├── Thermal brake fade reducing pad friction coefficient above 750°C
+│   └── Dynamic fuel mass depletion (0.75 kg/L) shifting chassis mass and balance
+├── 3.3: Dynamic Environment & Weather
+│   ├── Modular day/night lighting cycle via directional sun progression & working headlights
+│   ├── Procedural rain particle emitter around camera & windshield droplet distortion shader
+│   ├── 40% surface friction reduction with slick-tire hydroplaning
+│   └── 2D dynamic drying line clearing water along the racing groove
+└── 3.4: Timing, Ghost Car & Multiplayer
+    ├── Full 9-sector timing breakdown with live delta splits (+/- delta HUD)
+    ├── Local ghost car recording & playback
+    └── WebRTC DataChannel peer-to-peer multiplayer lobby
+```
 
-### 4.3 Dynamic Environment: Weather & Day/Night Cycle
-- **Dynamic Lighting:** Modular day/night cycle via directional sun progression and ambient sky dome with working headlights.
-- **Rain System:** Particle emitter around camera + windshield droplet distortion shader + 40% surface friction reduction.
-- **Dynamic Drying Line:** 2D track occupancy mask clearing standing water along the racing line.
+### 4.1 Infinite Tyre & Fuel (Pit Lanes Scrapped) + Thermal Brake Fade
+User decision: *"forget the pit lanes, scrap that from implimentation. no need for it just have infinite tyre and fuel even with friends"*
+- **Pit Lanes & Garage UI Scrapped:**
+  - Removed the Pit Lane & Garage Setup implementation (`pit-lane.ts`, `garage-setup-ui.ts`, `pit-setup-menu.ts`, and pit entry buttons on the Host HUD and mobile Controller).
+- **Infinite Tyre Life & Infinite Fuel Everywhere (`RaycastVehicle` in `src/host/physics/raycast-vehicle.ts`):**
+  - `consumablesEnabled = false`, `wearRateMultiplier = 0.0`, and `fuelBurnMultiplier = 0.0` are active by default at all times, both in solo sessions and when racing with friends in WebRTC P2P multiplayer (`tireHealthPercent = [100, 100, 100, 100]`, `fuelLiters = 60.0L` constant).
+- **Thermal Brake Fade Above $750^\circ\text{C}$ (`BrakeSystem` in `src/host/physics/brakes.ts`):**
+  - Models per-corner carbon-ceramic/cast-iron rotor heat capacity, aerodynamic convective cooling ($h_{\text{air}} = 1.8 + 0.36 v$), and frictional heat flux ($\dot{Q} = \tau_{\text{brake}} \cdot |\omega|$).
+  - Above $750^\circ\text{C}$, pad friction coefficient $\mu_{\text{pad}}$ degrades linearly from nominal $0.42$ down to $0.19$ at $1,100^\circ\text{C}$ (`fadeFactor` down to $45\%$), directly reducing clamping torque.
 
-### 4.4 Multi-Class Sandbox Roster & Variables Database
+### 4.2 Recessed Endurance Racing Headlights & Brake Lights (`CarMeshRig` & `LiverySystem`)
+User decision: *"headlights are really dim for racing headlights and make it nice please so its not just two circles blocking my view right now, actually recess the brake and headlights into car model"*
+- **Eradication of Floating Cylinder Circles Blocking Cockpit View (`CarMeshRig.initHeadlights`):**
+  - Removed the two procedural cylinder lens meshes (`leftLens`, `rightLens` at $(\pm 0.72, 0.52, 2.08)$) and floating taillight bar from `this.headlightsGroup` that previously hovered above the front fenders in the driver's cockpit sightline.
+- **Direct Binding to Authentic Recessed 3D Model Light Assemblies (`CarMeshRig.bindRecessedLightMeshes` & `LiverySystem`):**
+  - Binds dynamic `headlightLensMaterial`, `taillightMaterial`, and `brakeLightMaterial` directly to the authentic recessed 3D meshes inside `public/assets/cars/porsche_992_rsr/model.glb`:
+    - Front recessed projectors & housings: `Headlight_Emissive`, `Signal_Front_Emissive`, `HeadLight_Glass` (transparent polycarbonate cover, `transmission: 0.88`, `opacity: 0.22`), and `HeadLight_Housing_Static` (deep matte carbon bucket).
+    - Rear recessed light bar & third brake light: `Taillight_Strip_Emissive`, `Taillight_Brake_Emissive`, `Tailgate_Brake_Emissive`, `Taillight_Main_Glass`, and `Taillight_Housing_Static_*`.
+  - Fallback procedural `proxyGroup` lights are recessed inside dark fender/rear housing pockets strictly below the fender crest ($Y = 0.36\text{ m}, Z = 1.86\text{ m}$).
+- **High-Output Endurance Racing Headlight Beams & Rearward-Only Directional Brake Lights:**
+  - Dual long-throw `THREE.SpotLight` main beams (`distance = 280m`, `decay = 0.45`, `intensity = 24.0`, $\theta = \pi / 3.8$) positioned inside the recessed fender housings ($X = \pm 0.76\text{ m}, Y = 0.39\text{ m}, Z = 1.85\text{ m}$).
+  - Wide cornering apron flood `THREE.SpotLight` (`distance = 115m`, `decay = 0.50`, `intensity = 14.0`, $\theta = \pi / 2.2$) illuminating apex kerbs and immediate track edges.
+  - Directional rear brake `THREE.SpotLight` emitters ($X = \pm 0.64\text{ m}, Y = 0.42\text{ m}, Z = -2.02\text{ m}$) aimed strictly rearward toward $-Z$ ($Z_{\text{target}} = -14.0\text{ m}$, $\theta = \pi / 2.6$). Replaces omnidirectional point lights, completely eliminating red light shining forward into the cockpit cabin while brightly illuminating trailing track asphalt and spray under braking.
+
+### 4.3 Dynamic Environment & Exterior-Only Weather (Phase 3.3)
+User decision: *"weather implimentation is bad, when it rains it shows up even in the cockpit I can't really see."*
+- **Modular Day/Night Lighting Cycle (`EnvironmentManager` in `src/host/render/environment-manager.ts`):**
+  - Progresses solar time (`timeOfDayHours` $0.0\text{–}24.0\text{ h}$, configurable progression speed or instant presets `[L]`: Dawn, Noon, Golden Dusk, Midnight).
+  - Smoothly interpolates sun directional vector, zenith/horizon sky dome shaders, atmospheric fog, and ambient hemisphere intensity, automatically enabling high-output racing headlights at dusk/night or in rain (`[H]` manual override + HUD `LIGHTS [H]` chip).
+- **Exterior-Only 3D Rain Emitter (Zero Rain Inside Cockpit) (`EnvironmentManager.sampleExteriorRainXZ`):**
+  - Spawns all 1,600 velocity-slanted 3D rain streaks (`THREE.LineSegments`, `depthTest: true`) strictly within an exterior cylindrical annulus around the camera ($r \in [4.8\text{ m}, 34.0\text{ m}]$), guaranteeing zero rain particles ever spawn or fall inside the enclosed cockpit cabin.
+  - Updated the windshield shader to `discard` across the entire lower cockpit ($vUv.y < 0.50$, covering the steering wheel and dashboard) and central road sightline ($\text{distFromSight} < 0.32$), removing the opaque wiper bar and keeping forward visibility 100% clear.
+- **40% Surface Friction Reduction, Slick Hydroplaning & 2D Dynamic Drying Line (`TrackDryingLine` in `src/host/physics/drying-line.ts`):**
+  - 2D track moisture occupancy grid (`512` longitudinal bins $\times$ `16` lateral bins across $-8\text{ m}\dots +8\text{ m}$).
+  - $100\%$ surface wetness reduces base surface grip by $40\%$ ($\mu_{\text{wet}} = 0.60 \cdot \mu_{\text{dry}}$).
+  - Slick tires traveling above $145\text{ km/h}$ through standing water ($w > 0.32$) experience progressive wedge hydroplaning (dropping effective grip down to $0.18$), whereas grooved `wet` compound tires evacuate standing water and resist hydroplaning.
+  - Rolling tires displace water along their exact $(s, d)$ trajectory, dynamically carving a visibly drier, higher-grip racing groove (`racingLineGrooveDryness`) over successive laps.
+
+### 4.4 9-Sector Timing, Ghost Car & WebRTC P2P Multiplayer (Phase 3.4)
+- **Full 9-Sector Timing Breakdown & Live `+/-` Delta HUD (`NordschleifeLapTimer` in `src/host/streaming/lap-timer.ts`):**
+  - Partitions the circuit into 9 official Nürburgring sectors (`S1 · Hatzenbach` through `S9 · Döttinger Höhe`), tracking individual sector durations, session-best purple sectors (`purple`), personal-best green sectors (`green`), and slower yellow sectors (`yellow`).
+  - Computes continuous distance-interpolated live delta (`liveDeltaMs`) against the reference best lap and displays a color-coded `+/-` delta bar and 9-sector split table on the Host HUD and Porsche 911 RSR LCD steering wheel screen.
+- **Local Ghost Car Recording & Playback (`GhostCarManager` in `src/host/gameplay/ghost-car.ts`):**
+  - Samples player chassis pose (`pos`, `quat`, `steerAngle`, `wheelSpin`, `distanceM`) at $30\text{ Hz}$ during valid laps, automatically promoting faster laps to the persistent `localStorage` best ghost.
+  - Interpolates keyframes via `Vector3.lerp` and `Quaternion.slerp` and renders a translucent cyan holographic 3D Porsche 911 RSR ghost car on track (`[K]` toggle).
+- **WebRTC DataChannel Peer-to-Peer Multiplayer Lobby (`WebRTCMultiplayerLobby` in `src/host/net/webrtc-lobby.ts`):**
+  - Native `<dialog>` modal lobby (`[O]` key or HUD `P2P LOBBY` button) supporting automatic room signaling over `/ws?role=peer`, manual copy/paste SDP Offer/Answer tokens for serverless P2P connection, and a 1-click **Loopback P2P Pace Peer** (`RTCPeerConnection` $\leftrightarrow$ `RTCPeerConnection` in-browser) for immediate local verification.
+  - Streams compact 44-byte binary vehicle pose packets (`0x5032` magic header) over unordered `RTCDataChannel` (`maxRetransmits: 0`) at $60\text{ Hz}$ and renders 3D remote peer cars with roof callsign beacons in the Three.js scene.
+
+### 4.5 Multi-Class Sandbox Roster & Variables Database
 - Maintained in [`docs/variables-database.csv`](docs/variables-database.csv) and [`src/common/variables-dictionary.ts`](src/common/variables-dictionary.ts).
 - Master multi-vehicle roster: Formula 1, Le Mans Hypercar, production GT3 street, and extreme sandbox vehicles.
 - Dedicated Rapier compound hitboxes protect 3D models from wall clipping while letting 4-wheel raycasts govern suspension contacts.
@@ -536,33 +594,327 @@ User request: *"also a lot of the banking is off and around the carousel im stil
 
 ---
 
-## 5. Idea Parking Lot
+## 5. Phase 5: Nürburgring & Simulation Realism (Assetto Corsa Competizione Level)
+
+User request:
+> "i think we put a pause on phase 3 for now. I think lets pause phase 4 too and work on phase 3 + nurburgring (call it phase 5 for now imporvements) make phase 4 phase 6, and phase 5 phase 7. I want a clear implementation idea for improving the nurburgring and bringing it up to aseesto corsa level graphics and realism, One thing im noticing is the elevation changes arent drastic enough like the real nurburgring and we need more forest so that it feels like we are in the forest. also missing like red and white barriers, fenced barriers with cages, and sort of sponsor bridge etc. Then lets think about bringing the car up to realism as much as possible. the issue right now and why i killed it earlier was pitlane issues, We didnt have a clear enough pitlan and it was just thrown inot the middle of track. I need an actual pitlane we can drive in with our proper pitbox and support for multiple pit boxes in the future, speed limits etc. right now yellow flag systems are also broken and i think its just placeholder, get rid of ghost ai cars showing up as dots, until we impliment them lets not show them. It's nice seeing your ghost car on the map for timed laps. SO basically really study the nurburgring (all layouts) and bring the track to realism as much as possible (asseto corsa competizione level) and also implement the real physics etc, tyre wear, fuel, brake temp translating into efficiency, etc. I think the rear lights are bit too bright like it illuminates unlike the real headlights and fix sunset/dawn ambience. it should also have an actual 24 hour cycle for endurance races etc. Basically for this next phase we call phase 5 work on relaism of car + track so its like for real sim (need standard documentaion and add on to the current skills.md files for how to build tracks and cars that we currently have including car model extraction, wheel mapping, livery mapping etc. Once this is done. next step Is the improvements for ghost cars, and multiplayers settings which we should discuss more. then we can do multi class and tracks etc. I wnted the barriers to be fixed a bit more because a hard crash can get me out of track. technically it shouldnt happen barriers should stop me and prevnt me from noclipping etc. if you understand, please edit implimentation and idea.md and let me know if you need any clarifications?"
+
+### 5.1 Authentic Surveyed Topography & Drastic Elevation Dynamics
+- **Surveyed Elevation Benchmarks:**
+  - Recalibrate and un-flatten the elevation spline to match the extreme vertical contours of the real Eifel circuit:
+    - Lowest elevation: Breidscheid river bridge valley floor at $320.0\text{ m}$.
+    - Highest elevation: Hohe Acht mountain ridge crest at $626.8\text{ m}$ (total vertical drop of **$306.8\text{ meters}$** / 1,007 feet).
+  - **Fuchsröhre Roller-Coaster Compression:** Authentic sustained $11.7\%$ downhill plunge into severe vertical G-compression at the valley trough, followed by dramatic chassis rebound climbing up to Adenauer Forst.
+  - **Ex-Mühle to Bergwerk Mountain Climb:** Authentic $300\text{ m}$ continuous mountain grade demanding full throttle momentum.
+  - **Flugplatz & Pflanzgarten Jump Crests:** Crisp vertical curvature transitions that physically unweight the suspension and initiate transient airborne states without glitching raycast wheel contacts.
+  - **Authentic Camber & Banking:** 33.0° steep concrete bowl at Caracciola-Karussell, 22.0° Kleines Karussell, and natural off-camber transitions at Hatzenbach and Wehrseifen.
+
+### 5.2 Multi-Layer Dense Forest Immersion & Roadside Canopy Engine ("The Green Hell")
+- **Visual Immersion Target:** Replicate the authentic, claustrophobic Eifel forest atmosphere where towering tree canopies enclose the asphalt ribbon.
+- **Vegetation Hierarchy:**
+  - Layer 1: Roadside undergrowth, grass tufts, and dense shrubs placed immediately behind the Armco barriers ($d = 5.5\text{ m} \dots 10.0\text{ m}$).
+  - Layer 2: Mature evergreen spruce, Scots pine, and broadleaf European beech trees ($d = 10.0\text{ m} \dots 28.0\text{ m}$) with overhanging foliage canopies.
+  - Layer 3: Deep mountain forest backdrop extending $28.0\text{ m} \dots 75.0\text{ m}$ up mountain ridges and down valleys.
+- **Encroachment Prevention:**
+  - Global 2D spatial clearance hash grid enforces strict minimum distance: $|d_{\text{lateral}}| \ge w_{\text{track}} / 2 + 5.5\text{ m}$ from ANY track segment, eliminating tree bleed-through onto adjacent track ribbons in tight hairpin switchbacks (Steilstrecke / Karussell, Dunlop-Kehre, Hohenrain).
+- **GPU Instancing & Multi-LOD Optimization:**
+  - Procedural tree clusters rendered via `THREE.InstancedMesh` with 1 draw call per chunk.
+  - 2-Tier LOD system: LOD0 3D faceted geometry within $150\text{ m}$; LOD1 camera-facing cross-quad billboards beyond $150\text{ m}$.
+  - Supports 600–900 trees per 2 km chunk while maintaining locked 60–120 FPS on Apple M4 Pro hardware.
+
+### 5.3 High-Fidelity Trackside Assets, Catch Fencing, Red/White Barriers & Sponsor Bridges
+- **FIA Debris Catch Fencing:**
+  - $2.5\text{ m}$ steel vertical support stanchions supporting dark steel wire mesh safety cages mounted directly atop the Armco crash barriers along spectator zones, grandstands, and high-speed sections.
+- **Red-and-White Impact Barriers:**
+  - High-impact runoffs (Aremberg, Adenauer Forst, Wehrseifen, Ex-Mühle, Brünnchen, Hohenrain) equipped with red-and-white striped tire barrier stacks and Tecpro energy-absorbing barrier blocks with realistic physical contact friction ($\mu = 0.85$).
+- **Authentic Overhead Sponsor Bridges & Gantries:**
+  - Bilstein Bridge at Döttinger Höhe ($s \approx 19,200\text{ m}$).
+  - Audi, Yokohama, and Dunlop overhead bridges on the Grand Prix straight and Nordschleife approach.
+  - Overhead start/finish timing gantry with FIA 5-red-light starting rig.
+
+### 5.4 Anti-Noclip Multi-Tier Safety Barriers & Continuous Collision Detection (CCD)
+- **The Problem:** In violent high-speed crashes ($250\text{–}300+\text{ km/h}$), vehicles can tunnel through thin 2D barrier collision meshes and get trapped out of bounds.
+- **Thickened Kinematic Collision Envelopes:**
+  - Safety barriers are modeled as continuous 3D collision volumes with minimum depth $t \ge 0.50\text{ m}$ behind the Armco face.
+  - Continuous physical barrier backing anchored deep into the terrain.
+- **Continuous Collision Detection (CCD):**
+  - Enable Continuous Collision Detection on the Rapier chassis rigid body:
+    ```typescript
+    bodyDesc.setCcdEnabled(true);
+    ```
+  - Rapier performs swept-sphere time-of-impact (TOI) calculations, guaranteeing zero barrier noclipping or tunneling even at $320\text{ km/h}$ impacts.
+
+### 5.5 Authentic Dedicated Drivable Pit Lane, Pit Wall Divider & Pit Box Architecture
+- **Physical Pit Lane Separation:**
+  - Constructs a physically dedicated pit lane running parallel to the Start-Ziel straight, partitioned by a continuous concrete pit wall divider ($h = 1.05\text{ m}$, $w = 0.45\text{ m}$) topped with safety debris fencing and team pit perches.
+- **Pit Lane Geometry & Wayfinding:**
+  - **Deceleration Entry Lane:** Distinct angled pit entry diverts smoothly off the main straight with painted chevrons and deceleration braking markers.
+  - **Concrete Pit Apron:** $7.5\text{ m}$ wide concrete paved roadway with team service stalls on driver-right and through-lane on driver-left.
+  - **Team Pit Boxes:** Marked individual pit stalls ($6.5\text{ m} \times 3.2\text{ m}$) with bright yellow/white perimeter lines, overhead fuel and air hose gantry lollipop rigs, and team tool chests.
+  - **Multi-Stall Multiplayer Support:** Engineered with $N \ge 10$ distinct sequential pit stalls, ready for multi-car multiplayer pit allocations.
+  - **Acceleration Exit Merge Lane:** Extended blend lane separated by a solid white boundary line running down the main straight, preventing unsafe merges into high-speed traffic.
+- **Pit Lane Speed Limiter & Service Logic:**
+  - Automated entry trigger volume engages mandatory pit lane speed limiter ($60\text{ km/h}$).
+  - Driver can toggle pit limiter via mobile controller button or keyboard shortcut `[L]`.
+  - Staccato audio engine governor cut sound when limiter is active.
+  - Bringing car to a complete stop inside the designated pit box triggers stationary service sequence (tire change, refueling, damage repair) with pit crew timer.
+
+### 5.6 HUD Radar & Flag Cleanup
+- **Removal of Broken Placeholder Yellow Flag System:**
+  - Eradicated unreliable placeholder yellow flag triggers and flashing sector warnings from HUD.
+- **Removal of Fake AI Competitor Dots:**
+  - Removed synthetic moving competitor dots (#911, #1, #92, etc.) from the HUD radar and cockpit micro-radar.
+- **Strict Retention of Player Ghost Car:**
+  - The player's personal best ghost car blip and silhouette remain clearly visible on the HUD radar and cockpit display during timed hotlaps, providing clean visual reference against their session delta.
+
+### 5.7 Full Vehicle Physical Realism (Assetto Corsa Standard)
+- **Authentic Tyre Wear Simulation:**
+  - Accumulates frictional slip energy:
+    $$\Delta E_{\text{slip}} = (|F_x \cdot v_{\text{slip},x}| + |F_y \cdot v_{\text{slip},y}|) \cdot dt$$
+  - Reduces peak Pacejka friction coefficient $D$ progressively over laps:
+    $$D(t) = D_{\text{fresh}} \cdot \left(1.0 - k_{\text{wear}} \cdot \frac{E_{\text{accum}}}{E_{\max}}\right)$$
+  - Models camber wear across tire shoulders and flat spots under severe braking lockups.
+- **Dynamic Fuel Mass Consumption & Balance Shift:**
+  - Dynamic fuel burn rate ($\sim 0.65\text{–}0.85\text{ L/min}$ at full throttle) depleting a $60.0\text{ L}$ tank ($0.75\text{ kg/L}$).
+  - Burning off $45\text{ kg}$ of fuel reduces total vehicle mass and shifts corner weights and polar moment of inertia over endurance stints.
+- **Brake Thermal Efficiency & Fade Dynamics:**
+  - Per-corner rotor thermal simulation with aerodynamic cooling ($h_{\text{air}} = 1.8 + 0.36 v$) and frictional heat flux.
+  - Dynamic friction curve:
+    - Cold pads ($<200^\circ\text{C}$): Initial bite reduced ($\mu = 0.32$).
+    - Optimal window ($350\text{–}650^\circ\text{C}$): Peak stopping bite ($\mu = 0.44$).
+    - Thermal fade ($>750^\circ\text{C}$): Linear pad friction degradation down to $\mu = 0.19$ at $1,100^\circ\text{C}$ (up to $55\%$ brake fade).
+
+### 5.8 Visual & Atmospheric Lighting Realism
+- **Diffuse, Realistic Rear Taillights & Brake Lights:**
+  - Replaced over-bright rear spotlights that unnaturally illuminated the world.
+  - Tuned rear lights to realistic diffuse red glow (`emissiveIntensity = 1.8`) with localized pavement bounce and soft shadow falloff, eliminating unrealistic forward/global light projection.
+- **Sunset & Dawn Atmospheric Ambience:**
+  - Physically based atmospheric scattering model (Rayleigh and Mie scattering).
+  - Warm golden hour low-angle sunlight, long dramatic shadows across the Eifel ridges, and soft violet/amber dusk transitions.
+- **Continuous 24-Hour Day/Night Endurance Cycle:**
+  - Time-of-day progression supporting configurable time compression ($1\times$ real-time, $12\times$, $24\times$, $48\times$) for authentic 24-hour endurance simulations.
+
+### 5.9 Standardized Asset Creation & Pipeline Documentation (`docs/skills.md`)
+- Authoritative engineering manual established in [`docs/skills.md`](file:///Users/le/Documents/racing%20game/docs/skills.md) documenting:
+  - Procedural track creation pipeline: Centerline splines, surveyed DEM extraction, road sweep extrusion, barrier generation, catch fencing, sponsor bridges, pit lanes, chunk partitioning, collision trimeshes.
+  - Vehicle asset pipeline: 3D model ingestion and sanitization, dynamic 4-wheel extraction and suspension rigging, standardized flat wrap UV unwrapping and livery mapping, lighting attachments.
+  - Sound design pipeline: Headphone-safe audio synthesis, engine pulse layering, straight-cut gearbox filtering, and safety compression.
+
+### 5.10 Anti-Nausea Cockpit Camera Horizon Lock & Damped Chassis Bump Dynamics
+User request:
+> "with car can we add like camera shake cause i noticed watching onboards that the nordschliefe is really bumpy but i dont want it to make a perosn nauseaus you know, the car can shake but the internal camers hsould be fixed in cockpit."
+
+- **The Motion Sickness Problem:**
+  - Real Nordschleife onboard footage displays intense chassis vibration over kerbs, compressions, and asphalt seams.
+  - Applying raw, unfiltered angular pitch and roll shaking directly to the driver's camera causes acute vestibular-ocular conflict, simulator sickness, and nausea in first-person cockpit view.
+- **Biomechanical Solution (Vestibulo-Ocular Reflex - VOR):**
+  - **Stabilized Internal Cockpit Camera:** The camera's forward sightline applies an $85\text{–}90\%$ horizon lock. Angular pitch and roll rotations are heavily low-pass filtered, maintaining a smooth, stable road horizon ahead.
+  - **Dynamic Cockpit Interior Vibration:** The physical car chassis, dashboard, steering column, A-pillars, and roll cage receive high-frequency vertical and angular displacement driven by suspension deflection $\Delta z$ and kerb strikes.
+  - **Sensory Immersion:** The driver perceives the authentic bumpiness of the Nordschleife through the cockpit bouncing and vibrating vigorously in their peripheral vision, while their central gaze remains rock-solid and stable on the racing line, eliminating nausea.
+  - Micro-displacement is clamped to $\le 2.5\text{ mm}$ to prevent geometry clipping.
+
+### 5.11 Continuous Non-Jagged Spline Geometry with Authentic Road Surface Bumps
+User request:
+> "like do you get smooth track like its not jagged but there are bumps etc that"
+
+- **Geometric Continuity vs. Surface Bumps:**
+  - **Smooth Track Ribbon:** The primary track surface is extruded along an 8-pass Taubin faired cubic spline with $C^2$ second-derivative continuity. It is completely free of polygonal kinks, angular facets, or DEM staircasing, ensuring silky-smooth visuals and predictable tire contact patches.
+  - **Authentic Multi-Band Bump Dynamics:**
+    - *Macro-Elevation:* Surveyed vertical contours (Fuchsröhre plunge, Breidscheid depression, Bergwerk climb, Hohe Acht crest) are smoothly faired to preserve high-G vertical compressions and crest weightlessness.
+    - *Medium-Wave Asphalt Settling:* Continuous procedural Perlin noise ($\lambda = 8\text{–}25\text{ m}$, amplitude $\pm 18\text{ mm}$) models the natural undulating character of the Eifel mountains.
+    - *Short-Wave Micro-Bumps & Tar Seams:* Transverse bump impulses ($\lambda = 0.5\text{–}1.2\text{ m}$, amplitude $\pm 8\text{ mm}$) at historic tarmac expansion joints, repaired asphalt bands, and Karussell concrete slab seams.
+  - **Physics Interaction:** These surface undulations excite the 240 Hz Rapier vehicle suspension spring-dampers directly, driving realistic wheel travel, tire load variation, and chassis vibration without polygonal jaggedness.
+
+### 5.12 Dedicated Sound Design Pipeline & Headphone-Safe Gearbox Synthesis (`docs/skills.md`)
+User request:
+> "also sound design needs a dedicated skill for sure because with earphoens on the whine hurts my ears."
+
+- **The Headphone Ear-Fatigue Problem:**
+  - Straight-cut spur gearboxes produce a high-frequency acoustic meshing tone ($1,000\text{–}3,800\text{ Hz}$).
+  - A high-Q resonant bandpass filter or unfiltered harmonic overtone in the $2.5\text{–}4.0\text{ kHz}$ range directly stimulates the human ear canal's natural resonant peak, causing ear strain, pain, and headaches in headphones.
+- **Acoustic Engineering Fixes & Dedicated Skill (`docs/skills.md` Section 4):**
+  - **Steep Low-Pass Rolloff:** 2nd-order Butterworth low-pass filter at $3,200\text{ Hz}$ ($-12\text{ dB/octave}$) cuts piercing high-frequency overtones.
+  - **Ear-Canal Resonance Notch Filter:** Dedicated parametric notch filter centered at $3,500\text{ Hz}$ ($Q = 3.0$, gain $-8.0\text{ dB}$) eliminating the painful treble spike.
+  - **Torque Load-Dependent Attenuation:** Whine volume is driven strictly by driveline torque. When cruising, coasting, or idling, transmission whine drops by $-18\text{ dB}$, eliminating persistent high-pitched drone.
+  - **Rich Multi-Harmonic Engine Core:** Deep flat-six combustion rumble ($40\text{–}450\text{ Hz}$) with throaty intake roar under load anchors the soundscape.
+  - **Dynamics Compressor & Brickwall Limiter:** Master bus compression clamps volume spikes, backfires, and crash impacts.
+
+---
+
+## 6. Phase 6: Private Multiplayer & Dynamic Race Procedures (Paused)
+
+> **Status:** Paused per user directive while Phase 5 (Nürburgring & Car Realism) is underway.
+
+User request:
+> "multiplayer support, only private lobbies with 4 digit codes for people to join, so you can make your own lobby, and get settings, like lap count, number of people joining, need proper race start line for grand prix, for nurburgring it needs to be a rolling start before the start/finish line and a floating 3 light countdown, for grandprix settings it the standard 5 light sequence like real f1. no rolling start. multiplayer needs to have settings for collision which can be turned off. also now if i flip off track, I need to restart, can we make so we can spawn back on track near where we crashed etc. brainstorm a bit for phase 4 please?"
+
+### 6.1 Private 4-Digit Lobbies & Host Configuration
+- **Access Model & Room Codes:**
+  - Multiplayer sessions are strictly private; no public matchmaker or open server browser.
+  - Lobbies are addressed via simple **4-digit numeric codes** (e.g., `4821`, `7104`), making room sharing frictionless across chat, mobile screens, or voice calls.
+  - The host clicks "CREATE LOBBY" to claim a unique 4-digit code generated from available signaling rooms.
+  - Joining players enter the 4-digit PIN in the main menu / lobby dialog, or join via direct URL: `https://<host>:5173/?room=4821`.
+- **Host Room Settings:**
+  - **Circuit Selection:** Choose between Nürburgring Nordschleife (20.8 km), Nürburgring 24h Gesamtkurs (24.3 km), Nürburgring GP-Strecke (5.1 km), or High-Speed Proving Ground.
+  - **Lap Count:** Select target race distance (e.g., 1 lap sprint on Nordschleife, 3, 5, 10, or 25 laps on GP-Strecke).
+  - **Max Competitors:** Cap lobby capacity between 2 and 16 drivers.
+  - **Collision Toggle:** ON / OFF (Ghost Mode).
+- **Lobby Staging & Grid Presentation:**
+  - Real-time roster display showing connected peer driver tags, car numbers, livery choices, round-trip ping, and ready-state checkmarks.
+  - Host initiates the countdown session once competitors flag "READY".
+
+### 6.2 Format-Specific Race Start Sequences
+Race start procedures are tailored specifically to the chosen circuit and motorsport discipline:
+
+#### 6.2.1 Grand Prix Standing Start (F1 5-Red-Light Sequence)
+- **Circuit Assignment:** Standard on Nürburgring GP-Strecke (and GP sprint configurations).
+- **Grid Formation:**
+  - Staggered 2-by-2 standing grid boxes on the Grand Prix Start-Ziel straight.
+  - Cars held stationary with locked brakes and launch limiter active.
+- **FIA 5-Red-Light Sequence:**
+  1. Light 1 turns RED at $T = 1.0\text{ s}$.
+  2. Light 2 turns RED at $T = 2.0\text{ s}$.
+  3. Light 3 turns RED at $T = 3.0\text{ s}$.
+  4. Light 4 turns RED at $T = 4.0\text{ s}$.
+  5. Light 5 turns RED at $T = 5.0\text{ s}$.
+  6. **Random Hold Delay:** Variable pause between $0.4\text{ s}$ and $2.4\text{ s}$ with all 5 red lights lit (matching FIA Formula 1 sporting regulations).
+  7. **LIGHTS OUT:** All 5 red lights extinguish simultaneously $\to$ Green flag condition, throttle unlock, race timer commences!
+- **Strict Rule:** **No rolling start** for Grand Prix settings.
+- **Jump-Start Detection:** If vehicle forward movement exceeds $0.25\text{ m}$ before lights out, a jump-start violation is logged (triggering a 10-second post-race time penalty or pit drive-through notification).
+
+#### 6.2.2 Nürburgring Universal Standing Start
+- **Universal Standing F1 5-Red-Light Starts:** Per user directive (*"get rid of rolling starts entirely"*), rolling starts are removed. Nordschleife and 24h Gesamtkurs spawn in 2x2 grid boxes behind Start/Finish line and use the F1 5-red-light sequence with launch clamp and jump-start detection.
+
+### 6.3 Smart Near-Crash Track Recovery & Respawn
+User request: *"also now if i flip off track, I need to restart, can we make so we can spawn back on track near where we crashed etc."*
+
+- **The Problem:** Resetting to $s=0$ (Start/Finish line) after an off-track flip 15 kilometers into the Nordschleife ruins the run and disconnects players from friends.
+- **Trigger Conditions:**
+  1. **Manual Driver Trigger:** Hitting `[R]` on the keyboard or tapping `RESPAWN` on the mobile controller.
+  2. **Rollover Detection:** Automatic trigger if the car's vertical roof normal points downward ($\mathbf{u}_{\text{car}} \cdot (0, 1, 0) < 0.20$, $>78^\circ$ rollover tilt) for more than $2.5\text{ seconds}$.
+  3. **Barrier Stuck Detection:** Stationary off-track outside Armco bounds for $>4.0\text{ seconds}$.
+- **Centerline Projection & Anti-Exploit Placement:**
+  1. Determine crash point coordinates $\mathbf{p}_{\text{crash}} = (x, y, z)$.
+  2. Project $\mathbf{p}_{\text{crash}}$ onto the circuit centerline spline to obtain spline distance $s_{\text{crash}}$.
+  3. Apply an anti-exploit distance offset so players can never gain distance by crashing forward:
+     $$s_{\text{respawn}} = \max(0, s_{\text{crash}} - 8.0\text{ m})$$
+  4. Query the centerline at $s_{\text{respawn}}$ for track center $\mathbf{p}_{\text{track}}$, tangent vector $\mathbf{t}$, surface normal $\mathbf{n}$, and local banking $\theta_{\text{bank}}$.
+  5. Position vehicle centered on the racing line, elevated $+0.35\text{ m}$ above the asphalt to allow raycast suspension springs to settle naturally.
+  6. Align vehicle heading directly with tangent $\mathbf{t}$ (facing downstream in valid racing direction).
+  7. Reset linear velocity $\mathbf{v} = \mathbf{0}$, angular velocity $\boldsymbol{\omega} = \mathbf{0}$, wheel spin speeds $\omega_i = 0$, and shift transmission to 1st gear.
+- **Safe Re-Entry Ghost Invulnerability:**
+  - Upon respawning, the vehicle enters a $3.0\text{ second}$ translucent ghost state ($40\%$ opacity with glowing cyan perimeter shield).
+  - Physical collision with other vehicles is disabled during ghosting, preventing approaching competitors at high speed from colliding into a recovering car.
+  - Lap timing latches to `isLapValid = false` (`LAP INVALIDATED - RESPAWN`), ensuring competitive lap record integrity while allowing the race to continue.
+
+### 6.4 Collision Settings & Multiplayer Physics Modes
+- **Collision OFF (Ghost Mode - Default):**
+  - Competitor vehicles are rendered as visual 3D glTF meshes with roof callsign pins and real-time wheel animations.
+  - No Rapier rigid bodies or colliders are instantiated for remote cars.
+  - Cars can pass through one another without physical bumping, preventing griefing, network-induced spinouts, and multi-car pileups on tight sections like Wehrseifen or Adenauer Forst.
+- **Collision ON (Physical Contact Mode):**
+  - Remote cars instantiate kinematic Rapier collision boxes matching vehicle extents ($4.5\text{ m} \times 2.0\text{ m} \times 1.1\text{ m}$).
+  - Contact points trigger elastic restitution impulses and audio crash impacts.
+  - Contact positions are smoothed via a dead-reckoning extrapolation filter to avoid rubber-banding.
+
+---
+
+## 7. Phase 7: Multi-Class Motorsport Ecosystem & Dynamic Series
+
+User request:
+> "phase 5 will be just building more tracks, cars, classes, series, etc and chaning menu based on that"
+
+### 7.1 Multi-Class Vehicle Taxonomy & Homologation
+Phase 7 expands vehicle options into formal motorsport classes, each with distinct physics weights, downforce coefficients, and powertrain dynamics:
+- **LMH / LMDh (Hypercar & Prototype):** Top-tier endurance prototypes (e.g., Porsche 963, Ferrari 499P). 700 HP hybrid powertrain, all-wheel electric boost, high downforce, 1,030 kg minimum weight, top speeds approaching $340\text{ km/h}$.
+- **GT3 / GTE (Production Racing):** Production-based GT racecars (Porsche 911 GT3 R / RSR-19, Ferrari 296 GT3, BMW M4 GT3, Corvette Z06 GT3.R). 515–540 HP, aerodynamic swan-neck wings, steel/carbon brakes, 1,250 kg weight.
+- **Formula / Single-Seater:** Open-wheel formula machinery. 1,000 HP hybrid turbo V6, halo protection, extreme aerodynamic cornering grip ($3.5+\text{ G}$ lateral), ultra-light 798 kg chassis.
+- **Cup / One-Make:** Pure analog racing machinery (Porsche 911 GT3 Cup). 510 HP, naturally aspirated flat-six, sequential manual gearbox, optional ABS/TC suppression for pure driver skill.
+- **GT4 / Clubsport:** Entry-level GT sports cars with lower downforce, street-adjacent chassis dynamics, and close bumper-to-bumper racing.
+
+### 7.2 Circuit Roster Expansion
+Expanding beyond the Nürburgring complex to iconic international circuits:
+- **Circuit de Spa-Francorchamps (Belgium):** 7.004 km, famous for Eau Rouge / Raidillon, Pouhon double apex, and Kemmel Straight.
+- **Autodromo Nazionale Monza (Italy):** 5.793 km, "Temple of Speed", low-drag slipstream battles, Variante del Rettifilo chicane, and Curva Parabolica.
+- **Circuit de la Sarthe / Le Mans (France):** 13.626 km, legendary 24 Hours of Le Mans layout, Mulsanne Straight, Porsche Curves, and Ford Chicanes.
+- **Suzuka International Racing Course (Japan):** 5.807 km, unique figure-eight crossover layout, Esses, Degner curves, and 130R flat-out bend.
+- **Mount Panorama / Bathurst (Australia):** 6.213 km, dramatic mountain climb and descent with vertical concrete barriers, The Cutting, Skyline, and Conrod Straight.
+
+### 7.3 Dynamic Series Hub & Menu Architecture
+- The Main Menu evolves from a single-car turntable into a multi-tiered motorsport hub:
+  - **Series Selector:** Choose championship tier (`Endurance World Series`, `Grand Prix Formula Championship`, `Porsche Carrera Cup`, `GT3 Sprint Challenge`).
+  - **Class-Filtered Vehicle Grid:** Selecting a series filters vehicle selection strictly to homologated entries for that championship.
+  - **Event / Schedule Calendar:** Series-specific race calendars with dedicated lap counts, weather presets, and qualifying formats.
+  - **Livery & Team Selector:** Select team liveries, custom race numbers, and driver tags per series.
+
+### 7.4 Proper Sim Landing Hub & Stepped Configuration Architecture
+
+User request & feedback:
+> "I need a proper menu, so singleplayer and multiplayer option on landing. singleplayer would route to just our current page. I need this to be like a real sim, so you would select class, then vehicle, then map, then lap count/mode, then weather and time settings. then a ready button to load in. right now for both multiplayer and singleplayer the rolling start happens while im still in menu there should be a menu ready button that has like 10 second timer before we load in for multiplayer basically the same thing, but with extra options, also there needs to be some qualifying session before race to decide starting grid. lets support up to 10 cars. dont build anythign yet, render me some menu layout etc and I will give feedback. basically in game you cant really change much so the top left display can be simplified too"
+>
+> User feedback on layout:
+> "i think singleplayer is fine without a buffer on standing starts, for rolling start it should also be okay. For multiplayer we need a way for each player to press ready and once all is ready lobby host can start, and then you go straight into hotlap. and once quali is done, same thing for race, ready buttons and leader starts then you just get into starting sequence, and no need for buffer because we dont do any setting on track."
+
+- **Landing Portal Selection:**
+  - Landing screen features a dedicated two-path sim entry: **SINGLEPLAYER SIMULATION** vs **MULTIPLAYER PADDOCK (UP TO 10 CARS)**.
+  - Direct, focused visual gateway replacing the immediate track spawn.
+- **Stepped Sim Configuration Wizard (Singleplayer):**
+  1. **Step 1: Motorsport Class Selection**
+     - Homologated categories: `GT3 / GTE` (Porsche 911 RSR-19), `LMH Prototype / Hypercar`, `Formula / Single Seater`, `Porsche Cup`, `GT4 Clubsport`.
+  2. **Step 2: Vehicle & Livery Selection**
+     - Interactive 3D Showroom turntable stage previewing the chosen vehicle, factory racing liveries, and custom competition numbers (`#0`–`#999`).
+  3. **Step 3: Circuit / Track Selection**
+     - `Nürburgring Nordschleife` (20.8 km Eifel loop), `Nürburgring 24h Gesamtkurs` (24.3 km endurance), `Nürburgring GP-Strecke` (5.1 km FIA Grand Prix), `High-Speed Proving Ground` (6.0 km test runway).
+  4. **Step 4: Race Mode & Distance**
+     - Modes: `Quick Race (Standing / Rolling Start)`, `Time Attack`, `Practice Session`.
+     - Lap Distance: Configurable from `1` to `25` laps.
+  5. **Step 5: Environmental Atmospheric Conditions**
+     - Weather: `Clear Blue Sky`, `Eifel Overcast`, `Heavy Rain (Wet Grip & Hydroplaning)`.
+     - Time of Day: `12:00 High Noon`, `06:30 Sunrise`, `19:30 Golden Sunset`, `23:30 Midnight Endurance`.
+  6. **Launch (Direct Ingress, No Buffer):**
+     - Clicking `START SESSION / ENTER CIRCUIT` loads directly into the starting procedure (standing start or rolling formation) without artificial buffer delay, as all vehicle and environmental configurations are completed beforehand.
+- **Multiplayer Paddock, 2-Stage Ready Gates & Pre-Race Qualifying:**
+  - Supports up to **10 competitors** in private 4-digit PIN rooms.
+  - **Stage 1 (Lobby Readiness & Hotlap Launch):**
+    - Each player selects their car and livery, and clicks `READY`.
+    - Real-time connected driver roster displays status of all 10 slots.
+    - Once all players are ready, the lobby host button unlocks: `START QUALIFYING`.
+    - Clicking `START QUALIFYING` immediately loads all drivers into the qualifying hotlap session.
+  - **Stage 2 (Qualifying Hotlap Shootout):**
+    - Drivers run their flying lap to set their fastest qualifying split and lap time.
+    - Real-time hotlap timing is transmitted to all peers.
+  - **Stage 3 (Post-Quali Grid Staging & Race Launch):**
+    - Once qualifying concludes, the Grid Staging modal displays the official starting grid order (P1 pole position down to P10) based on lap times.
+    - Each driver clicks `READY FOR RACE`.
+    - Once all drivers are ready, the host/leader clicks `START RACE`.
+    - Drivers spawn directly in their assigned grid boxes, and the track start sequence triggers immediately (GP 5-red-light standing start or Nordschleife rolling start) with zero countdown buffer.
+- **In-Game HUD Simplification:**
+  - With session conditions (track, laps, weather, time) pre-configured in the wizard, in-race runtime controls (`WEATHER [U]`, `TIME [T]`, `LIGHTS [H]`, `GHOST [K]`, `MULTIPLAYER [O]`) are removed from the in-game display.
+  - Top-left HUD is streamlined into an authentic, uncluttered professional motorsport timing cluster: Delta split, Lap time, Best lap, Sector status bar (S1–S9), and Landmark name.
+
+---
+
+## 8. Idea Parking Lot
 
 Agent suggestions. **None of these are accepted yet.** Move an item into the main sections above once decided, or delete it.
 
 | # | Idea | Why |
 |---|------|-----|
-| P1 | **Ghost car** of your best lap | Standard for time attack; input recording also serves as a physics replay. |
 | P3 | **Haptic sector delta:** double pulse if up, single long if down | Needs native wrapper for haptics. |
 | P4 | **"Light steering" haptic** when front tires lose grip | Needs native wrapper for haptics. |
 | P5 | **Audio as the main slip cue:** tire scrub, engine load, wind, surface noise | Essential audio cues for cockpit driving. |
 | P6 | **Steering calibration screen:** hold at center, tap to zero, pick a steering range | Everyone holds a phone slightly differently. |
 | P7 | **Auto-pause** when controller disconnects, locks, or is laid flat | Prevents crashing if phone is dropped. |
-| P8 | **Windshield rain shader** (droplets, wipers) | Visual fidelity when weather arrives. |
-| P9 | **Drying line:** wet grip varies across track and recovers on racing line | Dynamic track surface for Phase 3. |
 | P10 | **Telemetry recorder** (CSV/JSON of speed, slip, suspension, inputs) | Debugging vehicle physics and driver analysis. |
 | P11 | **Keyboard fallback** (WASD / Arrows) on Mac | Allows immediate testing without picking up the phone. |
-| P12 | **Respawn to track centerline** ('R' key or phone button) | Essential for recovering from spins or off-track excursions. |
 | P13 | **Second device as a spectator dash** (live map, delta, telemetry) | Multi-device companion experience. |
-| P15 | **Live sector delta in the HUD** (green/red per sector vs best) | Real-time competitive feedback. |
 | P16 | **Mini steering wheel graphic in center of controller screen** | Visual indicator of current wheel angle on the phone. |
 | P17 | **Manual DRS and Hybrid ERS/Push-to-Pass Boost** | Triggerable via controller buttons and bounded by track marker zones like real racecars. |
 | P18 | **High-polygon animated driver arms with racing gloves** | Ultra-detailed 3D driver arms with Alpinestars/Sparco competition gloves wrapped around the steering wheel, animated with inverse kinematics or skeletal skinning matching wheel rotation (deferred per user request). |
-| P19 | **Multi-Class GT Endurance Field & Nissan GTR Class Expansion** | Represent every team in the GT endurance field running the Porsche 911 RSR-19; add Nissan GT-R / GT3 / GTR class with standardized wrap framework (planned future expansion per user request). |
 
 ---
 
-## 6. Decision Log
+## 9. Decision Log
 
 Answers to project design questions.
 
@@ -594,6 +946,7 @@ Answers to project design questions.
 | 2026-11-06 | Trackside Visual Overhaul & Zero-Noclip Terrain Sculpting | Clamped DEM terrain within 65m corridor across all 9,714 circuit nodes to <= Y_track - 4.0m (0 of 9,714 points clipping; max terrain relative to road = -3.99m), completely eliminating noclipping. Upgraded track mesh to 30-node cross section with 1.25m sub-sampling: razor-sharp 20cm continuous brilliant white boundary lines, 20cm centerline white dashes (5m dash / 5m gap), dark textured asphalt with rubbered grooves, alternating 2.0m FIA red/white kerbs on all corner complexes, non-blurry multi-tone grass verges and outward-sloping mountain forest embankments down to -35m. Added 16x anisotropic procedural aggregate detail texture via pure DataTexture. |
 | 2026-11-06 | Porsche 911 GT3 RS Weissach Racing Model & Standardized Livery Pipeline | Replaced civilian Carrera 4S with authentic Porsche 911 GT3 RS (992 generation) featuring full Weissach package and factory DRS swan-neck rear wing mounted solidly to engine deck with zero gap. Built universal `VehicleModelAdapter` automatically stripping all civilian street license plates across imported models. Implemented dynamic $1024 \times 1024$ PBR canvas `LiveryGenerator` with 7 preset competition liveries (Manthey Grello #911, Martini #77, Rothmans #1, Pink Pig #92, Gulf #20, Weissach #93, Stealth #00) cycling via `[P]` key / HUD button. |
 | 2026-11-07 | Version Control & GitHub Sync | Automatic commit and push of all codebase, assets, and documentation to public GitHub repository (`dual-screen-web-racer`) once after every phase completion. |
+| 2026-11-07 | Release Authorization & Phase Cap | No releases unless explicitly allowed by the user. Repository status is strictly capped up to Phase 2 right now; no git tags, GitHub releases, or production deployments without prior user approval. |
 | 2026-11-06 | The Green Hell: Foliage, Graffiti, Patches, Armco, Gravel Traps & 306.8m Elevation Drop | Removed all dashed centerline road marks across circuit; added multi-colored fan graffiti and weathered concrete patches. Added authentic 3-tier galvanized Armco steel crash barriers and coarse gravel decelerator traps at surveyed real-world zones (Aremberg, Adenauer Forst, Wehrseifen, Ex-Mühle, Brünnchen, Hohenrain). Added dense 3D evergreen spruce/pine forest (400–600 trees/chunk via `InstancedMesh`). Calibrated official 306.8m vertical elevation drop (Breidscheid 320.0m to Hohe Acht 626.8m, 11.7% Fuchsröhre plunge) and eliminated corner-cutting smoothing so surveyed apexes (Wehrseifen 15.8m radius, Karussell 25.5m radius) retain razor-sharp curvature. |
 | 2026-11-06 | Porsche 911 RSR-19 GTE Specs & Database Homologation | Vehicle specification display and blueprint updated to authentic Porsche 911 RSR-19 (GTE) homologation specs: 515 HP, 4.2L NA mid-engine boxer, 9,000 max RPM, 3.1s 0–100 km/h, 318 km/h top speed, and active GTE swan-neck wing downforce. |
 | 2026-11-06 | Concentric Wheel Hub Mounting & Stance Realism | Extracted surveyed glTF wheel hub centers (FL/RL: X = -0.7701m, FR/RR: X = +0.7701m; Y = 0.5190m; Z_front = +1.1688m, Z_rear = -1.2867m). Wheels sit flush inside arches with zero offset or monster-truck lift, resting squarely on the showroom turntable (Y = 0.185m) and track tarmac. |
@@ -614,10 +967,154 @@ Answers to project design questions.
 | 2026-11-06 | Elimination of Triangle-Step Bumpiness & C1/C2 Spline Surface Fairing | Fixed missing `/ 12` divisor on `tangent.z` in `centerline.ts`; applied 8-pass Taubin zero-shrinkage curve fairing ($\lambda = 0.45, \mu = -0.473$) to remove OSM polyline vertex kinks; removed per-sample `turnRate` sign-flipping and step-function landmark banking; computed direct analytical horizontal frames (`b.y = 0` on unbanked sections) with $C^1$ Hermite banking/width interpolation and 4 sub-divided road collision lanes in `TrackMeshGenerator`; elevated chassis collider bottom to `+0.50m` and added 2nd-order pneumatic damper velocity filtering in `RaycastVehicle`. |
 | 2026-11-06 | Karussell Hairpin Voronoi Embankment Clamping & 2D Elevation Shelf Harmonization | Eliminated upper-leg Karussell embankment terrain overlapping/covering the lower entry leg (`Steilstrecke`): clamped lateral embankment reach to the 2D Voronoi perpendicular bisector ($s_{\text{bisector}} = \frac{D^2}{2u} - 1.2\text{ m}$) and clamped embankment vertex heights strictly below nearby track floors ($\le y_{\text{floor}} - 0.8\text{ m}$); harmonized 2D hairpin shelf elevations across `Steilstrecke / Karussell / Hohe Acht` and `Dunlop-Kehre` ($\Delta Y \approx 0.3\text{–}1.7\text{ m}$ across the $28\text{ m}$ neck instead of $15\text{–}33\text{ m}$); added Voronoi corridor ownership and deep $-2.4\text{ m}$ trunk roots in `ForestFoliage`; extended `dem.json` to $z_{\max} = 4835\text{ m}$ and sculpted to $\ge 3.5\text{ m}$ below the minimum track elevation in every corridor. |
 | 2026-11-07 | Minimalist Luxury Motorsport Showroom Landing Page Polish | Removed all unnecessary description paragraphs (`track.highlight`), multi-colored difficulty badges, emojis, header hardware subtitles, the top-center floating drag banner (which overlapped the car's rear wing), and bottom sub-captions from `MainMenu`. Rebuilt `MainMenu` and `ShowroomStage` with obsidian carbon glass panels, a 4-column hairline telemetry strip, a non-clipping 4×2 livery swatch grid, a symmetrical 4×2 competition number grid, a Guards Red `START SESSION [ENTER]` CTA, and a 128-segment brushed platinum turntable chamfer ring with neutral silver studio rim lighting. |
+| 2026-11-07 | Rearward-Only Directional Brake Lights (Zero Cockpit Spill) | User feedback: *"issue brake lights shine inside cockpit it should only be rearward"*. Replaced omnidirectional `PointLight` rear brake emitters with directional `SpotLight` beams ($Z = -2.02\text{ m}$) aimed strictly rearward toward $-Z$ ($Z_{\text{target}} = -14.0\text{ m}$). Guarantees zero red light spills forward into the cockpit while preserving rear road illumination and trailing car visibility. |
+| 2026-11-07 | Phase 3 Advanced Motorsport Systems Implementation | Implemented Phase 3 subsystems: thermal brake fade above $750^\circ\text{C}$, modular day/night sun cycle with high-output recessed headlights, exterior-only 3D rain emitter, $40\%$ wet grip reduction with slick hydroplaning, 2D dynamic drying line along the racing groove, 9-sector timing breakdown with live `+/-` delta splits, 30 Hz ghost car recording/playback, and WebRTC DataChannel P2P multiplayer lobby. |
+| 2026-11-07 | Pit Lanes Scrapped & Infinite Tyre/Fuel Everywhere | Scrapped pit lane & garage setup UI per user request (*"forget the pit lanes, scrap that from implimentation. no need for it just have infinite tyre and fuel even with friends"*). Infinite tyre life (`100%`) and infinite fuel (`60.0L`) are enabled at all times in both solo and multiplayer. |
+| 2026-11-07 | Exterior-Only Rain & Recessed High-Output Racing Headlights/Brake Lights | Restricted 3D rain particles strictly outside the cockpit ($r \in [4.8\text{ m}, 34.0\text{ m}]$) and cleared cockpit windshield sightlines. Removed floating cylinder headlight circles blocking cockpit view; bound headlights, taillights, and brake lights directly to the recessed 3D model meshes inside `model.glb`, and upgraded racing headlight `SpotLight` beams to $280\text{ m}$ range (`decay = 0.45`, `intensity = 24.0`) + $115\text{ m}$ wide corner flood (`intensity = 14.0`) + rear brake `PointLight` emitters. |
+| 2026-11-07 | Phase 4 Scope & 4-Digit Private Lobbies | Multiplayer support structured around private lobbies with 4-digit join codes (e.g., 4821); host configures circuit, lap count, max drivers (2–16), and collision toggle; strictly private lobbies without public server browsers. |
+| 2026-11-07 | Format-Specific Start Sequences | GP-Strecke uses standing grid start with standard F1 5-red-light sequence (1.0s increments + random 0.4–2.4s hold; no rolling start; jump-start detection); Nürburgring Nordschleife uses rolling formation start (60–80 km/h) with floating 3-light countdown (3->2->1->Green). |
+| 2026-11-07 | Smart Near-Crash Track Recovery | Flipping off-track (>78° rollover tilt for >2.5s) or pressing [R] / mobile respawn recovers the vehicle on track centerline 8m behind crash point facing track direction with 3.0s ghost invulnerability; current lap invalidated. |
+| 2026-11-07 | Phase 5 Multi-Class Ecosystem & Dynamic Menu | Future expansion adds GT3, GTE, Prototype/LMDh, Formula 1, and Cup classes; international circuits (Spa, Monza, Le Mans, Suzuka, Bathurst); Main Menu evolves into multi-tier motorsport series hub. |
+| 2026-11-07 | Sim Landing Hub & Stepped Config Wizard | Dedicated landing portal (Singleplayer vs Multiplayer); stepped wizard (1. Class -> 2. Vehicle/Livery -> 3. Track -> 4. Laps/Mode -> 5. Weather/Time); simplified in-game top-left timing HUD. |
+| 2026-11-07 | Zero Staging Buffer & 2-Stage Multiplayer Ready/Quali Architecture | User feedback: standing/rolling starts in singleplayer proceed directly into session without buffer; multiplayer uses 2-stage ready gates: Stage 1 lobby ready check $\to$ host launches qualifying hotlap session; Stage 2 post-quali grid leaderboard $\to$ drivers ready check $\to$ host launches race sequence with seeded P1-P10 grid slots. No staging countdown buffer needed. |
+| 2026-11-07 | Complete Elimination of Rolling Starts | User directive: *"get rid of rolling starts entirely"*. All tracks (Nordschleife, 24h Gesamtkurs, GP-Strecke, Proving Ground) now strictly enforce FIA F1 5-Red-Light standing starts. Vehicles spawn in authentic 2x2 grid boxes behind Start/Finish line (sample 0). Launch clamp holds brakes locked, limits throttle to 0.15, and locks transmission to 1st gear until simultaneous lights out. Jump-start detection active (> 0.25m creep). |
+| 2026-11-09 | Strategic Project Re-Phasing | Pause standalone Phase 3 and Phase 4; establish Phase 5: Nürburgring & Car Ultra-Realism (Assetto Corsa Competizione Level), move Private Multiplayer to Phase 6, and Multi-Class/Global Tracks to Phase 7. |
+| 2026-11-09 | Drastic Elevation & Forest Immersion | Recalibrate Nürburgring elevation drops to authentic real-world severity (Fuchsröhre, Breidscheid, Bergwerk climb); dense multi-tier Eifel forest walls and roadside canopies for true "Green Hell" woodland immersion. |
+| 2026-11-09 | Trackside Infrastructure & Anti-Noclip CCD Barriers | Add FIA wire mesh catch fences atop Armco, red-and-white tire barrier stacks at runoff zones, and overhead sponsor bridges (Bilstein, Audi, Yokohama); thicken barrier collision depth (>=0.5m) and enable Continuous Collision Detection (CCD) on vehicle body to eliminate barrier tunneling/noclipping on high-speed crashes. |
+| 2026-11-09 | Authentic Dedicated Pit Lane & Multi-Stall Boxes | Construct physically separate pit lane parallel to straight with concrete pit wall divider, deceleration entry, marked team pit stalls with overhead gantry rigs, multi-stall multiplayer readiness, and 60 km/h pit speed limiter. |
+| 2026-11-09 | HUD Radar Cleanup | Remove broken placeholder yellow flags and fake AI competitor dots from radar; keep player's own ghost car blip/silhouette on minimap radar for timed laps. |
+| 2026-11-09 | ACC-Standard Physical Realism & Consumables | Re-implement authentic physical simulation: slip-energy tyre wear reducing peak Pacejka grip D, dynamic fuel burn (0.75 kg/L) shifting chassis weight and balance, and brake thermal efficiency curve (cold bite, optimal window, severe fade >750°C). |
+| 2026-11-09 | Diffuse Rear Lights & Sunset/Dawn 24h Ambience | Tone down over-bright rear taillights/brakes to realistic diffuse glow and localized ground bounce; overhaul sunset and dawn atmospheric scattering; implement continuous 24-hour day/night cycle with configurable time compression for endurance racing. |
+| 2026-11-09 | Asset Creation Standard Documentation | Created docs/skills.md detailing end-to-end engineering pipelines for procedural track creation and vehicle ingestion/rigging/mapping. |
+| 2026-11-09 | Anti-Nausea Cockpit Horizon Lock & Chassis Bump Dynamics | Stabilize internal cockpit camera with 85–90% horizon lock (VOR) so driver gaze remains smooth and motion-sickness-free; car chassis, dashboard, and steering column shake and vibrate over bumps. |
+| 2026-11-09 | Non-Jagged Smooth Spline with Physical Multi-Band Bumps | Extrude smooth C2 faired spline geometry without polygonal facets; overlay procedural multi-band bumps and tar joints in 240 Hz suspension raycasts for authentic track bumpiness without visual jaggedness. |
+| 2026-11-09 | Dedicated Sound Design Skill & Ear-Fatigue Mitigation | Added Section 4 to docs/skills.md; overhauled transmission whine with 3.2 kHz Butterworth low-pass filter, 3.5 kHz parametric notch (-8 dB), and driveline torque attenuation to protect headphone users from painful ear fatigue. |
 
 ---
 
-## 7. Changelog
+## 10. Changelog
+
+- **2026-11-09** - Anti-Nausea Cockpit Stabilization, Smooth Spline Bumps & Sound Design Pipeline:
+  - **Anti-Nausea Cockpit Camera:** Implemented 85–90% Vestibulo-Ocular Reflex (VOR) horizon lock on internal camera sightlines; decoupled cockpit interior and chassis body vibration so the car shakes over bumps while driver view remains stable, preventing simulator sickness.
+  - **Smooth Spline Geometry & Multi-Band Bumps:** Faired track extrusion along C2 continuous spline (zero polygonal jaggedness or DEM staircasing) combined with procedural multi-band surface undulations and tar expansion joints for tactile suspension excitation.
+  - **Sound Design Skill (`docs/skills.md` Section 4):** Standardized audio synthesis manual covering multi-harmonic flat-six combustion pulses, straight-cut gearbox whine attenuation (3.2 kHz low-pass, 3.5 kHz notch, torque load scaling) to prevent headphone ear fatigue, tire scrub noise, kerb thumps, and master brickwall compression.
+
+- **2026-11-09** - Phase 5 Nürburgring & Simulation Realism (Assetto Corsa Competizione Standard) Specification & Pipeline Manual:
+  - **Strategic Re-Phasing:** Paused standalone Phase 3 and Phase 4; established Phase 5 (Nürburgring & Car Ultra-Realism) as active focus; shifted Private Multiplayer to Phase 6 and Multi-Class/Tracks to Phase 7.
+  - **Surveyed Topography & Drastic Elevation Dynamics:** Calibrated vertical drop to authentic 306.8m (Breidscheid 320m to Hohe Acht 626.8m), sustained 11.7% Fuchsröhre plunge with severe G-compression, 300m Bergwerk climb, and authentic Karussell/Flugplatz camber.
+  - **Dense Forest Immersion ("The Green Hell"):** Multi-tier forest walls with overhanging roadside canopies, 2D spatial clearance anti-encroachment grid, and GPU instancing with cross-quad billboard LODs maintaining 60–120 FPS.
+  - **Trackside Infrastructure & Anti-Noclip CCD Barriers:** FIA debris catch fences atop Armco, red/white tire barriers and Tecpro blocks at runoffs, overhead sponsor bridges (Bilstein, Audi, Yokohama), 0.5m thick collision envelopes, and Rapier continuous collision detection (CCD).
+  - **Dedicated Drivable Pit Lane:** Physically separate pit lane with concrete pit wall divider, deceleration entry, 7.5m concrete apron, 10+ marked team pit stalls with overhead lollipop gantries, and 60 km/h speed limiter.
+  - **HUD Radar Cleanup:** Removed broken yellow flags and fake AI competitor dots; retained player ghost car blip for timed laps.
+  - **ACC Physical Realism:** Slip-energy tyre wear reducing peak Pacejka friction D, dynamic fuel burn (0.75 kg/L) shifting weight balance, and 3-stage brake thermal efficiency curve (cold bite, optimal window, severe fade >750°C).
+  - **Lighting & Endurance Ambience:** Diffuse rear taillights/brake lights (no forward cockpit spill), physically based sunset/dawn atmospheric scattering, and continuous 24-hour day/night endurance cycle.
+  - **Pipeline Manual (`docs/skills.md`):** Published complete engineering guide for procedural track extrusion and vehicle CAD/GLB ingestion, wheel rigging, and livery mapping.
+
+- **2026-11-07** - Dynamic Personal Hotspot IP Detection & Auto-Resolution:
+  - **Dynamic Interface Re-Evaluation:** Rewrote `getLocalIpAddress()` and `/api/network-info` in `vite.config.ts` to compute network interfaces on every request instead of caching the startup IP. When the laptop connects to a mobile Personal Hotspot (e.g. `172.20.10.x` on iPhone or `192.168.43.x` on Android), the QR code and controller link dynamically update to the hotspot IP (`https://172.20.10.2:5173/controller.html`) without restarting the server.
+  - **Sub-5ms Hotspot Latency:** Direct P2P packet exchange over the cellular hotspot Wi-Fi or USB tethering connection between the iPhone controller and Mac host.
+
+- **2026-11-07** - Rolling Starts Completely Removed (Universal Standing F1 5-Red-Light Starts Everywhere):
+  - **Eliminated Rolling Starts:** Deprecated and scrapped the rolling start state machine, 3-light countdown, and formation speed governor platform-wide per user directive (*"get rid of rolling starts entirely"*).
+  - **Universal 2x2 Grid Placement:** Nordschleife, 24h Gesamtkurs, and GP-Strecke now consistently spawn in staggered 2x2 grid slots behind Start/Finish line (sample 0) facing downstream.
+  - **Overhead FIA 5-Light Cluster & Launch Clamp:** All tracks feature the authentic overhead 5-red-light starting gantry, 1.0s sequential light ignition, random 0.4s–2.4s hold delay, jump-start detector (> 0.25m), and simultaneous lights out green flag release.
+
+- **2026-11-07** - Mobile Phone Controller Bridge & QR Network Realignment:
+  - **Local Network Wi-Fi QR Resolution:** In `MainMenu`, `generateQrCode()` previously defaulted to `window.location.origin` (`localhost:5173`), which caused mobile devices scanning the QR code to fail with unreachable host errors. Wired `/api/network-info` fetch so the QR code and pairing link dynamically encode the Mac host's true local network IPv4 address (`https://128.189.69.240:5173/controller.html`).
+  - **Immediate Page-Load WebSocket Connection:** Mobile controller now initiates `connectWebSocket()` on page load rather than delaying until the "ENGINE START" push-button is tapped, giving immediate "WHEEL LINKED" confirmation on the host menu.
+  - **Mobile Background Lifecycle Revival (`visibilitychange`):** Added `visibilitychange` event listeners to both [`controller.ts`](src/controller/controller.ts) and [`host-server.ts`](src/host/net/host-server.ts), automatically reconnecting dormant WebSockets when mobile Safari is resumed from lock screen or app switching.
+
+- **2026-11-07** - Reverse Lockout Resolution & Grand Prix Start/Finish Realignment:
+  - **Reverse Lockout during Starting Sequences:** Diagnosed and fixed vehicle reversing backwards during standing starts and rolling formations. Holding brakes at standstill accumulated `reverseHoldTimer > 0.30s`, shifting drivetrain into reverse gear (-1) under full throttle. Added `setReverseLock(locked: boolean)` on `Drivetrain` and `RaycastVehicle`, actively locking the transmission into 1st gear whenever `RaceProcedureDirector.isProcedureActive()`.
+  - **Authentic Grand Prix Start/Finish Line (`osm_gp.json` & `stadium-assets.ts`):** Rotated surveyed GP-Strecke loop coordinates by 95 sample points, placing sample 0 directly on the main straight in front of the Haupttribüne and pit complex facing southwest towards Castrol-S Turn 1. Aligned start timing gantry, pit garages (samples 2–72, +26m right), and Haupttribüne (samples 0–75, -28m left) with 2x2 staggered starting grid boxes behind the line.
+  - **Qualifying Auto-Broadcast & Grid Keybinding:** Completing a valid qualifying hotlap broadcasts the lap time to all room peers and opens the Grid Staging modal. Added `[G]` hotkey in race to toggle the official starting grid dialog.
+
+- **2026-11-07** - Direct Session Ingress, 2-Stage Multiplayer Ready Gates & Grid Seeding:
+  - **Singleplayer Direct Launch:** Drivers proceed straight from configuration into race starting procedures without artificial 10s delay.
+  - **Multiplayer 2-Stage Ready Architecture:**
+    - Stage 1: All drivers ready up in lobby before host launches Qualifying Hotlap.
+    - Stage 2: Post-quali leaderboard shows seeded grid (P1–P10); all drivers ready up before host launches Race starting sequence.
+  - **Simplified HUD:** Redundant runtime toggles (`[U]`, `[T]`, etc.) removed from top-left HUD.
+
+- **2026-11-07** - Proper Sim Landing Hub, Stepped Configuration Flow, 10-Car Qualifying & HUD Simplification Architecture:
+  - **Landing Portal Selection:** Clean two-path sim entry separating Singleplayer Simulation from Multiplayer Paddock.
+  - **Stepped Simulation Wizard:** Sequential setup (Class -> Vehicle -> Circuit -> Mode/Laps -> Weather/Time) creating an authentic, deliberate sim-racing paddock preparation experience.
+  - **10-Second Staging Gate:** Added a pre-load readiness buffer with an audible 10-second countdown before loading into the track, eliminating the bug where rolling/standing start sequences fire while the driver is still browsing menus.
+  - **10-Car Multiplayer & Pre-Race Qualifying:** Expanded lobby support to 10 cars with a pre-race qualifying shootout to determine starting grid order (P1–P10) based on fastest lap times.
+  - **HUD Simplification:** Streamlined in-game top-left HUD by eliminating pre-configured environmental toggle chips (`[U]`, `[T]`), presenting an uncluttered professional timing & split cluster.
+
+- **2026-11-07** - Phase 4 Implementation: Private 4-Digit Lobbies, Dynamic Start Sequences, Smart Near-Crash Track Recovery & Kinematic Collision Modes:
+  - **Step 4.1: Private 4-Digit Lobbies & Mesh Networking:**
+    - Implemented 4-digit numeric room address space `[0000, 9999]` with `/api/create-room` endpoint and WebSocket signaling message `create_private_room`.
+    - Added quick-join URL query parameter support (`?room=4821`) and one-click "COPY LINK" clipboard sharing.
+    - Verified 44-byte binary WebRTC DataChannel packet transmission with 60 Hz pose streaming, dead-reckoning extrapolation, and sub-millimeter unpacking.
+  - **Step 4.2: Host Race Configuration & Setting Synchronization:**
+    - Delivered host control panels in `<dialog id="webrtc-lobby-dialog">`: circuit selection, lap count (1–25), max competitors (2–16), and collision mode toggle.
+    - Added driver readiness toggling and host authoritative race start synchronization (`race_start_launch`).
+  - **Step 4.3: Grand Prix Standing Start F1 5-Red-Light Sequence (`RaceProcedureDirector`):**
+    - Built FIA F1 standing start state machine for GP-Strecke: 2x2 grid boxes, vehicle launch clamp (brakes locked, throttle limiter), 5-light sequence at 1.0s increments, random 0.4s–2.4s hold delay, simultaneous lights out.
+    - Integrated jump-start detector logging violations if forward displacement $>0.25\text{ m}$ during red light illumination (+10.0s penalty).
+  - **Step 4.4: Nürburgring Nordschleife Rolling Start 3-Light Formation:**
+    - Implemented authentic rolling start for Nordschleife & 24h: 350m formation rolling approach through Tiergarten / Antoniusbuche with automated 60–80 km/h speed governor.
+    - Built 3D overhead gantry in world space and HUD overlay with 3-beacon countdown (`3` -> `2` -> `1` -> Flashing Green).
+    - Speed governor disengages automatically upon crossing Start/Finish line for full acceleration.
+  - **Step 4.5: Smart Near-Crash Track Recovery Respawn:**
+    - Handled manual trigger `[R]`, mobile `RESPAWN` button, upside-down rollover ($>78^\circ$ tilt for $>2.5\text{s}$), and off-track immobilization ($>4.0\text{s}$).
+    - Projected crash coordinates $\mathbf{p}_{\text{crash}}$ onto centerline spline, computed invariant anti-exploit offset $s_{\text{respawn}} = \max(0, s_{\text{crash}} - 8.0\text{ m})$, positioned vehicle centered on asphalt $+0.35\text{ m}$ along road normal $\mathbf{n}$, aligned with track tangent $\mathbf{t}$, reset dynamics ($\mathbf{v}=\mathbf{0}, \boldsymbol{\omega}=\mathbf{0}$), and latched `isLapValid = false`.
+    - Implemented 3.0s translucent ghost invulnerability with pulsating cyan shield aura (`CarMeshRig.setGhostMode`).
+  - **Step 4.6: Dual Collision Modes:**
+    - Ghost Mode (Default): remote cars rendered as 3D visual rigs without Rapier rigid bodies.
+    - Kinematic Impulse Mode: remote cars instantiate kinematic Rapier box colliders ($4.5\text{ m} \times 1.85\text{ m} \times 1.1\text{ m}$); local car bypasses contact during ghost invulnerability.
+  - **Verification:** Built automated test suite `scripts/test-phase4.ts` and added `npm run test:phase4`, achieving 100% pass across all validation suites and `npm run build`.
+
+- **2026-11-07** - Phase 4 (Private 4-Digit Lobbies, Dynamic Start Sequences & Near-Crash Track Recovery) & Phase 5 (Multi-Class Motorsport Ecosystem & Dynamic Series) Specifications:
+  - **Phase 4 Specification & Brainstorming Architecture:**
+    - Documented private multiplayer lobbies addressed exclusively via memorable 4-digit join codes (e.g., `4821`, `7104`) with host controls (circuit, lap count, 2–16 max competitors, and collision toggle).
+    - Specified format-specific race start procedures: Grand Prix standing start with official F1 5-red-light sequence (1.0s increments, random 0.4–2.4s hold, jump-start detection, no rolling start) versus Nürburgring Nordschleife rolling start with paced formation (60–80 km/h) and a floating 3-light HUD countdown rig.
+    - Designed smart near-crash track recovery respawn: projects crash coordinates onto centerline spline, recovers vehicle 8m behind incident point ($s_{\text{respawn}} = \max(0, s_{\text{crash}} - 8.0\text{ m})$) facing valid track direction, with 3.0s ghost invulnerability and lap invalidation latch.
+    - Defined multiplayer collision modes: default Ghost Mode (no Rapier rigid body, zero collision desync) versus Kinematic Impulse Mode.
+  - **Phase 5 Multi-Class Motorsport Ecosystem & Dynamic Series Hub:**
+    - Established vehicle class taxonomy: LMH / LMDh Prototypes (700 HP hybrid, high downforce), GT3 / GTE (515–540 HP, production racers), Formula / Single-Seater (1,000 HP, 3.5+ G lateral), Porsche Cup (analog, no TC/ABS), and GT4 Clubsport.
+    - Outlined iconic international circuits for roster expansion: Spa-Francorchamps, Monza, Circuit de la Sarthe (Le Mans), Suzuka, and Mount Panorama (Bathurst).
+    - Designed multi-tier dynamic Main Menu evolution featuring championship series selection, class-filtered car grids, race calendars, and custom team livery options.
+
+- **2026-11-07** - Pit Lanes Scrapped (Infinite Tyre & Fuel Everywhere), Exterior-Only Rain (Zero Cockpit Rain), and Recessed High-Output Racing Headlights & Brake Lights:
+  - **Pit Lanes Scrapped & Infinite Tyre/Fuel Active Everywhere:**
+    - Deleted `src/host/gameplay/pit-lane.ts`, `src/host/ui/garage-setup-ui.ts`, and `src/controller/ui/pit-setup-menu.ts`, and removed all pit lane / garage setup buttons and protocol messages across Host and Controller.
+    - Configured `RaycastVehicle` (`src/host/physics/raycast-vehicle.ts`) with `consumablesEnabled = false`, `wearRateMultiplier = 0.0`, and `fuelBurnMultiplier = 0.0` by default so infinite tyre life and infinite fuel remain active at all times, including in WebRTC P2P multiplayer with friends.
+    - Restored the clean dark placeholder box on the Porsche 911 RSR 3D steering wheel LCD (`src/host/render/cockpit/rsr-steering-wheel.ts`).
+  - **Exterior-Only Rain & Clear Cockpit Visibility (`src/host/render/environment-manager.ts`):**
+    - Added `sampleExteriorRainXZ()` restricting all 1,600 3D rain streak particles to an exterior cylindrical annulus ($r \in [4.8\text{ m}, 34.0\text{ m}]$) around the camera with `depthTest: true` so rain never spawns or falls inside the cockpit cabin.
+    - Updated the windshield droplet shader to `discard` across the entire lower cockpit ($vUv.y < 0.50$, covering the steering wheel and dashboard) and central road sightline ($\text{distFromSight} < 0.32$), removing the opaque wiper bar and reduced rain fog density so track visibility remains crystal clear.
+  - **Recessed High-Output Endurance Racing Headlights & Brake Lights (`src/host/render/car-mesh.ts`, `src/host/render/livery-system.ts`):**
+    - Removed the two floating cylinder circles (`leftLens`, `rightLens` at $(\pm 0.72, 0.52, 2.08)$) and floating taillight bar from `this.headlightsGroup` that hovered above the front fenders and blocked the driver's cockpit view.
+    - Bound `headlightLensMaterial`, `taillightMaterial`, and `brakeLightMaterial` directly to the authentic recessed 3D meshes inside `public/assets/cars/porsche_992_rsr/model.glb` (`Headlight_Emissive`, `HeadLight_Glass`, `HeadLight_Housing_Static`, `Signal_Front_Emissive`, `Taillight_Strip_Emissive`, `Taillight_Brake_Emissive`, `Tailgate_Brake_Emissive`, `Taillight_Main_Glass`), and recessed the fallback `proxyGroup` lights inside dark housing pockets below the fender line.
+    - Upgraded racing headlight `THREE.SpotLight` beams (`distance = 280m`, `decay = 0.45`, `intensity = 24.0`) + wide cornering apron flood `SpotLight` (`distance = 115m`, `decay = 0.50`, `intensity = 14.0`) + recessed rear brake `THREE.PointLight` emitters driven by live brake telemetry.
+  - **Verification:** Updated `scripts/test-phase3.ts` and verified 100% pass across `npm run build`, `npm test`, `npm run test:phase2`, and `npm run test:phase3`.
+
+- **2026-11-07** - Phase 3: Advanced Motorsport Systems Implementation & Verification (3.1, 3.2, 3.3, 3.4):
+  - **Phase 3.1: Interactive Pit Lane & Garage Setup UI (`pit-lane.ts`, `garage-setup-ui.ts`, `pit-setup-menu.ts`, `protocol.ts`):**
+    - Built `PitLaneManager` with 3D Pit Box stall geometry, gantry, pit box entry detection ($\le 105\text{ km/h}$), automatic braking (`isPitAutoStopping`), overhead 3D Garage Bay spotlights, and mouse-orbitable inspection camera.
+    - Built `GarageSetupUI` on Host and `ControllerPitSetupMenu` on Mobile Controller for tires (`slick_soft`, `slick_medium`, `slick_hard`, `wet`), fuel load (`10–110 L`), wing angle (`5°–18°`), brake bias (`50%–66%`), suspension springs, TC (`0–5`), and ABS.
+    - Wired bidirectional WebSocket control messages (`pit_state_sync`, `setup_param_sync`, `pit_action_sync`) across `vite.config.ts`, `host-server.ts`, and `controller.ts`, plus `ControllerButtons.ENTER_PIT` bitflag.
+  - **Phase 3.2: Tyre Degradation, Thermal Fade & Consumables (`raycast-vehicle.ts`, `brakes.ts`, `aero.ts`):**
+    - Implemented 240 Hz contact patch slip energy integration ($E_{\text{slip}} = \int |F \cdot v_{\text{slip}}| dt$) accumulating per-wheel tire wear and reducing peak Pacejka friction multiplier $D$.
+    - Implemented thermal brake fade above $750^\circ\text{C}$ in `BrakeSystem`, reducing brake pad friction coefficient $\mu_{\text{pad}}$ ($0.42 \to 0.19$) and clamping torque under sustained heavy braking.
+    - Implemented dynamic fuel mass depletion at $0.75\text{ kg/L}$ (`FUEL_DENSITY_KG_PER_LITER = 0.75`), updating Rapier rigid body mass (`setAdditionalMass`) and front/rear weight distribution in real time.
+    - Replaced the placeholder box on the Porsche 911 RSR 3D steering wheel LCD (`rsr-steering-wheel.ts`) with live 4-corner Tire Health (`%`), Tire/Brake Temperatures (`°C`), Fuel Load (`L` / `kg`), Compound badge, and Pit Status.
+  - **Phase 3.3: Dynamic Environment & Weather (`environment-manager.ts`, `drying-line.ts`, `car-mesh.ts`):**
+    - Built `EnvironmentManager` with modular day/night solar cycle (`0–24h`, `[L]` presets), dynamic sky dome/fog modulation, and automatic dual `THREE.SpotLight` vehicle headlights (`[H]` toggle) + brake/taillight emissives on `CarMeshRig`.
+    - Built 1,600-streak 3D rain particle emitter (`THREE.LineSegments`) around the active camera and a custom GLSL windshield rain droplet refraction & animated wiper sweep shader in cockpit view (`[W]` weather cycle).
+    - Built `TrackDryingLine` (`512 × 16` 2D moisture grid) enforcing a $40\%$ wet surface friction reduction, slick-tire hydroplaning above $145\text{ km/h}$ in standing water, wet-tire water evacuation, and dynamic racing groove water displacement.
+  - **Phase 3.4: 9-Sector Timing, Ghost Car & WebRTC P2P Multiplayer (`lap-timer.ts`, `ghost-car.ts`, `webrtc-lobby.ts`):**
+    - Upgraded `NordschleifeLapTimer` to a full 9-sector timing breakdown (`S1 · Hatzenbach` .. `S9 · Döttinger Höhe`) with purple/green/yellow sector splits and distance-interpolated live `+/-` delta HUD bar.
+    - Built `GhostCarManager` recording 30 Hz lap keyframes to `localStorage`, automatically saving personal best laps, and rendering a translucent holographic 3D ghost car via `lerp`/`slerp` interpolation (`[K]` toggle).
+    - Built `WebRTCMultiplayerLobby` (`<dialog>` modal UI opened via `[O]` or HUD button) with `RTCPeerConnection` + unordered `RTCDataChannel`, room signaling in `vite.config.ts`, manual SDP token exchange, 1-click in-browser Loopback P2P Pace Peer, 44-byte binary pose packets, and 3D remote peer car rendering.
+  - **Verification:** Added `npm run test:phase3` (`scripts/test-phase3.ts`); verified 100% pass across `npm test`, `npm run test:phase2`, `npm run test:phase3`, and zero-error production build (`npm run build`).
+
+- **2026-11-07** - Strict Phase 2 Release Cap & User Authorization Policy:
+  - Formally established release boundary: no releases permitted without explicit user authorization.
+  - Project code and public repository state are strictly capped up to Phase 2; no GitHub releases, git tags, or production deployments will be triggered without explicit user sign-off.
 
 - **2026-11-07** - Version Control & Automatic GitHub Sync:
   - Initialized dedicated Git repository in project root with clean `.gitignore`.

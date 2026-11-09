@@ -1,5 +1,5 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { CarProfile, VehicleTelemetry } from '../../common/types';
+import { CarProfile, CarSetup, DEFAULT_CAR_SETUP, VehicleTelemetry } from '../../common/types';
 import { clamp, lerp } from '../../common/math';
 import { PacejkaTireModel } from './tire-model';
 import { Drivetrain } from './drivetrain';
@@ -7,6 +7,9 @@ import { Aerodynamics } from './aero';
 import { DrivingAssists } from './assists';
 import { getSurfaceProperties } from './materials';
 import { BrakeSystem } from './brakes';
+import { TrackDryingLine } from './drying-line';
+
+export const FUEL_DENSITY_KG_PER_LITER = 0.75; // 0.75 kg/L motorsport E20/racing fuel
 
 export interface WheelState {
   hardpoint: [number, number, number]; // chassis-relative [x, y, z]
@@ -25,18 +28,39 @@ export interface WheelState {
   contactPointWorld: [number, number, number];
   isInContact: boolean;
   rotationalInertia: number; // kg m^2
+  // Phase 3: Tyre degradation & thermal state
+  slipEnergyJ: number; // Accumulated frictional slip work (Joules)
+  tireWear: number; // 0.0 (fresh 100% grip) to 1.0 (worn out)
+  tireTempC: number; // Carcass temperature (°C)
 }
 
 export class RaycastVehicle {
   public chassisBody: RAPIER.RigidBody;
   public chassisCollider: RAPIER.Collider;
   public profile: CarProfile;
+  public setup: CarSetup;
   public drivetrain: Drivetrain;
   public aero: Aerodynamics;
   public assists: DrivingAssists;
   public brakes: BrakeSystem;
 
   public wheels: WheelState[];
+
+  // Phase 3 & 5: Consumables, Fuel Mass & Pit Auto-Stop
+  public fuelLiters = 60.0;
+  public fuelCapacityLiters = 110.0;
+  public consumablesEnabled = false; // Enabled dynamically in Phase 5 simulation
+  public wearRateMultiplier = 0.0;
+  public fuelBurnMultiplier = 0.0;
+  public pitLimiterActive = false; // Phase 5: Automated 60 km/h pit speed limiter
+  private lastBrakeInput = 0;
+
+  // Phase 3: Weather & 2D Drying Line link
+  public dryingLine?: TrackDryingLine;
+  public currentTrackDistanceM = 0;
+  public currentLateralOffsetM = 0;
+  private isHydroplaningNow = false;
+  private currentSurfaceWetness = 0;
 
   private world: RAPIER.World;
   public rapier: typeof RAPIER;
@@ -66,14 +90,28 @@ export class RaycastVehicle {
   constructor(world: RAPIER.World, rapier: typeof RAPIER, profile: CarProfile, spawnPos = { x: 0, y: 0.8, z: 0 }, spawnYaw = 0) {
     this.world = world;
     this.rapier = rapier;
-    this.profile = profile;
+    this.profile = JSON.parse(JSON.stringify(profile)) as CarProfile;
+    this.setup = {
+      ...DEFAULT_CAR_SETUP,
+      frontSpringNPerM: profile.suspension.front.springNPerM,
+      rearSpringNPerM: profile.suspension.rear.springNPerM,
+      frontAntiRollNmPerRad: profile.suspension.front.antiRollNmPerRad,
+      rearAntiRollNmPerRad: profile.suspension.rear.antiRollNmPerRad,
+      frontBrakeBias: profile.brakes.frontBias,
+      maxBrakeTorqueNm: profile.brakes.maxTorqueNm,
+      finalDriveRatio: profile.transmission.finalDrive,
+      upshiftRpm: profile.transmission.upshiftRpm,
+      tireCompound: (profile.tires.compound as CarSetup['tireCompound']) || 'slick_medium',
+    };
+    this.fuelLiters = this.setup.fuelLoadL;
 
-    this.drivetrain = new Drivetrain(profile);
-    this.aero = new Aerodynamics(profile);
-    this.assists = new DrivingAssists(profile);
-    this.brakes = new BrakeSystem(profile.brakes);
+    this.drivetrain = new Drivetrain(this.profile);
+    this.aero = new Aerodynamics(this.profile);
+    this.assists = new DrivingAssists(this.profile);
+    this.brakes = new BrakeSystem(this.profile.brakes);
 
-    // 1. Create chassis rigid body
+    // 1. Create chassis rigid body with Continuous Collision Detection (CCD) enabled
+    // Eliminates high-speed boundary tunneling & noclipping during 300+ km/h barrier impacts
     const qy = Math.sin(spawnYaw / 2);
     const qw = Math.cos(spawnYaw / 2);
     const bodyDesc = rapier.RigidBodyDesc.dynamic()
@@ -81,9 +119,11 @@ export class RaycastVehicle {
       .setRotation({ x: 0, y: qy, z: 0, w: qw })
       .setCanSleep(false)
       .setLinearDamping(0.001) // Minimal numerical damping: authentic aerodynamic drag (Cd*A) governs equilibrium top speed
-      .setAngularDamping(2.0); // Heavy rotational damping to eliminate chassis roll/pitch wobbling
+      .setAngularDamping(2.0)  // Heavy rotational damping to eliminate chassis roll/pitch wobbling
+      .setCcdEnabled(true);
 
     this.chassisBody = world.createRigidBody(bodyDesc);
+    this.chassisBody.enableCcd(true);
 
     // Set mass & inertia tensor from spec
     // Note: Rapier coordinate axes are X (right), Y (up), Z (forward)
@@ -146,6 +186,9 @@ export class RaycastVehicle {
         contactPointWorld: [0, 0, 0],
         isInContact: false,
         rotationalInertia: frontInertia,
+        slipEnergyJ: 0,
+        tireWear: 0,
+        tireTempC: 75,
       },
       // FR (1)
       {
@@ -165,6 +208,9 @@ export class RaycastVehicle {
         contactPointWorld: [0, 0, 0],
         isInContact: false,
         rotationalInertia: frontInertia,
+        slipEnergyJ: 0,
+        tireWear: 0,
+        tireTempC: 75,
       },
       // RL (2)
       {
@@ -184,6 +230,9 @@ export class RaycastVehicle {
         contactPointWorld: [0, 0, 0],
         isInContact: false,
         rotationalInertia: rearInertia,
+        slipEnergyJ: 0,
+        tireWear: 0,
+        tireTempC: 75,
       },
       // RR (3)
       {
@@ -203,8 +252,160 @@ export class RaycastVehicle {
         contactPointWorld: [0, 0, 0],
         isInContact: false,
         rotationalInertia: rearInertia,
+        slipEnergyJ: 0,
+        tireWear: 0,
+        tireTempC: 75,
       },
     ];
+
+    this.updateDynamicMassAndBalance();
+  }
+
+  /**
+   * Computes total vehicle mass (dry chassis + 0.75 kg/L fuel) and updates
+   * Rapier RigidBody mass and longitudinal Center of Mass shift.
+   */
+  public updateDynamicMassAndBalance(): void {
+    const dryMassKg = this.profile.chassis.massKg;
+    const fuelMassKg = Math.max(0, this.fuelLiters) * FUEL_DENSITY_KG_PER_LITER;
+    const totalMassKg = dryMassKg + fuelMassKg;
+
+    // Front fuel tank sits at Z = +0.95m forward of dry CG.
+    // Shifting fuel load shifts longitudinal center of mass and front/rear weight balance.
+    const tankZ = 0.95;
+    const comZShift = (fuelMassKg * tankZ) / totalMassKg;
+
+    const { inertiaTensor } = this.profile.chassis;
+    const massScale = totalMassKg / dryMassKg;
+    const pitchInertia = inertiaTensor[0] * massScale;
+    const yawInertia = inertiaTensor[2] * massScale;
+    const rollInertia = inertiaTensor[1] * massScale;
+
+    this.chassisBody.setAdditionalMassProperties(
+      totalMassKg,
+      new this.rapier.Vector3(0, 0, comZShift),
+      new this.rapier.Vector3(pitchInertia, yawInertia, rollInertia),
+      new this.rapier.Quaternion(0, 0, 0, 1),
+      true
+    );
+  }
+
+  public getFuelMassKg(): number {
+    return Math.max(0, this.fuelLiters) * FUEL_DENSITY_KG_PER_LITER;
+  }
+
+  public getTotalMassKg(): number {
+    return this.profile.chassis.massKg + this.getFuelMassKg();
+  }
+
+  public getSetup(): CarSetup {
+    return { ...this.setup };
+  }
+
+  /**
+   * Applies tunable CarSetup parameters from the Pit Lane / Garage UI or Controller.
+   */
+  public applySetup(partialSetup: Partial<CarSetup>): CarSetup {
+    this.setup = { ...this.setup, ...partialSetup };
+
+    this.aero.setRearWingAngleDeg(this.setup.rearWingAngleDeg);
+    this.brakes.setFrontBias(this.setup.frontBrakeBias);
+    this.brakes.setMaxTorqueNm(this.setup.maxBrakeTorqueNm);
+    this.drivetrain.setFinalDriveRatio(this.setup.finalDriveRatio);
+    this.drivetrain.setUpshiftRpm(this.setup.upshiftRpm);
+
+    this.profile.suspension.front.springNPerM = this.setup.frontSpringNPerM;
+    this.profile.suspension.rear.springNPerM = this.setup.rearSpringNPerM;
+    this.profile.suspension.front.antiRollNmPerRad = this.setup.frontAntiRollNmPerRad;
+    this.profile.suspension.rear.antiRollNmPerRad = this.setup.rearAntiRollNmPerRad;
+
+    this.assists.setTcLevel(this.setup.tcLevel);
+    if (this.setup.absEnabled !== undefined) {
+      this.assists.setAbsEnabled(this.setup.absEnabled);
+    } else {
+      this.assists.setAbsEnabled(this.setup.absLevel > 0);
+    }
+    this.assists.setEspGain(this.setup.espGain);
+    this.assists.setCounterSteerGain(this.setup.counterSteerGain);
+    this.assists.setHighSpeedLockFraction(this.setup.highSpeedLockFraction);
+
+    if (partialSetup.fuelLoadL !== undefined) {
+      this.fuelLiters = clamp(partialSetup.fuelLoadL, 0, this.fuelCapacityLiters);
+      this.updateDynamicMassAndBalance();
+    }
+
+    return this.setup;
+  }
+
+  /**
+   * Phase 5: Configures dynamic consumables simulation (tyre degradation & fuel mass depletion).
+   */
+  public setConsumablesEnabled(enabled: boolean, wearMultiplier = 1.0, fuelBurnMultiplier = 1.0): void {
+    this.consumablesEnabled = enabled;
+    this.wearRateMultiplier = enabled ? wearMultiplier : 0.0;
+    this.fuelBurnMultiplier = enabled ? fuelBurnMultiplier : 0.0;
+  }
+
+  /**
+   * Phase 5: Toggles or sets the automated 60 km/h pit speed limiter.
+   */
+  public setPitLimiter(active: boolean): void {
+    this.pitLimiterActive = active;
+  }
+
+  public togglePitLimiter(): boolean {
+    this.pitLimiterActive = !this.pitLimiterActive;
+    return this.pitLimiterActive;
+  }
+
+  /**
+   * Pit stop service: fits fresh tires (0% wear), resets brake temps, and refuels to target load.
+   */
+  public serviceCar(freshTires = true, targetFuelLiters?: number): void {
+    if (freshTires) {
+      for (const w of this.wheels) {
+        w.slipEnergyJ = 0;
+        w.tireWear = 0;
+        w.tireTempC = 80;
+      }
+    }
+    if (targetFuelLiters !== undefined) {
+      this.setup.fuelLoadL = clamp(targetFuelLiters, 5, this.fuelCapacityLiters);
+      this.fuelLiters = this.setup.fuelLoadL;
+    } else {
+      this.fuelLiters = this.setup.fuelLoadL;
+    }
+    this.brakes.reset(120);
+    this.updateDynamicMassAndBalance();
+  }
+
+  /**
+   * Returns compound grip & wear rate characteristics.
+   */
+  public getCompoundCharacteristics(): { gripScale: number; wearRateScale: number } {
+    switch (this.setup.tireCompound) {
+      case 'slick_soft':
+        return { gripScale: 1.07, wearRateScale: 1.50 };
+      case 'slick_hard':
+        return { gripScale: 0.94, wearRateScale: 0.62 };
+      case 'wet':
+        return { gripScale: 0.92, wearRateScale: 1.15 };
+      case 'slick_medium':
+      default:
+        return { gripScale: 1.00, wearRateScale: 1.00 };
+    }
+  }
+
+  /**
+   * Returns effective Pacejka peak friction multiplier D for a wheel after accounting
+   * for compound selection and accumulated slip-energy wear.
+   */
+  public getEffectiveWheelGripMultiplier(wheelIndex: number): number {
+    const w = this.wheels[wheelIndex];
+    const { gripScale } = this.getCompoundCharacteristics();
+    // Wear reduces peak Pacejka D by up to 35% at 100% wear
+    const wearPenalty = 1.0 - 0.35 * clamp(w.tireWear, 0.0, 1.0);
+    return gripScale * wearPenalty;
   }
 
   /**
@@ -214,6 +415,7 @@ export class RaycastVehicle {
     // Reset forces & torques from previous tick before applying new tick forces
     this.chassisBody.resetForces(true);
     this.chassisBody.resetTorques(true);
+    this.isHydroplaningNow = false;
 
     const chassisPos = this.chassisBody.translation();
     const chassisRot = this.chassisBody.rotation();
@@ -262,7 +464,14 @@ export class RaycastVehicle {
     const chassisSideslipRad = Math.atan2(latVel, forwardSpeedRef);
 
     // 1. Process driver assists & pedal ramps with Counter-Steer Assist
-    const { throttle, brake } = this.assists.processPedalRamps(dt, rawThrottleInput, rawBrakeInput);
+    let { throttle, brake } = this.assists.processPedalRamps(dt, rawThrottleInput, rawBrakeInput);
+
+    // Phase 5: Automated 60 km/h Pit Lane Speed Limiter Governor
+    if (this.pitLimiterActive && this.currentSpeedKmh > 59.5) {
+      const overspeedKmh = this.currentSpeedKmh - 59.5;
+      throttle = Math.max(0, throttle - overspeedKmh * 0.35);
+    }
+    this.lastBrakeInput = brake;
     const steerAngleRad = this.assists.processSteering(
       dt,
       rawSteerInput,
@@ -397,8 +606,14 @@ export class RaycastVehicle {
         const surfaceName = (hitCollider?.userData as any)?.surface;
         const surfaceProp = getSurfaceProperties(surfaceName);
 
-        // Compression: deflection from rest
-        const currentLength = hitDist - w.radius;
+        // Phase 5 Step 5.11: Procedural Multi-Band Road Surface Bump Dynamics
+        // Overlay continuous asphalt undulations & tar expansion seams onto wheel contact
+        const sMed = Math.sin(hpWorldX * 0.38 + hpWorldZ * 0.42) * Math.cos(hpWorldZ * 0.28) * 0.012;
+        const sShort = Math.sin(hpWorldX * 6.28 + hpWorldZ * 6.28) * 0.005;
+        const bumpOffset = sMed + sShort;
+
+        // Compression: deflection from rest with tactile road micro-undulations
+        const currentLength = (hitDist - bumpOffset) - w.radius;
         const rawCompression = clamp(restSuspensionLength - currentLength, 0, maxTravel);
 
         // 2nd-order pneumatic contact patch compliance filter:
@@ -491,7 +706,30 @@ export class RaycastVehicle {
           w.angularVelocity = lerp(w.angularVelocity, targetDriveSpin, 1 - Math.exp(-32 * dt));
         }
 
-        // Compute tire forces via Pacejka Magic Formula modulated by surface friction
+        // Compute effective surface friction (dry surface * wet drying line / hydroplaning * tire wear & compound)
+        const wheelLatOffset = this.currentLateralOffsetM + hp[0];
+        let surfaceFriction = surfaceProp.frictionMultiplier;
+        if (this.dryingLine) {
+          const wetEval = this.dryingLine.evaluateWetGrip(
+            surfaceProp.frictionMultiplier,
+            this.currentTrackDistanceM + hp[2],
+            wheelLatOffset,
+            this.currentSpeedKmh,
+            this.setup.tireCompound
+          );
+          surfaceFriction = wetEval.effectiveFrictionMultiplier;
+          if (wetEval.isHydroplaning) {
+            this.isHydroplaningNow = true;
+          }
+          if (i === 0) {
+            this.currentSurfaceWetness = wetEval.localWaterDepth;
+          }
+        }
+
+        const tireWearGripMult = this.getEffectiveWheelGripMultiplier(i);
+        const totalFrictionMultiplier = surfaceFriction * tireWearGripMult;
+
+        // Compute tire forces via Pacejka Magic Formula modulated by surface friction & tire wear
         const tireForces = PacejkaTireModel.computeForces(
           vx,
           vy,
@@ -500,8 +738,28 @@ export class RaycastVehicle {
           suspForce,
           tireConfig.pacejkaLong,
           tireConfig.pacejkaLat,
-          surfaceProp.frictionMultiplier
+          totalFrictionMultiplier
         );
+
+        // Phase 3.2: Slip energy wear accumulation E_slip = integral |F_tire * v_slip| dt
+        if (this.consumablesEnabled && Math.abs(vx) > 0.5) {
+          const vSlipLong = Math.abs(w.angularVelocity * w.radius - vx);
+          const vSlipLat = Math.abs(vy);
+          const slipPowerWatts = Math.abs(tireForces.fx) * vSlipLong + Math.abs(tireForces.fy) * vSlipLat;
+          const deltaEnergyJ = slipPowerWatts * dt;
+          w.slipEnergyJ += deltaEnergyJ;
+
+          const { wearRateScale } = this.getCompoundCharacteristics();
+          // Full tread life ~ 18 MJ of cumulative slip work per tire
+          const wearIncrement = (deltaEnergyJ / 18_000_000) * wearRateScale * this.wearRateMultiplier;
+          w.tireWear = clamp(w.tireWear + wearIncrement, 0.0, 1.0);
+
+          // Update tire carcass temperature from slip power and convective air cooling
+          const targetAmbient = this.currentSurfaceWetness > 0.2 ? 45 : 68;
+          const heatGainC = (slipPowerWatts * dt) / 2800;
+          const coolLossC = (w.tireTempC - targetAmbient) * 0.028 * dt;
+          w.tireTempC = clamp(w.tireTempC + heatGainC - coolLossC, 25, 145);
+        }
 
         if (!w.isDriven && effectiveBrakePedal <= 0.01) {
           // Free-rolling wheel produces zero longitudinal braking drag (only rolling resistance applies)
@@ -600,6 +858,29 @@ export class RaycastVehicle {
     // Update background thermal simulation of brake discs
     this.brakes.updateThermal(dt, this.currentSpeedKmh, wheelBrakeTorques, wheelOmegas);
 
+    // Phase 3.2: Dynamic Fuel Mass Depletion (0.75 kg/L)
+    if (this.consumablesEnabled && this.fuelLiters > 0) {
+      const idleBurnLPerS = 0.004;
+      const loadBurnLPerS = 0.042 * throttle * Math.max(0.25, dtInfo.rpmRatio);
+      const burnedLiters = (idleBurnLPerS + loadBurnLPerS) * this.fuelBurnMultiplier * dt;
+      const prevMassInt = Math.round(this.getTotalMassKg() * 100);
+      this.fuelLiters = Math.max(0, this.fuelLiters - burnedLiters);
+      const newMassInt = Math.round(this.getTotalMassKg() * 100);
+      if (newMassInt !== prevMassInt) {
+        this.updateDynamicMassAndBalance();
+      }
+    }
+
+    // Displace standing water along the 2D drying line when wheels roll on track
+    if (this.dryingLine && Math.abs(this.currentSpeedKmh) > 5.0) {
+      this.dryingLine.clearWaterAlongGroove(
+        this.currentTrackDistanceM,
+        this.currentLateralOffsetM,
+        this.currentSpeedKmh,
+        0.04 * dt * 60
+      );
+    }
+
     // Standstill damping, low-speed coast-down, and static hold:
     // If the car is slowing down without driving throttle (< 0.85 m/s ≈ 3 km/h):
     const inReverseMode = dtInfo.gear === -1;
@@ -644,6 +925,7 @@ export class RaycastVehicle {
 
     return {
       speedKmh: cleanSpeed,
+      brake: this.lastBrakeInput,
       rpm: dtInfo.rpm,
       rpmRatio: dtInfo.rpmRatio,
       gear: dtInfo.gear,
@@ -673,6 +955,38 @@ export class RaycastVehicle {
       lateralG: this.lateralG,
       longitudinalG: this.longitudinalG,
       brakeTempsC: [...this.brakes.tempsC],
+      brakePadFriction: [...this.brakes.padFrictionCoeffs],
+      brakeFadeFactor: [...this.brakes.fadeFactors],
+      tireWear: [
+        this.wheels[0].tireWear,
+        this.wheels[1].tireWear,
+        this.wheels[2].tireWear,
+        this.wheels[3].tireWear,
+      ],
+      tireHealthPercent: [
+        Math.round((1 - this.wheels[0].tireWear) * 100),
+        Math.round((1 - this.wheels[1].tireWear) * 100),
+        Math.round((1 - this.wheels[2].tireWear) * 100),
+        Math.round((1 - this.wheels[3].tireWear) * 100),
+      ],
+      tireTempsC: [
+        Math.round(this.wheels[0].tireTempC),
+        Math.round(this.wheels[1].tireTempC),
+        Math.round(this.wheels[2].tireTempC),
+        Math.round(this.wheels[3].tireTempC),
+      ],
+      tireSlipEnergyJ: [
+        Math.round(this.wheels[0].slipEnergyJ),
+        Math.round(this.wheels[1].slipEnergyJ),
+        Math.round(this.wheels[2].slipEnergyJ),
+        Math.round(this.wheels[3].slipEnergyJ),
+      ],
+      fuelLiters: Number(this.fuelLiters.toFixed(2)),
+      fuelMassKg: Number(this.getFuelMassKg().toFixed(2)),
+      totalMassKg: Number(this.getTotalMassKg().toFixed(2)),
+      tireCompound: this.setup.tireCompound,
+      isHydroplaning: this.isHydroplaningNow,
+      surfaceWetness: this.currentSurfaceWetness,
       isDownshiftBlip: dtInfo.isDownshiftBlip,
       isShifting: dtInfo.isShifting,
       lapTimeSeconds: 0,
@@ -711,7 +1025,17 @@ export class RaycastVehicle {
       w.suspVel = 0;
       w.slipRatio = 0;
       w.slipAngleRad = 0;
+      w.slipEnergyJ = 0;
+      w.tireWear = 0;
+      w.tireTempC = 75;
     }
+    this.fuelLiters = this.setup.fuelLoadL;
+    this.isHydroplaningNow = false;
+    this.updateDynamicMassAndBalance();
+  }
+
+  public setReverseLock(locked: boolean): void {
+    this.drivetrain.setReverseLock(locked);
   }
 
   public dispose(): void {

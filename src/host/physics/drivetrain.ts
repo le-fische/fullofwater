@@ -10,10 +10,33 @@ export class Drivetrain {
   private isDownshiftBlip = false;
   private targetBlipRpm = 2000;
   private reverseHoldTimer = 0;
+  private reverseLock = false;
+  private finalDriveOverride: number | null = null;
+  private upshiftRpmOverride: number | null = null;
 
   constructor(profile: CarProfile) {
     this.profile = profile;
     this.currentRpm = profile.engine.idleRpm;
+  }
+
+  public setReverseLock(locked: boolean): void {
+    this.reverseLock = locked;
+    if (locked && this.currentGear === -1) {
+      this.currentGear = 1;
+      this.reverseHoldTimer = 0;
+    }
+  }
+
+  public isReverseLocked(): boolean {
+    return this.reverseLock;
+  }
+
+  public setFinalDriveRatio(ratio: number): void {
+    this.finalDriveOverride = clamp(ratio, 2.80, 4.20);
+  }
+
+  public setUpshiftRpm(rpm: number): void {
+    this.upshiftRpmOverride = clamp(rpm, 8200, 9100);
   }
 
   /**
@@ -62,7 +85,9 @@ export class Drivetrain {
     shiftLight: boolean;
   } {
     const { idleRpm, redlineRpm, limiterRpm, engineBrakeNm } = this.profile.engine;
-    const { ratios, reverse, finalDrive, shiftTimeS, upshiftRpm, downshiftRpm } = this.profile.transmission;
+    const { ratios, reverse, shiftTimeS, downshiftRpm } = this.profile.transmission;
+    const finalDrive = this.finalDriveOverride ?? this.profile.transmission.finalDrive;
+    const upshiftRpm = this.upshiftRpmOverride ?? this.profile.transmission.upshiftRpm;
 
     // Handle shift timeout
     if (this.isShifting) {
@@ -102,7 +127,7 @@ export class Drivetrain {
         if (throttle > 0.05) {
           this.currentGear = 1; // Engage 1st gear on throttle to launch
           this.reverseHoldTimer = 0;
-        } else if (brake > 0.25) {
+        } else if (brake > 0.25 && !this.reverseLock) {
           // Holding brake while stopped: count hold timer to shift into reverse
           this.reverseHoldTimer += dt;
           if (this.reverseHoldTimer > 0.30) {
@@ -112,7 +137,7 @@ export class Drivetrain {
             this.currentGear = 0; // Neutral while waiting for reverse hold threshold
           }
         } else {
-          this.currentGear = 0; // Neutral at standstill when pedals released
+          this.currentGear = this.reverseLock ? 1 : 0; // Lock to 1st gear if reverse locked (race starts)
           this.reverseHoldTimer = 0;
         }
       }

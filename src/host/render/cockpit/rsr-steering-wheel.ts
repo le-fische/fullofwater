@@ -646,7 +646,8 @@ export class PorscheRsrSteeringWheel {
     isAbsActive: boolean,
     isTcActive: boolean,
     lapTimeSeconds = 0,
-    bestLapSeconds: number | null = null
+    bestLapSeconds: number | null = null,
+    liveDeltaMs: number | null = null
   ): void {
     const ctx = this.dashCtx;
     const w = 1024;
@@ -848,20 +849,14 @@ export class PorscheRsrSteeringWheel {
     // Box 4: Oil Press
     drawMetricBox(190, lRow2Y, 'Oil Press', dynamicOilPress, 'bar');
 
-    // Bottom Placeholder bar for future pit/fuel data
+    // Bottom Clean Dark Placeholder Box (reserved space on official RSR display)
     ctx.fillStyle = '#08090d';
     ctx.beginPath();
     ctx.roundRect(20, 490, 330, 85, 8);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
-
-    ctx.fillStyle = '#475569';
-    ctx.font = 'bold 14px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('PIT STRATEGY & TYRE TELEMETRY', 185, 532);
 
     // =========================================================================
     // 4. RIGHT LAP TIMING & TELEMETRY CLUSTER
@@ -901,7 +896,11 @@ export class PorscheRsrSteeringWheel {
     // Delta calculation
     let deltaStr = '+0.00';
     let deltaColor = '#f8fafc';
-    if (bestLapSeconds && lapTimeSeconds > 0) {
+    if (liveDeltaMs !== null && !isNaN(liveDeltaMs)) {
+      const diffSec = liveDeltaMs / 1000;
+      deltaStr = diffSec > 0 ? `+${diffSec.toFixed(2)}` : diffSec.toFixed(2);
+      deltaColor = diffSec <= 0 ? '#22c55e' : '#ef4444';
+    } else if (bestLapSeconds && lapTimeSeconds > 0) {
       const diff = lapTimeSeconds - bestLapSeconds;
       deltaStr = diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2);
       deltaColor = diff <= 0 ? '#22c55e' : '#ef4444';
@@ -1066,7 +1065,8 @@ export class PorscheRsrSteeringWheel {
         telemetry.isAbsActive,
         telemetry.isTcActive,
         telemetry.lapTimeSeconds,
-        telemetry.bestLapSeconds
+        telemetry.bestLapSeconds,
+        telemetry.liveDeltaMs ?? null
       );
     }
   }

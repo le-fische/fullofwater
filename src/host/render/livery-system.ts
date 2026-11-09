@@ -1081,22 +1081,52 @@ export class VehicleModelAdapter {
           }
         }
 
-        // Headlights: Authentic Endurance Racing Yellow for Rexy / Crisp LED for standard
-        if (name.includes('headlight') || matName.includes('headlight')) {
-          if (name.includes('emissive') || matName.includes('emissive')) {
-            const emMat = child.material as THREE.MeshStandardMaterial;
-            if (emMat && emMat.isMeshStandardMaterial) {
-              if (livery.decalType === 'rexy') {
-                emMat.color.set(0xfbbf24);
-                emMat.emissive.set(0xfbbf24);
-                emMat.emissiveIntensity = 2.4;
-              } else {
-                emMat.color.set(0xf8fafc);
-                emMat.emissive.set(0xf8fafc);
-                emMat.emissiveIntensity = 1.0;
-              }
-              emMat.needsUpdate = true;
+        // Recessed Headlight & Taillight Outer Glass Covers (clear polycarbonate lens over recessed housings)
+        if (
+          name === 'headlight_glass' ||
+          name === 'signal_front_glass' ||
+          name === 'taillight_main_glass' ||
+          matName.includes('glass_lights')
+        ) {
+          const isRearGlass = name.includes('taillight');
+          child.material = new THREE.MeshPhysicalMaterial({
+            color: isRearGlass ? 0x2a0808 : 0xe2e8f0,
+            roughness: 0.06,
+            metalness: 0.05,
+            transmission: 0.88,
+            transparent: true,
+            opacity: isRearGlass ? 0.32 : 0.22,
+            depthWrite: false,
+          });
+        }
+
+        // Recessed Headlight & Taillight Internal Housings (deep matte carbon/obsidian buckets)
+        if (
+          name.includes('headlight_housing') ||
+          name.includes('taillight_housing')
+        ) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: 0x09090b,
+            roughness: 0.28,
+            metalness: 0.75,
+          });
+        }
+
+        // Headlights: Authentic Endurance Racing Yellow for Rexy / Crisp Xenon LED for standard
+        if (name.includes('headlight_emissive') || name.includes('signal_front_emissive') || matName.includes('headlight_emissive')) {
+          const emMat = child.material as THREE.MeshStandardMaterial;
+          if (emMat && emMat.isMeshStandardMaterial) {
+            if (livery.decalType === 'rexy') {
+              emMat.color.set(0xfef08a);
+              emMat.emissive.set(0xfbbf24);
+              emMat.emissiveIntensity = 2.8;
+            } else {
+              emMat.color.set(0xffffff);
+              emMat.emissive.set(0xe0f2fe);
+              emMat.emissiveIntensity = 1.8;
             }
+            emMat.roughness = 0.1;
+            emMat.needsUpdate = true;
           }
         }
       }

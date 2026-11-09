@@ -29,6 +29,25 @@ export class CarMeshRig {
   private caliperMaterial!: THREE.MeshStandardMaterial;
   private rimMaterial!: THREE.MeshStandardMaterial;
   private wingEndplateMaterial!: THREE.MeshStandardMaterial;
+  private headlightLensMaterial!: THREE.MeshStandardMaterial;
+  private taillightMaterial!: THREE.MeshStandardMaterial;
+  private brakeLightMaterial!: THREE.MeshStandardMaterial;
+
+  // Working Racing Headlights, Recessed Brake Lights & Aerodynamic Wing Mesh
+  private headlightsGroup = new THREE.Group();
+  private leftHeadlightSpot!: THREE.SpotLight;
+  private rightHeadlightSpot!: THREE.SpotLight;
+  private apronFloodSpot!: THREE.SpotLight;
+  private leftBrakeLight!: THREE.SpotLight;
+  private rightBrakeLight!: THREE.SpotLight;
+  private headlightsEnabled = false;
+  private proxyWingMesh: THREE.Mesh | null = null;
+
+  // Phase 4.5: Translucent Ghost Invulnerability & Cyan Shield Aura
+  private ghostShieldGroup = new THREE.Group();
+  private ghostShieldMaterial!: THREE.MeshStandardMaterial;
+  private isGhostMode = false;
+  private ghostAnimTime = 0;
 
   private currentLiveryIndex = 0;
   private activeCarNumber: string = PRESET_LIVERIES[0]?.carNumber || '80';
@@ -44,9 +63,13 @@ export class CarMeshRig {
 
     this.chassisGroup.add(this.proxyGroup);
     this.chassisGroup.add(this.modelGroup);
+    this.chassisGroup.add(this.headlightsGroup);
+    this.chassisGroup.add(this.ghostShieldGroup);
 
     this.initStandardMaterials();
     this.buildProxyChassis();
+    this.initHeadlights();
+    this.initGhostShield();
     this.setupCockpit();
     this.buildWheels();
     this.loadGlbModel();
@@ -80,6 +103,30 @@ export class CarMeshRig {
       metalness: 0.40,
     });
 
+    this.headlightLensMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xfef08a,
+      emissiveIntensity: 1.2,
+      roughness: 0.08,
+      metalness: 0.1,
+    });
+
+    this.taillightMaterial = new THREE.MeshStandardMaterial({
+      color: 0xdc2626,
+      emissive: 0xff1e1e,
+      emissiveIntensity: 0.85,
+      roughness: 0.15,
+      metalness: 0.1,
+    });
+
+    this.brakeLightMaterial = new THREE.MeshStandardMaterial({
+      color: 0x991b1b,
+      emissive: 0xff0000,
+      emissiveIntensity: 0.25,
+      roughness: 0.12,
+      metalness: 0.1,
+    });
+
     // Apply initial livery skin
     VehicleModelAdapter.applyLivery(
       this.proxyGroup,
@@ -89,6 +136,65 @@ export class CarMeshRig {
       this.rimMaterial,
       this.wingEndplateMaterial
     );
+  }
+
+  private initHeadlights(): void {
+    this.headlightsGroup.name = 'Car_Headlights_Group';
+    // High-output Endurance Racing LED Matrix Headlight Beams
+    // Positioned directly inside the recessed 992 fender housings (X = +-0.76, Y = 0.39, Z = 1.85),
+    // with ZERO protruding geometry blocking the cockpit windshield view.
+    this.leftHeadlightSpot = new THREE.SpotLight(0xfffbeb, 0, 280, Math.PI / 3.8, 0.65, 0.45);
+    this.leftHeadlightSpot.position.set(0.76, 0.39, 1.85);
+    this.leftHeadlightSpot.target.position.set(0.32, -0.05, 110.0);
+    this.headlightsGroup.add(this.leftHeadlightSpot);
+    this.headlightsGroup.add(this.leftHeadlightSpot.target);
+
+    this.rightHeadlightSpot = new THREE.SpotLight(0xfffbeb, 0, 280, Math.PI / 3.8, 0.65, 0.45);
+    this.rightHeadlightSpot.position.set(-0.76, 0.39, 1.85);
+    this.rightHeadlightSpot.target.position.set(-0.32, -0.05, 110.0);
+    this.headlightsGroup.add(this.rightHeadlightSpot);
+    this.headlightsGroup.add(this.rightHeadlightSpot.target);
+
+    // Wide Cornering Apron Flood Beam (illuminates apex kerbs and immediate track edges)
+    this.apronFloodSpot = new THREE.SpotLight(0xfef9c3, 0, 115, Math.PI / 2.2, 0.85, 0.50);
+    this.apronFloodSpot.position.set(0.0, 0.38, 1.90);
+    this.apronFloodSpot.target.position.set(0.0, -0.25, 42.0);
+    this.headlightsGroup.add(this.apronFloodSpot);
+    this.headlightsGroup.add(this.apronFloodSpot.target);
+
+    // Recessed Rear Brake & Taillight Directional SpotLight Beams (cast red light strictly rearward)
+    // Positioned at rear taillight buckets (Z = -2.02m) and aimed backward (-Z).
+    // Eliminates omnidirectional spill so ZERO red light ever shines forward into the cockpit cabin.
+    this.leftBrakeLight = new THREE.SpotLight(0xff1e1e, 0, 24.0, Math.PI / 2.6, 0.75, 0.85);
+    this.leftBrakeLight.position.set(0.64, 0.42, -2.02);
+    this.leftBrakeLight.target.position.set(0.40, 0.15, -14.0);
+    this.headlightsGroup.add(this.leftBrakeLight);
+    this.headlightsGroup.add(this.leftBrakeLight.target);
+
+    this.rightBrakeLight = new THREE.SpotLight(0xff1e1e, 0, 24.0, Math.PI / 2.6, 0.75, 0.85);
+    this.rightBrakeLight.position.set(-0.64, 0.42, -2.02);
+    this.rightBrakeLight.target.position.set(-0.40, 0.15, -14.0);
+    this.headlightsGroup.add(this.rightBrakeLight);
+    this.headlightsGroup.add(this.rightBrakeLight.target);
+  }
+
+  public setHeadlightsEnabled(enabled: boolean): void {
+    this.headlightsEnabled = enabled;
+    const mainBeamIntensity = enabled ? 24.0 : 0.0;
+    const floodIntensity = enabled ? 14.0 : 0.0;
+    this.leftHeadlightSpot.intensity = mainBeamIntensity;
+    this.rightHeadlightSpot.intensity = mainBeamIntensity;
+    this.apronFloodSpot.intensity = floodIntensity;
+    this.headlightLensMaterial.emissiveIntensity = enabled ? 6.5 : 0.8;
+  }
+
+  public getHeadlightsEnabled(): boolean {
+    return this.headlightsEnabled;
+  }
+
+  public toggleHeadlights(): boolean {
+    this.setHeadlightsEnabled(!this.headlightsEnabled);
+    return this.headlightsEnabled;
   }
 
   /**
@@ -111,6 +217,7 @@ export class CarMeshRig {
         this.wingEndplateMaterial,
         this.activeCarNumber
       );
+      this.bindRecessedLightMeshes(this.carModelRoot);
     } else {
       VehicleModelAdapter.applyLivery(
         this.proxyGroup,
@@ -248,6 +355,7 @@ export class CarMeshRig {
     const wingMesh = new THREE.Mesh(wingGeo, carbonMat);
     wingMesh.position.set(0, 1.15, -2.05);
     wingMesh.castShadow = true;
+    this.proxyWingMesh = wingMesh;
     this.proxyGroup.add(wingMesh);
 
     // Wing endplates
@@ -269,6 +377,38 @@ export class CarMeshRig {
     const rightPylon = new THREE.Mesh(pylonGeo, carbonMat);
     rightPylon.position.set(0.4, 0.82, -1.95);
     this.proxyGroup.add(rightPylon);
+
+    // Recessed Proxy Headlight Buckets & Taillight Cavity (strictly below fender line inside proxyGroup)
+    const bucketGeo = new THREE.BoxGeometry(0.24, 0.10, 0.18);
+    const leftBucket = new THREE.Mesh(bucketGeo, carbonMat);
+    leftBucket.position.set(0.72, 0.36, 1.86);
+    this.proxyGroup.add(leftBucket);
+
+    const rightBucket = new THREE.Mesh(bucketGeo, carbonMat);
+    rightBucket.position.set(-0.72, 0.36, 1.86);
+    this.proxyGroup.add(rightBucket);
+
+    const recLensGeo = new THREE.PlaneGeometry(0.20, 0.08);
+    const leftRecLens = new THREE.Mesh(recLensGeo, this.headlightLensMaterial);
+    leftRecLens.position.set(0.72, 0.36, 1.94);
+    leftRecLens.rotation.x = -0.25;
+    this.proxyGroup.add(leftRecLens);
+
+    const rightRecLens = new THREE.Mesh(recLensGeo, this.headlightLensMaterial);
+    rightRecLens.position.set(-0.72, 0.36, 1.94);
+    rightRecLens.rotation.x = -0.25;
+    this.proxyGroup.add(rightRecLens);
+
+    const rearCavityGeo = new THREE.BoxGeometry(1.56, 0.08, 0.08);
+    const rearCavity = new THREE.Mesh(rearCavityGeo, carbonMat);
+    rearCavity.position.set(0, 0.42, -2.14);
+    this.proxyGroup.add(rearCavity);
+
+    const rearStripGeo = new THREE.PlaneGeometry(1.48, 0.035);
+    const rearStrip = new THREE.Mesh(rearStripGeo, this.taillightMaterial);
+    rearStrip.position.set(0, 0.42, -2.175);
+    rearStrip.rotation.y = Math.PI;
+    this.proxyGroup.add(rearStrip);
   }
 
   /**
@@ -308,6 +448,7 @@ export class CarMeshRig {
    * Asynchronously loads authentic Porsche 911 GT3 RS GLB model with Draco compression.
    */
   private loadGlbModel(): void {
+    if (typeof window === 'undefined') return;
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('/draco/');
@@ -346,16 +487,56 @@ export class CarMeshRig {
       this.activeCarNumber
     );
 
-    // 4. Align chassis body with Rapier physics center of mass and wheelbase
+    // 4. Bind recessed 3D model headlight & brake/taillight emissive meshes directly to dynamic materials
+    this.bindRecessedLightMeshes(carModel);
+
+    // 5. Align chassis body with Rapier physics center of mass and wheelbase
     // Offset Y -0.305m aligns wheel hubs with Rapier physics contact line; Z +0.230m aligns wheel arches with frontZ (+1.399m) and rearZ (-1.056m)
     this.modelGroup.scale.set(1.0, 1.0, 1.0);
     this.modelGroup.position.set(0, -0.305, 0.230);
     this.modelGroup.add(carModel);
 
-    // 5. Hide procedural proxy body
+    // 6. Hide procedural proxy body
     this.proxyGroup.visible = false;
     this.isModelLoaded = true;
     console.log('✅ Porsche 911 RSR 3D model loaded and mapped into standardized livery system.');
+  }
+
+  /**
+   * Connects the recessed headlight projector meshes and rear taillight/brake meshes
+   * inside the Porsche 911 3D model directly to our live headlight and brake materials.
+   */
+  private bindRecessedLightMeshes(carModel: THREE.Object3D): void {
+    const livery = PRESET_LIVERIES[this.currentLiveryIndex];
+    const isRexy = livery?.decalType === 'rexy';
+    this.headlightLensMaterial.color.set(isRexy ? 0xfef08a : 0xffffff);
+    this.headlightLensMaterial.emissive.set(isRexy ? 0xfbbf24 : 0xe0f2fe);
+    this.headlightLensMaterial.emissiveIntensity = this.headlightsEnabled ? 6.5 : 1.1;
+
+    carModel.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const name = child.name.toLowerCase();
+      const matName = (child.material?.name || '').toLowerCase();
+
+      if (
+        name.includes('headlight_emissive') ||
+        name.includes('signal_front_emissive') ||
+        matName.includes('headlight_emissive')
+      ) {
+        child.material = this.headlightLensMaterial;
+      } else if (
+        name.includes('taillight_strip_emissive') ||
+        matName.includes('taillight_emissive')
+      ) {
+        child.material = this.taillightMaterial;
+      } else if (
+        name.includes('taillight_brake_emissive') ||
+        name.includes('tailgate_brake_emissive') ||
+        matName.includes('taillight_brake_emissive')
+      ) {
+        child.material = this.brakeLightMaterial;
+      }
+    });
   }
 
   /**
@@ -437,14 +618,72 @@ export class CarMeshRig {
     const chassisPos = this.vehicle.chassisBody.translation();
     const chassisRot = this.vehicle.chassisBody.rotation();
 
-    // 1. Update chassis position and orientation
-    this.chassisGroup.position.set(chassisPos.x, chassisPos.y, chassisPos.z);
-    this.chassisGroup.quaternion.set(chassisRot.x, chassisRot.y, chassisRot.z, chassisRot.w);
+    // 1. Phase 5 Step 5.10: Dynamic Cockpit Bump Vibration relative to stabilized camera
+    // Translates suspension deflection and road undulations into micro-displacement of the
+    // car interior and dashboard (clamped to <= 2.5 mm to prevent geometry clipping)
+    let bumpY = 0;
+    let bumpRotX = 0;
+    let bumpRotZ = 0;
+    if (this.vehicle && this.vehicle.wheels.length >= 4) {
+      const w0 = this.vehicle.wheels[0];
+      const w1 = this.vehicle.wheels[1];
+      const w2 = this.vehicle.wheels[2];
+      const w3 = this.vehicle.wheels[3];
+      const frontComp = (w0.suspensionCompression + w1.suspensionCompression) * 0.5;
+      const rearComp = (w2.suspensionCompression + w3.suspensionCompression) * 0.5;
+      const leftComp = (w0.suspensionCompression + w2.suspensionCompression) * 0.5;
+      const rightComp = (w1.suspensionCompression + w3.suspensionCompression) * 0.5;
+
+      bumpY = Math.max(-0.0025, Math.min(0.0025, (frontComp + rearComp) * 0.035));
+      bumpRotX = Math.max(-0.0035, Math.min(0.0035, (frontComp - rearComp) * 0.04));
+      bumpRotZ = Math.max(-0.0035, Math.min(0.0035, (leftComp - rightComp) * 0.04));
+    }
+
+    this.chassisGroup.position.set(chassisPos.x, chassisPos.y + bumpY, chassisPos.z);
+
+    const bumpQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(bumpRotX, 0, bumpRotZ, 'XYZ'));
+    const totalQuat = new THREE.Quaternion(chassisRot.x, chassisRot.y, chassisRot.z, chassisRot.w).multiply(bumpQuat);
+    this.chassisGroup.quaternion.copy(totalQuat);
 
     // 2. Update modular cockpit (steering wheel, gloved hands, LCD dash, shift LEDs)
     const telemetry = this.vehicle.getTelemetry();
     const steerDeg = this.vehicle.assists.getSteerAngleDeg();
     this.cockpit.update(telemetry, steerDeg, dt);
+
+    // 2b. Phase 5 Step 5.8: Diffuse, Realistic Rear Taillights & Brake Lights
+    // Calibrated to realistic automotive luminance (emissiveIntensity = 1.8) with localized ground bounce
+    const isBraking = (telemetry.brake ?? 0) > 0.04;
+    if (this.taillightMaterial) {
+      this.taillightMaterial.emissiveIntensity = isBraking
+        ? 1.8
+        : this.headlightsEnabled
+          ? 0.55
+          : 0.25;
+    }
+    if (this.brakeLightMaterial) {
+      this.brakeLightMaterial.emissiveIntensity = isBraking
+        ? 1.8
+        : this.headlightsEnabled
+          ? 0.35
+          : 0.08;
+    }
+    if (this.leftBrakeLight && this.rightBrakeLight) {
+      const rearGlow = isBraking ? 2.8 : this.headlightsEnabled ? 0.45 : 0.05;
+      this.leftBrakeLight.intensity = rearGlow;
+      this.rightBrakeLight.intensity = rearGlow;
+    }
+    if (this.proxyWingMesh) {
+      const wingDeg = this.vehicle.getSetup().rearWingAngleDeg;
+      this.proxyWingMesh.rotation.x = -(wingDeg * Math.PI) / 180;
+    }
+
+    // Step Phase 4.5 Cyan Ghost Shield Pulse
+    if (this.isGhostMode && this.ghostShieldMaterial) {
+      this.ghostAnimTime += dt;
+      const pulse = 0.5 + 0.5 * Math.sin(this.ghostAnimTime * 8.0);
+      this.ghostShieldMaterial.emissiveIntensity = 2.0 + pulse * 3.0;
+      this.ghostShieldMaterial.opacity = 0.28 + pulse * 0.22;
+    }
 
     // 3. Update 4 wheels with physical suspension, steering, and forward rolling spin
     for (let i = 0; i < 4; i++) {
@@ -488,6 +727,71 @@ export class CarMeshRig {
       this.wheelSpinAngles[i] += w.angularVelocity * dt;
       spinGroup.rotation.x = this.wheelSpinAngles[i];
     }
+  }
+
+  /**
+   * Initializes Phase 4.5 Cyan Shield Aura Geometry around chassis.
+   */
+  private initGhostShield(): void {
+    this.ghostShieldGroup.name = 'Car_Ghost_Shield_Group';
+    this.ghostShieldGroup.visible = false;
+
+    this.ghostShieldMaterial = new THREE.MeshStandardMaterial({
+      color: 0x06b6d4,
+      emissive: 0x22d3ee,
+      emissiveIntensity: 3.5,
+      transparent: true,
+      opacity: 0.35,
+      roughness: 0.2,
+      metalness: 0.1,
+      depthWrite: false,
+    });
+
+    const shieldGeo = new THREE.BoxGeometry(2.1, 1.25, 4.65);
+    const shieldMesh = new THREE.Mesh(shieldGeo, this.ghostShieldMaterial);
+    shieldMesh.position.set(0, 0.6, 0);
+    this.ghostShieldGroup.add(shieldMesh);
+
+    // Glowing cyan outline wireframe perimeter
+    const edges = new THREE.EdgesGeometry(shieldGeo);
+    const wireframeMat = new THREE.LineBasicMaterial({ color: 0x67e8f9, linewidth: 2 });
+    const wireframe = new THREE.LineSegments(edges, wireframeMat);
+    wireframe.position.set(0, 0.6, 0);
+    this.ghostShieldGroup.add(wireframe);
+  }
+
+  /**
+   * Toggles Phase 4.5 Translucent Non-Colliding Ghost Invulnerability State (40% opacity + cyan shield).
+   */
+  public setGhostMode(active: boolean): void {
+    this.isGhostMode = active;
+    this.ghostShieldGroup.visible = active;
+    const targetOpacity = active ? 0.4 : 1.0;
+
+    if (this.paintMaterial) {
+      this.paintMaterial.transparent = active;
+      this.paintMaterial.opacity = targetOpacity;
+    }
+
+    if (this.carModelRoot) {
+      this.carModelRoot.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m) => {
+              m.transparent = active;
+              m.opacity = targetOpacity;
+            });
+          } else {
+            child.material.transparent = active;
+            child.material.opacity = targetOpacity;
+          }
+        }
+      });
+    }
+  }
+
+  public getIsGhostMode(): boolean {
+    return this.isGhostMode;
   }
 
   public dispose(): void {

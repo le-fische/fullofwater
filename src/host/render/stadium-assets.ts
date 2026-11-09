@@ -70,11 +70,11 @@ export class StadiumAssets {
     this.materials.push(glassMat);
 
     // 1. Start/Finish Haupttribüne (Main Grandstand along the Front Straight)
-    // Left side of track opposite pit lane: sample indices 85 to 165
+    // Left side of track opposite pit lane: sample indices 0 to 75
     this.buildGrandstandSection(
       samples,
-      85,
-      165,
+      0,
+      75,
       -28.0, // 28m offset to driver's left
       6,     // 6 tiers
       18.0,  // depth 18m
@@ -87,22 +87,17 @@ export class StadiumAssets {
     );
 
     // 2. Concrete Pit Building & Team Garages (Right side of Front Straight)
-    this.buildPitComplex(samples, 88, 162, 26.0, concreteMat, glassMat, steelMat);
+    this.buildPitComplex(samples, 2, 72, 26.0, concreteMat, glassMat, steelMat);
 
-    // 3. Overhead Start/Finish Timing Gantry with FIA Start Lights
+    // 3. Overhead Start/Finish Timing Gantry with FIA Start Lights at Start/Finish Line
     this.buildStartFinishGantry(samples[0], steelMat);
-    if (samples.length > 100) {
-      // Also place timing gantry over the Start/Finish grid on Front Straight
-      this.buildStartFinishGantry(samples[95], steelMat);
-    }
 
     // 4. Mercedes-Benz Arena Grandstand (Wrapping around Turns 2 & 3)
-    // Samples ~270 to ~330
-    if (samples.length > 350) {
+    if (samples.length > 250) {
       this.buildGrandstandSection(
         samples,
-        275,
-        335,
+        180,
+        240,
         -24.0, // Outside of the loop
         6,
         20.0,
@@ -116,12 +111,11 @@ export class StadiumAssets {
     }
 
     // 5. Dunlop-Kehre Hairpin Grandstand (Lowest point valley hairpin)
-    // Samples ~540 to ~590
-    if (samples.length > 600) {
+    if (samples.length > 500) {
       this.buildGrandstandSection(
         samples,
-        545,
-        585,
+        450,
+        490,
         24.0, // Outside of hairpin
         4,
         14.0,
@@ -135,12 +129,11 @@ export class StadiumAssets {
     }
 
     // 6. NGK-Schikane Stadium Seating (Chicane before final turn)
-    // Samples ~950 to ~1000
-    if (samples.length > 1000) {
+    if (samples.length > 920) {
       this.buildGrandstandSection(
         samples,
-        960,
-        1005,
+        865,
+        910,
         -20.0,
         4,
         14.0,

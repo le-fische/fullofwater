@@ -14,11 +14,14 @@ export interface ControllerInput {
   timestamp: number;
 }
 
+export type TireCompound = 'slick_soft' | 'slick_medium' | 'slick_hard' | 'wet';
+
 export interface VehicleTelemetry {
   speedKmh: number;
   rpm: number;
   rpmRatio: number;   // 0.0 to 1.0 (normalized between idle and redline)
   gear: number;       // -1 = R, 0 = N, 1..6 = 1..6
+  brake?: number;
   isShiftLightActive: boolean;
   isAbsActive: boolean;
   isTcActive: boolean;
@@ -31,11 +34,26 @@ export interface VehicleTelemetry {
   longitudinalG: number;
   lapTimeSeconds: number;
   bestLapSeconds: number | null;
+  liveDeltaMs?: number | null;
+  currentSectorIndex?: number;
+  sectorSplits?: SectorSplit[];
   sprint0to100Time: number | null;
   sprint0to200Time?: number | null;
   maxSpeedKmh?: number;
   distanceM?: number;
   brakeTempsC?: [number, number, number, number]; // Background brake rotor temperatures in °C (FL, FR, RL, RR)
+  brakePadFriction?: [number, number, number, number]; // Effective pad friction coefficient mu_pad (FL, FR, RL, RR)
+  brakeFadeFactor?: [number, number, number, number]; // 1.0 = no fade, < 1.0 = thermal fade above 750°C
+  tireWear?: [number, number, number, number]; // 0.0 (fresh) to 1.0 (worn) per wheel
+  tireHealthPercent?: [number, number, number, number]; // 100% down to 0% per wheel
+  tireTempsC?: [number, number, number, number]; // Tire carcass temperature °C
+  tireSlipEnergyJ?: [number, number, number, number]; // Accumulated slip energy (Joules)
+  fuelLiters?: number; // Remaining fuel in liters
+  fuelMassKg?: number; // Remaining fuel mass in kg (0.75 kg/L)
+  totalMassKg?: number; // Dynamic chassis + fuel mass in kg
+  tireCompound?: TireCompound;
+  isHydroplaning?: boolean;
+  surfaceWetness?: number; // 0.0 (dry) to 1.0 (soaked) at vehicle position
   isDownshiftBlip?: boolean; // Electronic throttle rev-matching blip during downshifts
   isShifting?: boolean; // Pneumatic sequential shift actuator active
   rttMs: number;
@@ -184,7 +202,61 @@ export interface CarSetup {
   // Steering & Driver Electronics
   tcLevel: number;               // 0 (Off) to 10 (Max intervention)
   absLevel: number;              // 0 (Off) to 10 (Max intervention)
+  absEnabled: boolean;           // Master ABS toggle
   espGain: number;               // 0.0 to 1.0 (Stability yaw damping)
   counterSteerGain: number;      // 0.0 to 1.0 (Counter-steer assist)
   highSpeedLockFraction: number; // 0.25 to 0.50 (Steering lock clamp at 250+ km/h)
+
+  // Consumables & Strategy (Phase 3)
+  fuelLoadL: number;             // Starting / pit refuel load in liters (5 to 110 L, 0.75 kg/L)
 }
+
+export type WeatherCondition = 'clear' | 'drizzle' | 'heavy_rain' | 'dry' | 'light_rain';
+
+export interface EnvironmentState {
+  timeOfDayHours: number;        // 0.0 to 24.0 (e.g. 14.0 = midday, 19.5 = sunset, 23.0 = night)
+  timeScale: number;             // Progression multiplier (0 = paused, 1 = real-time, 60 = 1 min/sec)
+  weather: WeatherCondition;
+  ambientTrackWetness?: number;  // 0.0 (dry) to 1.0 (drenched)
+  globalWetness?: number;
+  rainIntensity: number;         // 0.0 to 1.0
+  headlightsOn: boolean;
+  wipersOn?: boolean;
+  ambientTempC?: number;
+  trackTempC?: number;
+}
+
+export interface SectorSplit {
+  sectorIndex: number;           // 0 to 8 (S1 to S9)
+  sectorName: string;
+  currentMs: number | null;
+  bestMs: number | null;
+  sessionBestMs: number | null;  // Purple sector
+  deltaMs: number | null;        // +/- vs best lap sector
+  status: 'pending' | 'purple' | 'green' | 'yellow';
+}
+
+export const DEFAULT_CAR_SETUP: CarSetup = {
+  rearWingAngleDeg: 10.0,
+  drsEnabled: false,
+  finalDriveRatio: 3.44,
+  gearRatioSet: 'standard',
+  upshiftRpm: 8800,
+  frontSpringNPerM: 125000,
+  rearSpringNPerM: 145000,
+  frontAntiRollNmPerRad: 95000,
+  rearAntiRollNmPerRad: 75000,
+  rideHeightOffsetM: 0.0,
+  frontBrakeBias: 0.57,
+  maxBrakeTorqueNm: 6800,
+  tireCompound: 'slick_medium',
+  tirePressureBarFront: 1.8,
+  tirePressureBarRear: 1.8,
+  tcLevel: 6,
+  absLevel: 8,
+  absEnabled: true,
+  espGain: 0.45,
+  counterSteerGain: 0.30,
+  highSpeedLockFraction: 0.35,
+  fuelLoadL: 60,
+};

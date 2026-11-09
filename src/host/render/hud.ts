@@ -1,4 +1,5 @@
-import { VehicleTelemetry } from '../../common/types';
+import { SectorSplit, VehicleTelemetry } from '../../common/types';
+import { RaceStartState } from '../gameplay/race-start';
 import QRCode from 'qrcode';
 
 export interface HudData {
@@ -15,6 +16,14 @@ export interface HudData {
   isLapValid?: boolean;
   flagStatus?: string;
   opponentCars?: Array<{ x: number; z: number; color: string; number: string }>;
+  sectorSplits?: SectorSplit[];
+  currentSectorIndex?: number;
+  liveDeltaMs?: number | null;
+  weatherLabel?: string;
+  timeOfDayLabel?: string;
+  pitStatusLabel?: string;
+  ghostActive?: boolean;
+  p2pPeerCount?: number;
 }
 
 export interface TrackChoice {
@@ -110,6 +119,23 @@ export class HostHud {
   private paintButton: HTMLButtonElement | null = null;
   public onPaintCycle?: () => string;
 
+  // Phase 3 HUD Elements & Action Callbacks
+  private liveDeltaBadge!: HTMLElement;
+  private sectorBoxes: HTMLElement[] = [];
+  private envSummaryEl!: HTMLElement;
+  public onCycleWeather?: () => void;
+  public onCycleTimeOfDay?: () => void;
+  public onToggleHeadlights?: () => void;
+  public onToggleGhost?: () => void;
+  public onOpenMultiplayerLobby?: () => void;
+
+  // Phase 4 Race Start & Smart Recovery Notification Elements
+  private startOverlayEl!: HTMLElement;
+  private startPodsRowEl!: HTMLElement;
+  private startBannerEl!: HTMLElement;
+  private notificationBannerEl!: HTMLElement;
+  private notificationTimer: any = null;
+
   // Minimap
   private minimapCanvas!: HTMLCanvasElement;
   private minimapCtx!: CanvasRenderingContext2D;
@@ -160,6 +186,7 @@ export class HostHud {
           <div class="hud-meta-row" id="hud-lap-row">
             <span class="meta-label">LAP:</span>
             <span class="meta-val" id="hud-lap-time" style="color: #4ade80;">--:--.--</span>
+            <span id="hud-live-delta" class="hud-delta-pill">--.--s</span>
             <span id="hud-lap-status" style="font-size: 10px; font-weight: 700; padding: 1px 4px; border-radius: 2px;"></span>
           </div>
           <div class="hud-meta-row" id="hud-best-row">
@@ -167,6 +194,18 @@ export class HostHud {
             <span class="meta-val" id="hud-best-time" style="color: #facc15;">--:--.--</span>
             <span class="meta-label" style="margin-left: 6px;">LAST:</span>
             <span class="meta-val" id="hud-last-time">--:--.--</span>
+          </div>
+          <!-- 9-Sector Timing Breakdown Strip (S1..S9) -->
+          <div class="hud-sector-strip" id="hud-sector-strip">
+            <span class="hud-sector-cell" data-sec="0">S1</span>
+            <span class="hud-sector-cell" data-sec="1">S2</span>
+            <span class="hud-sector-cell" data-sec="2">S3</span>
+            <span class="hud-sector-cell" data-sec="3">S4</span>
+            <span class="hud-sector-cell" data-sec="4">S5</span>
+            <span class="hud-sector-cell" data-sec="5">S6</span>
+            <span class="hud-sector-cell" data-sec="6">S7</span>
+            <span class="hud-sector-cell" data-sec="7">S8</span>
+            <span class="hud-sector-cell" data-sec="8">S9</span>
           </div>
           <div class="hud-meta-row" id="hud-sprint-row" style="display: none;">
             <span class="meta-label">0-100 KM/H:</span>
@@ -190,6 +229,12 @@ export class HostHud {
           </div>
           <div class="hud-rpm-wrapper">
             <div class="hud-rpm-bar" id="hud-rpm"></div>
+          </div>
+          <div class="hud-consumables-grid">
+            <div class="hud-consumable-row">
+              <span class="meta-label">ENV:</span>
+              <span class="meta-val" id="hud-env-summary">CLEAR • 14:00</span>
+            </div>
           </div>
         </div>
 
@@ -222,6 +267,15 @@ export class HostHud {
           <div class="qr-url" id="qr-url-text">Loading IP...</div>
           <div class="qr-sub">Scan with iPhone Camera on same Wi-Fi</div>
         </div>
+
+        <!-- Phase 4 Race Start Gantry Overlay (Top Center) -->
+        <div class="hud-race-start-overlay" id="hud-race-start-overlay" style="display: none;">
+          <div class="hud-lights-pod-row" id="hud-lights-pod-row"></div>
+          <div class="hud-start-banner" id="hud-start-banner">GRID FORMED</div>
+        </div>
+
+        <!-- Phase 4 Smart Near-Crash Track Recovery Notification Banner -->
+        <div class="hud-notification-banner" id="hud-notification-banner" style="display: none;"></div>
       </div>
 
       <!-- Track Selection Modal -->
@@ -266,12 +320,21 @@ export class HostHud {
     this.maxSpeedDisplay = this.container.querySelector('#hud-max-speed');
     this.camModeDisplay = this.container.querySelector('#hud-cam-mode')!;
     this.qrContainer = this.container.querySelector('#hud-qr-box')!;
+    this.liveDeltaBadge = this.container.querySelector('#hud-live-delta')!;
+    this.sectorBoxes = Array.from(this.container.querySelectorAll<HTMLElement>('.hud-sector-cell'));
+    this.envSummaryEl = this.container.querySelector('#hud-env-summary')!;
 
     // Minimap Canvas initialization
     this.minimapCanvas = this.container.querySelector('#hud-minimap-canvas') as HTMLCanvasElement;
     this.minimapCtx = this.minimapCanvas.getContext('2d')!;
     this.minimapTag = this.container.querySelector('#minimap-track-tag')!;
     this.minimapTitleText = this.container.querySelector('#minimap-title-text')!;
+
+    // Phase 4 Elements
+    this.startOverlayEl = this.container.querySelector('#hud-race-start-overlay')!;
+    this.startPodsRowEl = this.container.querySelector('#hud-lights-pod-row')!;
+    this.startBannerEl = this.container.querySelector('#hud-start-banner')!;
+    this.notificationBannerEl = this.container.querySelector('#hud-notification-banner')!;
 
     // Modal
     this.trackModalBackdrop = this.container.querySelector('#track-menu-backdrop')!;
@@ -288,6 +351,22 @@ export class HostHud {
 
     this.exitMenuButton.addEventListener('click', () => {
       this.onExitToMenu?.();
+    });
+
+    this.container.querySelector('#hud-btn-weather')?.addEventListener('click', () => {
+      this.onCycleWeather?.();
+    });
+    this.container.querySelector('#hud-btn-time')?.addEventListener('click', () => {
+      this.onCycleTimeOfDay?.();
+    });
+    this.container.querySelector('#hud-btn-lights')?.addEventListener('click', () => {
+      this.onToggleHeadlights?.();
+    });
+    this.container.querySelector('#hud-btn-ghost')?.addEventListener('click', () => {
+      this.onToggleGhost?.();
+    });
+    this.container.querySelector('#hud-btn-p2p')?.addEventListener('click', () => {
+      this.onOpenMultiplayerLobby?.();
     });
 
     // Minimap click toggle
@@ -321,6 +400,70 @@ export class HostHud {
 
   public hide(): void {
     this.container.style.display = 'none';
+  }
+
+  /**
+   * Phase 4: Updates starting lights gantry and banner overlay in cockpit/chase view.
+   */
+  public updateRaceStart(state: RaceStartState): void {
+    if (!this.startOverlayEl) return;
+
+    if (!state.visible) {
+      this.startOverlayEl.style.display = 'none';
+      return;
+    }
+
+    this.startOverlayEl.style.display = 'flex';
+    const totalPods = state.format === 'standing_f1_5lights' ? 5 : 3;
+
+    // Render lights pods
+    let podsHtml = '';
+    for (let i = 0; i < totalPods; i++) {
+      let podClass = '';
+      if (state.format === 'standing_f1_5lights') {
+        if (state.isLightsOut) {
+          podClass = ''; // All lights extinguished simultaneously
+        } else if (i < state.lightsCount) {
+          podClass = 'pod-red';
+        }
+      } else {
+        // Rolling 3-light start
+        if (state.isGreenFlag) {
+          podClass = 'pod-green';
+        } else if (i < state.lightsCount) {
+          podClass = 'pod-amber';
+        }
+      }
+      podsHtml += `<div class="hud-start-pod ${podClass}"></div>`;
+    }
+    this.startPodsRowEl.innerHTML = podsHtml;
+
+    this.startBannerEl.textContent = state.bannerText;
+    if (state.jumpStartInfraction) {
+      this.startBannerEl.classList.add('banner-penalty');
+    } else {
+      this.startBannerEl.classList.remove('banner-penalty');
+    }
+  }
+
+  /**
+   * Phase 4.5: Shows temporary notification banner (e.g. Smart Respawn Near Track, Ghost Aura).
+   */
+  public showNotification(text: string, durationMs = 3000): void {
+    if (!this.notificationBannerEl) return;
+    if (this.notificationTimer) {
+      clearTimeout(this.notificationTimer);
+    }
+    this.notificationBannerEl.textContent = text;
+    this.notificationBannerEl.style.display = 'block';
+    this.notificationBannerEl.style.opacity = '1';
+
+    this.notificationTimer = setTimeout(() => {
+      this.notificationBannerEl.style.opacity = '0';
+      setTimeout(() => {
+        this.notificationBannerEl.style.display = 'none';
+      }, 300);
+    }, durationMs);
   }
 
   public setCenterlineSamples(samples: { x: number; z: number }[]): void {
@@ -1144,6 +1287,42 @@ export class HostHud {
       const maxSpeed = Math.round(data.telemetry.maxSpeedKmh ?? 0);
       this.maxSpeedDisplay.innerText = `${maxSpeed} km/h`;
     }
+
+    // Phase 3.4: Live Delta Split (+/- delta HUD) & 9-Sector Timing Breakdown
+    const deltaMs = data.liveDeltaMs ?? data.telemetry.liveDeltaMs ?? null;
+    if (deltaMs !== null && !isNaN(deltaMs)) {
+      const sec = deltaMs / 1000.0;
+      this.liveDeltaBadge.innerText = `${sec > 0 ? '+' : ''}${sec.toFixed(2)}s`;
+      this.liveDeltaBadge.className =
+        sec <= 0 ? 'hud-delta-pill delta-faster' : 'hud-delta-pill delta-slower';
+    } else {
+      this.liveDeltaBadge.innerText = '--.--s';
+      this.liveDeltaBadge.className = 'hud-delta-pill';
+    }
+
+    const splits = data.sectorSplits ?? data.telemetry.sectorSplits;
+    const activeSec = data.currentSectorIndex ?? data.telemetry.currentSectorIndex ?? 0;
+    for (let i = 0; i < this.sectorBoxes.length; i++) {
+      const box = this.sectorBoxes[i];
+      const split = splits?.[i];
+      box.className = 'hud-sector-cell';
+      if (split && split.status !== 'pending') {
+        box.classList.add(`sector-${split.status}`);
+      } else if (i === activeSec) {
+        box.classList.add('sector-active');
+      }
+    }
+
+    // Phase 3.3: Environment & Weather Summary
+    const weatherStr = data.weatherLabel || 'CLEAR';
+    const timeStr = data.timeOfDayLabel || '14:00';
+    const wetPct = Math.round((data.telemetry.surfaceWetness ?? 0) * 100);
+    const hydroTag = data.telemetry.isHydroplaning ? ' • ⚠️ HYDROPLANE' : '';
+    this.envSummaryEl.innerText =
+      wetPct > 0
+        ? `${weatherStr} (${wetPct}% WET) • ${timeStr}${hydroTag}`
+        : `${weatherStr} • ${timeStr}`;
+    this.envSummaryEl.style.color = data.telemetry.isHydroplaning ? '#ef4444' : '#f4f4f5';
   }
 
   public setPaintName(name: string): void {

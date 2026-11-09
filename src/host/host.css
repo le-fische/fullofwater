@@ -1157,3 +1157,1480 @@ html, body {
   color: #cbd5e1;
   font-weight: 600;
 }
+
+/* ==========================================================================
+   Phase 3: 9-Sector Timing Strip, Consumables HUD, 3D Garage Bay & WebRTC P2P
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+  accent-color: #38bdf8;
+}
+
+.hud-delta-pill {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(39, 39, 42, 0.85);
+  color: #a1a1aa;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hud-delta-pill.delta-faster {
+  background: rgba(34, 197, 94, 0.22);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.hud-delta-pill.delta-slower {
+  background: rgba(239, 68, 68, 0.22);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.hud-sector-strip {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.hud-sector-cell {
+  text-align: center;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 0;
+  border-radius: 3px;
+  background: rgba(39, 39, 42, 0.75);
+  color: #71717a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hud-sector-cell.sector-active {
+  background: rgba(56, 189, 248, 0.22);
+  color: #38bdf8;
+  border-color: #38bdf8;
+}
+
+.hud-sector-cell.sector-purple {
+  background: rgba(168, 85, 247, 0.35);
+  color: #e9d5ff;
+  border-color: #c084fc;
+}
+
+.hud-sector-cell.sector-green {
+  background: rgba(34, 197, 94, 0.35);
+  color: #bbf7d0;
+  border-color: #22c55e;
+}
+
+.hud-sector-cell.sector-yellow {
+  background: rgba(234, 179, 8, 0.32);
+  color: #fef08a;
+  border-color: #facc15;
+}
+
+.hud-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+  pointer-events: auto;
+}
+
+.hud-action-chip {
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  color: #e2e8f0;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.hud-action-chip:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+.hud-consumables-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3px;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hud-consumable-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.hud-pit-banner {
+  margin-top: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: rgba(234, 179, 8, 0.22);
+  border: 1px solid #facc15;
+  color: #fef08a;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.6px;
+}
+
+/* 3D Garage Bay & Telemetry Setup Page */
+.garage-setup-root {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 65;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 22px 28px;
+  pointer-events: none;
+  color-scheme: dark;
+  accent-color: #38bdf8;
+}
+
+.garage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(9, 12, 18, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 10px;
+  padding: 12px 20px;
+  pointer-events: auto;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+}
+
+.garage-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.garage-badge-live {
+  background: #e11d48;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.garage-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #f8fafc;
+}
+
+.garage-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.garage-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.garage-btn {
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.garage-btn-service {
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid #38bdf8;
+  color: #7dd3fc;
+}
+
+.garage-btn-service:hover {
+  background: #38bdf8;
+  color: #090d16;
+}
+
+.garage-btn-release {
+  background: #22c55e;
+  border: 1px solid #86efac;
+  color: #052e16;
+}
+
+.garage-btn-release:hover {
+  background: #4ade80;
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.55);
+}
+
+.garage-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 24px;
+  margin-top: 16px;
+  flex: 1;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.garage-panel {
+  width: 390px;
+  background: rgba(9, 12, 18, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: auto;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
+}
+
+.garage-eyebrow {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  color: #38bdf8;
+}
+
+.garage-section-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #f8fafc;
+  margin-bottom: 10px;
+}
+
+.garage-wheels-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.garage-wheel-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 9px 10px;
+}
+
+.garage-wheel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.garage-wheel-title {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.garage-wheel-health-val {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  color: #22c55e;
+}
+
+.garage-health-bar-track {
+  width: 100%;
+  height: 5px;
+  background: #1e293b;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 7px;
+}
+
+.garage-health-bar-fill {
+  height: 100%;
+  background: #22c55e;
+  transition: width 0.15s ease;
+}
+
+.garage-wheel-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+}
+
+.garage-metric-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.garage-metric-lbl {
+  font-size: 8px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.garage-metric-val {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.garage-chassis-summary {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.garage-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.garage-summary-lbl {
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.garage-summary-val {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  color: #38bdf8;
+  font-weight: 800;
+}
+
+.garage-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 9px;
+}
+
+.garage-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.garage-control-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #cbd5e1;
+  letter-spacing: 0.6px;
+}
+
+.garage-control-output {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.garage-compound-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.garage-compound-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 7px 6px;
+  color: #cbd5e1;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.garage-compound-btn.active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+.compound-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-soft { background: #ef4444; }
+.dot-medium { background: #facc15; }
+.dot-hard { background: #f8fafc; }
+.dot-wet { background: #38bdf8; }
+
+.garage-dual-sliders {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+/* Modern Range Slider with progress() and @supports fallback */
+.garage-range-slider {
+  --slider-progress: progress(
+    var(--control-value, 50),
+    var(--attr-min, 0),
+    var(--attr-max, 100)
+  );
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+  accent-color: #38bdf8;
+}
+
+@supports not (opacity: progress(1, 0, 100)) {
+  .garage-range-slider {
+    --slider-progress: calc(
+      (var(--control-value, 50) - var(--attr-min, 0)) /
+      (var(--attr-max, 100) - var(--attr-min, 0))
+    );
+  }
+}
+
+.garage-range-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #38bdf8 0%,
+    #38bdf8 calc(var(--slider-progress, 0.5) * 100%),
+    #1e293b calc(var(--slider-progress, 0.5) * 100%),
+    #1e293b 100%
+  );
+}
+
+.garage-range-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #38bdf8 0%,
+    #38bdf8 calc(var(--slider-progress, 0.5) * 100%),
+    #1e293b calc(var(--slider-progress, 0.5) * 100%),
+    #1e293b 100%
+  );
+}
+
+.garage-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #f8fafc;
+  border: 2px solid #38bdf8;
+  margin-top: -4.5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.garage-range-slider::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #f8fafc;
+  border: 2px solid #38bdf8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.garage-assists-row {
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.garage-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.garage-checkbox {
+  width: 15px;
+  height: 15px;
+  accent-color: #38bdf8;
+}
+
+/* WebRTC P2P Multiplayer <dialog> Modal */
+.webrtc-lobby-dialog {
+  margin: auto;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 12px;
+  background: #090d16;
+  color: #f8fafc;
+  width: 92%;
+  max-width: 620px;
+  padding: 0;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85);
+}
+
+.webrtc-lobby-dialog::backdrop {
+  background: rgba(2, 6, 23, 0.78);
+  backdrop-filter: blur(12px);
+}
+
+.webrtc-modal-inner {
+  padding: 20px 24px;
+}
+
+.webrtc-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.webrtc-eyebrow {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  color: #38bdf8;
+}
+
+.webrtc-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.webrtc-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.webrtc-badge {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.webrtc-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.webrtc-section {
+  margin-bottom: 15px;
+}
+
+.webrtc-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+}
+
+.webrtc-room-row {
+  display: flex;
+  gap: 8px;
+}
+
+.webrtc-input {
+  flex: 1;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #f8fafc;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.webrtc-btn {
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.webrtc-btn-primary {
+  background: #38bdf8;
+  border: none;
+  color: #090d16;
+}
+
+.webrtc-btn-secondary {
+  background: rgba(225, 29, 72, 0.2);
+  border: 1px solid #e11d48;
+  color: #fda4af;
+}
+
+.webrtc-peer-list {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.webrtc-empty-state {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.webrtc-peer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 11px;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.webrtc-peer-state.peer-open {
+  color: #4ade80;
+  font-weight: 800;
+}
+
+.webrtc-sdp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.webrtc-sdp-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.webrtc-btn-small {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #e2e8f0;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.webrtc-sdp-textarea {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 8px;
+  color: #cbd5e1;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 10px;
+  resize: none;
+}
+
+/* Phase 4 Private Multiplayer Host Settings & Race Procedure UI */
+.webrtc-host-settings {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.webrtc-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.webrtc-setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.webrtc-setting-item label {
+  font-size: 9px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+}
+
+.webrtc-select,
+.webrtc-number-input {
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #f8fafc;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 11px;
+}
+
+.webrtc-toggle-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #38bdf8;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: center;
+}
+
+.webrtc-toggle-btn.collision-active {
+  background: rgba(225, 29, 72, 0.25);
+  border-color: #e11d48;
+  color: #f43f5e;
+}
+
+.webrtc-roster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.webrtc-peer-ready-state {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.webrtc-peer-ready-state.ready-true {
+  color: #4ade80;
+}
+
+.webrtc-actions-bar {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.webrtc-btn-ready {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #cbd5e1;
+}
+
+.webrtc-btn-ready.ready-active {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: #22c55e;
+  color: #4ade80;
+}
+
+.webrtc-btn-launch {
+  flex: 1.4;
+  background: #e11d48;
+  border: none;
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.webrtc-btn-launch:hover {
+  background: #f43f5e;
+}
+
+.webrtc-sdp-accordion {
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+}
+
+.webrtc-sdp-summary {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.webrtc-sdp-inner {
+  margin-top: 8px;
+}
+
+/* Phase 4 HUD Race Start Gantry Overlay */
+.hud-race-start-overlay {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.hud-lights-pod-row {
+  display: flex;
+  gap: 14px;
+  background: rgba(9, 13, 22, 0.92);
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+}
+
+.hud-start-pod {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #18181b;
+  border: 2px solid #27272a;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+  transition: all 0.1s ease;
+}
+
+.hud-start-pod.pod-red {
+  background: #ef4444;
+  border-color: #f87171;
+  box-shadow: 0 0 20px #ef4444, inset 0 0 8px #fca5a5;
+}
+
+.hud-start-pod.pod-amber {
+  background: #f97316;
+  border-color: #fb923c;
+  box-shadow: 0 0 20px #f97316, inset 0 0 8px #fed7aa;
+}
+
+.hud-start-pod.pod-green {
+  background: #22c55e;
+  border-color: #4ade80;
+  box-shadow: 0 0 24px #22c55e, inset 0 0 8px #bbf7d0;
+}
+
+.hud-start-banner {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: rgba(9, 13, 22, 0.88);
+  color: #f8fafc;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+}
+
+.hud-start-banner.banner-penalty {
+  color: #fca5a5;
+  border-color: #ef4444;
+  background: rgba(220, 38, 38, 0.35);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+  animation: pulse-penalty 0.6s infinite alternate;
+}
+
+@keyframes pulse-penalty {
+  from { transform: scale(1); }
+  to { transform: scale(1.04); }
+}
+
+/* Phase 4 Smart Near-Crash Track Recovery Notification Banner */
+.hud-notification-banner {
+  position: absolute;
+  top: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(6, 182, 212, 0.25);
+  border: 1.5px solid #22d3ee;
+  color: #e0f2fe;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(6, 182, 212, 0.45);
+  pointer-events: none;
+  z-index: 998;
+  transition: opacity 0.3s ease;
+}
+
+/* ==========================================================================
+   Motorsport Landing Portal & Stepped Sim Wizard
+   ========================================================================== */
+.landing-portal-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  width: 100%;
+  max-width: 960px;
+  pointer-events: auto;
+}
+
+.landing-headline-block {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.landing-badge {
+  display: inline-block;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.landing-title {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.landing-sub {
+  font-size: 13px;
+  color: #94a3b8;
+  max-width: 620px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.landing-cards-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.landing-card {
+  background: radial-gradient(circle at top right, rgba(30, 41, 59, 0.45), rgba(15, 23, 42, 0.95)), #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 26px 28px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.landing-card:hover {
+  transform: translateY(-3px);
+}
+
+.landing-card-sp:hover {
+  border-color: rgba(225, 29, 72, 0.8);
+  box-shadow: 0 20px 50px rgba(225, 29, 72, 0.25);
+}
+
+.landing-card-mp:hover {
+  border-color: rgba(6, 182, 212, 0.8);
+  box-shadow: 0 20px 50px rgba(6, 182, 212, 0.25);
+}
+
+.landing-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.landing-card-tag {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.tag-sp {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.35);
+}
+
+.tag-mp {
+  background: rgba(6, 182, 212, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+}
+
+.landing-arrow-tag {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.landing-card-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.landing-card-desc {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.landing-feature-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.landing-feature-chips span {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: #cbd5e1;
+}
+
+.landing-card-cta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.cta-sp {
+  color: #fb7185;
+}
+
+.cta-mp {
+  color: #38bdf8;
+}
+
+/* Wizard Breadcrumbs & Navigation */
+.wizard-steps-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  pointer-events: auto;
+}
+
+.step-pill {
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.step-pill-active {
+  background: #e11d48;
+  color: #ffffff;
+  border-color: #f43f5e;
+  box-shadow: 0 0 12px rgba(225, 29, 72, 0.4);
+}
+
+.step-pill-done {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.step-arrow {
+  font-size: 10px;
+  color: #475569;
+}
+
+.wizard-back-home-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.wizard-back-home-btn:hover {
+  color: #f43f5e;
+}
+
+.wizard-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 860px;
+  margin: auto;
+  pointer-events: auto;
+}
+
+.wizard-pane {
+  width: 100%;
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  background: rgba(10, 11, 15, 0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 22px 26px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7);
+}
+
+.wizard-pane.pane-active {
+  display: flex;
+}
+
+/* Step 1 Class Selection Cards */
+.class-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.class-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.class-card:hover {
+  border-color: rgba(225, 29, 72, 0.6);
+  background: rgba(225, 29, 72, 0.06);
+}
+
+.class-card-active {
+  border-color: #e11d48;
+  background: rgba(225, 29, 72, 0.12);
+  box-shadow: 0 0 16px rgba(225, 29, 72, 0.2);
+}
+
+.class-card-locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.class-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.class-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #f8fafc;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+}
+
+.class-status-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+}
+
+.status-active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.status-locked {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+}
+
+.class-car-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.class-specs-text {
+  font-size: 10px;
+  color: #94a3b8;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+}
+
+.track-start-format {
+  color: #f59e0b;
+  font-weight: 700;
+}
+
+/* Step 4 Mode Options */
+.mode-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.mode-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-card-active {
+  border-color: #e11d48;
+  background: rgba(225, 29, 72, 0.12);
+}
+
+.mode-card-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  margin-bottom: 4px;
+}
+
+.mode-card-desc {
+  font-size: 10px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.lap-slider-wrap {
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.lap-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.lap-count-val {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 14px;
+  font-weight: 900;
+  color: #e11d48;
+}
+
+.sim-range-slider {
+  width: 100%;
+  accent-color: #e11d48;
+  cursor: pointer;
+}
+
+.lap-range-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Step 5 Conditions */
+.env-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.env-card-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.env-btn-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.env-choice-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.env-choice-btn small {
+  display: block;
+  font-size: 9px;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.env-choice-active {
+  border-color: #e11d48;
+  background: rgba(225, 29, 72, 0.15);
+  color: #ffffff;
+}
+
+.direct-launch-banner {
+  margin-top: 10px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.direct-launch-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.direct-launch-badge {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: #34d399;
+  letter-spacing: 1px;
+}
+
+.direct-launch-desc {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Wizard Navigation Footer */
+.wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  pointer-events: auto;
+  padding: 12px 0 0 0;
+}
+
+.wizard-nav-btn {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wizard-prev-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+}
+
+.wizard-next-btn {
+  background: #e11d48;
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.4);
+}
+
+.wizard-launch-btn {
+  background: #10b981;
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+}
+
+.wizard-step-tag {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 700;
+}
+

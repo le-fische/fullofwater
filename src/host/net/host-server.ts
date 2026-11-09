@@ -1,4 +1,9 @@
-import { ControllerPacketDecoder, TelemetryPacketEncoder, ControllerButtons } from '../../common/protocol';
+import {
+  ControllerPacketDecoder,
+  TelemetryPacketEncoder,
+  ControllerButtons,
+  BridgeControlMessage,
+} from '../../common/protocol';
 import { ControllerInput } from '../../common/types';
 
 export interface HostNetworkCallbacks {
@@ -30,9 +35,23 @@ export class HostNetworkBridge {
   constructor(callbacks: HostNetworkCallbacks = {}) {
     this.callbacks = callbacks;
     this.connect();
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            console.log('Host resumed from background, reconnecting WebSocket...');
+            this.connect();
+          }
+        }
+      });
+    }
   }
 
   private connect(): void {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws?role=host`;
 
@@ -48,6 +67,7 @@ export class HostNetworkBridge {
     this.ws.onclose = () => {
       console.warn('Host WebSocket disconnected. Retrying in 1s...');
       this.isConnected = false;
+      this.ws = null;
       this.setControllerActive(false);
       setTimeout(() => this.connect(), 1000);
     };
@@ -130,6 +150,15 @@ export class HostNetworkBridge {
         this.lastPingSeq
       );
       this.ws.send(buffer);
+    }
+  }
+
+  /**
+   * Sends a JSON control message to the mobile Controller.
+   */
+  public sendControlMessage(msg: BridgeControlMessage): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(msg));
     }
   }
 

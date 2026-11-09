@@ -140,3 +140,7 @@ export class TelemetryPacketDecoder {
     };
   }
 }
+
+export type BridgeControlMessage =
+  | { type: 'controller_connected' }
+  | { type: 'controller_disconnected' };

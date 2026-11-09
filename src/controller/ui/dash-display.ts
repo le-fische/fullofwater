@@ -166,7 +166,7 @@ export class DashDisplay {
                   <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
                 </svg>
               </button>
-              <button id="btn-reset" class="ctrl-btn icon-btn" type="button" aria-label="Reset Car">
+              <button id="btn-reset" class="ctrl-btn icon-btn respawn-btn" type="button" aria-label="Smart Respawn Track" title="Respawn Near Track (-8m)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                   <path d="M3 3v5h5"/>

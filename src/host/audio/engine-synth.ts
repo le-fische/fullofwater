@@ -26,6 +26,8 @@ export class EngineAudioSynth {
   private gearMeshOsc: OscillatorNode | null = null;
   private gearMeshHarmonicOsc: OscillatorNode | null = null;
   private gearMeshFilter: BiquadFilterNode | null = null;
+  private gearMeshLowPass: BiquadFilterNode | null = null;
+  private gearMeshNotch: BiquadFilterNode | null = null;
   private gearMeshGain: GainNode | null = null;
   private overrunLfo: OscillatorNode | null = null;
   private overrunTremoloGain: GainNode | null = null;
@@ -45,8 +47,9 @@ export class EngineAudioSynth {
   private windFilterNode: BiquadFilterNode | null = null;
   private windGain: GainNode | null = null;
 
-  // Master output bus
+  // Master output bus with DynamicsCompressor brickwall limiter
   private masterGain: GainNode | null = null;
+  private masterCompressor: DynamicsCompressorNode | null = null;
 
   constructor() {
     // AudioContext is initialized on first user gesture
@@ -77,7 +80,18 @@ export class EngineAudioSynth {
 
     this.masterGain = this.ctx.createGain();
     this.masterGain.gain.value = 0.75;
-    this.masterGain.connect(this.ctx.destination);
+
+    // Phase 5 Step 5.12: Master Output Dynamics Compressor / Brickwall Limiter
+    // Prevents acoustic clipping, painful transient spikes, and ear damage during backfires or crashes
+    this.masterCompressor = this.ctx.createDynamicsCompressor();
+    this.masterCompressor.threshold.value = -6; // -6 dBFS
+    this.masterCompressor.knee.value = 12;      // 12 dB
+    this.masterCompressor.ratio.value = 8;      // 8:1
+    this.masterCompressor.attack.value = 0.003; // 3 ms
+    this.masterCompressor.release.value = 0.15; // 150 ms
+
+    this.masterGain.connect(this.masterCompressor);
+    this.masterCompressor.connect(this.ctx.destination);
 
     this.setupEngineSound();
     this.setupTransmissionSound();
@@ -282,11 +296,24 @@ export class EngineAudioSynth {
     this.gearMeshHarmonicOsc.type = 'triangle';
     this.gearMeshHarmonicOsc.frequency.value = 2120; // 2nd harmonic overtone
 
-    // High-Q bandpass filter gives the piercing siren whine characteristic of straight-cut gears
+    // Phase 5 Step 5.12: Headphone-Safe Gearbox Synthesis & Ear-Fatigue Mitigation
+    // High-Q bandpass replaced by moderated bandpass + 2nd-order Butterworth low-pass + 3.5 kHz ear-canal notch filter
     this.gearMeshFilter = this.ctx.createBiquadFilter();
     this.gearMeshFilter.type = 'bandpass';
     this.gearMeshFilter.frequency.value = 1060;
-    this.gearMeshFilter.Q.value = 6.0;
+    this.gearMeshFilter.Q.value = 2.2;
+
+    // 2nd-Order Butterworth Low-Pass Filter at 3,200 Hz (-12 dB/octave) rolls off piercing high frequencies
+    this.gearMeshLowPass = this.ctx.createBiquadFilter();
+    this.gearMeshLowPass.type = 'lowpass';
+    this.gearMeshLowPass.frequency.value = 3200;
+    this.gearMeshLowPass.Q.value = 0.7071;
+
+    // Static Parametric Notch Filter at 3,500 Hz (Q = 3.0, gain -8.0 dB) targets human ear-canal resonance
+    this.gearMeshNotch = this.ctx.createBiquadFilter();
+    this.gearMeshNotch.type = 'notch';
+    this.gearMeshNotch.frequency.value = 3500;
+    this.gearMeshNotch.Q.value = 3.0;
 
     this.gearMeshGain = this.ctx.createGain();
     this.gearMeshGain.gain.value = 0.0;
@@ -301,7 +328,9 @@ export class EngineAudioSynth {
 
     this.gearMeshOsc.connect(this.gearMeshFilter);
     this.gearMeshHarmonicOsc.connect(this.gearMeshFilter);
-    this.gearMeshFilter.connect(this.gearMeshGain);
+    this.gearMeshFilter.connect(this.gearMeshLowPass);
+    this.gearMeshLowPass.connect(this.gearMeshNotch);
+    this.gearMeshNotch.connect(this.gearMeshGain);
     this.gearMeshGain.connect(this.masterGain);
 
     this.gearMeshOsc.start();
@@ -582,16 +611,22 @@ export class EngineAudioSynth {
       const rpmRatio = clamp((rpm - 2000) / 7000, 0, 1);
       const speedRatio = clamp(speedKmh / 280, 0, 1);
 
+      // Phase 5 Step 5.12: Whine volume strictly driven by driveline torque
+      // Drops by -18 dB (attenuated by factor ~0.125) when cruising or coasting, eliminating persistent headphone drone
+      const throttleTorque = Math.pow(Math.max(0, throttle), 1.5);
+      const overrunBraking = throttle <= 0.05 && speedKmh > 30 ? 0.65 : 0.0;
+      const torqueLoad = Math.max(0.125, Math.max(throttleTorque, overrunBraking));
+
       if (throttle > 0.08) {
-        // DRIVE SIDE: Gear teeth under load screaming upwards to redline
-        meshVolume = 0.18 + throttle * 0.16 + rpmRatio * 0.14;
-        diffVolume = 0.05 + speedRatio * 0.12;
+        // DRIVE SIDE: Gear teeth under load
+        meshVolume = (0.16 + throttle * 0.14 + rpmRatio * 0.12) * torqueLoad;
+        diffVolume = (0.05 + speedRatio * 0.10) * torqueLoad;
       } else if (speedKmh > 10) {
-        // COAST / OVERRUN: Backlash tooth chatter & hollow deceleration howl
-        meshVolume = 0.14 + rpmRatio * 0.10;
-        diffVolume = 0.06 + speedRatio * 0.10;
+        // COAST / OVERRUN: Backlash tooth chatter attenuated by -18 dB
+        meshVolume = (0.12 + rpmRatio * 0.08) * torqueLoad;
+        diffVolume = (0.04 + speedRatio * 0.08) * torqueLoad;
       } else {
-        meshVolume = 0.02;
+        meshVolume = 0.015;
         diffVolume = 0.0;
       }
     }

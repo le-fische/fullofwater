@@ -217,9 +217,13 @@ export class ForestFoliage {
     const sampleCount = endIndex - startIndex;
     const totalSamples = samples.length;
 
-    // Density: ~1 to 2 trees per flank every 5m sample
-    // Total instances per chunk: ~400-500 trees
-    const MAX_TREES = sampleCount * 2 + 100;
+    // Phase 5 Step 5.2: Multi-Layer Dense Forest Immersion ("The Green Hell")
+    // 3-Tier Vegetation Hierarchy:
+    // Tier 1: Roadside undergrowth & shrubs immediately behind Armco (5.5m - 10.0m)
+    // Tier 2: Mature Scots pine & spruce with overhanging canopy (10.0m - 26.0m)
+    // Tier 3: Deep mountain forest backdrop up ridges and valleys (26.0m - 65.0m)
+    // Supports 600–900 trees per 2 km chunk within a single GPU draw call
+    const MAX_TREES = sampleCount * 3 + 250;
     const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_TREES);
     instancedMesh.name = `foliage_chunk_${chunkIndex}`;
     instancedMesh.receiveShadow = true;
@@ -251,85 +255,76 @@ export class ForestFoliage {
         continue;
       }
 
-      // --- Left Flank Trees (Embankment & Outer Forest: -16m to -38m from centerline) ---
-      const numLeft = rng() > 0.35 ? 1 : (rng() > 0.5 ? 2 : 0);
-      for (let k = 0; k < numLeft; k++) {
+      const barrierOffset = sp.trackWidth * 0.5 + 5.0;
+
+      // Populate both flanks with 3-tier dense vegetation
+      for (const side of [-1, 1] as const) {
         if (instanceIdx >= MAX_TREES) break;
 
-        const lateralDist = -(16.0 + rng() * 22.0); // -16m to -38m (strictly on solid embankment mesh)
-        const longitudinalJitter = (rng() - 0.5) * 4.5;
-        const scale = 0.85 + rng() * 0.70; // 9.5m to 17.5m tree height
+        // Tier 1: Roadside undergrowth & saplings (5.5m - 10.0m behind barrier)
+        if (rng() > 0.30) {
+          const lateralDist = side * (barrierOffset + 1.2 + rng() * 4.5);
+          const longJitter = (rng() - 0.5) * 4.0;
+          const scale = 0.55 + rng() * 0.35; // 4.5m to 8.5m compact roadside shrubs/spruce
+          const treePos = new THREE.Vector3(pos.x, pos.y, pos.z)
+            .addScaledVector(hRight, lateralDist)
+            .addScaledVector(sp.tangent, longJitter);
+          treePos.y -= 0.25;
 
-        // Exact embankment surface drop matching TrackMeshGenerator (-0.35m at +4m to -2.60m at +35m)
-        const lateralOffset = Math.abs(lateralDist);
-        const dFromBarrier = Math.max(0, lateralOffset - 10.05);
-        const yDrop = 0.35 + (dFromBarrier / 35.0) * 2.25;
-
-        const treePos = new THREE.Vector3(pos.x, pos.y, pos.z)
-          .addScaledVector(hRight, lateralDist)
-          .addScaledVector(sp.tangent, longitudinalJitter);
-        treePos.y -= yDrop;
-
-        // Spatial safety & Voronoi ownership verification
-        if (grid.isNearAnyTrackSegment(treePos.x, treePos.z, 12.0, idx)) {
-          continue;
+          if (!grid.isNearAnyTrackSegment(treePos.x, treePos.z, 10.5, idx)) {
+            dummy.position.copy(treePos);
+            dummy.rotation.set((rng() - 0.5) * 0.08, rng() * Math.PI * 2, (rng() - 0.5) * 0.08);
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            instancedMesh.setMatrixAt(instanceIdx++, dummy.matrix);
+          }
         }
 
-        // Suppress if tree falls within GP Stadium envelope
-        if (treePos.x > -2350 && treePos.x < -700 && treePos.z > 2650 && treePos.z < 4750) {
-          continue;
+        // Tier 2: Mature canopy pines & spruce (10.0m - 26.0m behind barrier)
+        const numTier2 = rng() > 0.40 ? 1 : 2;
+        for (let k = 0; k < numTier2; k++) {
+          if (instanceIdx >= MAX_TREES) break;
+          const lateralDist = side * (barrierOffset + 6.0 + rng() * 16.0);
+          const longJitter = (rng() - 0.5) * 5.0;
+          const scale = 0.90 + rng() * 0.70; // 10.0m to 18.0m mature trees
+          const dFromBarrier = Math.max(0, Math.abs(lateralDist) - 10.05);
+          const yDrop = 0.35 + (dFromBarrier / 35.0) * 2.25;
+
+          const treePos = new THREE.Vector3(pos.x, pos.y, pos.z)
+            .addScaledVector(hRight, lateralDist)
+            .addScaledVector(sp.tangent, longJitter);
+          treePos.y -= yDrop;
+
+          if (!grid.isNearAnyTrackSegment(treePos.x, treePos.z, 11.0, idx)) {
+            dummy.position.copy(treePos);
+            dummy.rotation.set((rng() - 0.5) * 0.08, rng() * Math.PI * 2, (rng() - 0.5) * 0.08);
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            instancedMesh.setMatrixAt(instanceIdx++, dummy.matrix);
+          }
         }
 
-        dummy.position.copy(treePos);
-        dummy.rotation.set(
-          (rng() - 0.5) * 0.08, // Subtle natural organic tilt
-          rng() * Math.PI * 2,  // Random yaw
-          (rng() - 0.5) * 0.08
-        );
-        dummy.scale.set(scale, scale, scale);
-        dummy.updateMatrix();
+        // Tier 3: Deep mountain ridge forest backdrop (26.0m - 60.0m)
+        if (rng() > 0.25) {
+          const lateralDist = side * (barrierOffset + 22.0 + rng() * 34.0);
+          const longJitter = (rng() - 0.5) * 6.0;
+          const scale = 1.10 + rng() * 0.85; // 14.0m to 24.0m deep forest giants
+          const dFromBarrier = Math.max(0, Math.abs(lateralDist) - 10.05);
+          const yDrop = 0.65 + (dFromBarrier / 35.0) * 3.5;
 
-        instancedMesh.setMatrixAt(instanceIdx++, dummy.matrix);
-      }
+          const treePos = new THREE.Vector3(pos.x, pos.y, pos.z)
+            .addScaledVector(hRight, lateralDist)
+            .addScaledVector(sp.tangent, longJitter);
+          treePos.y -= yDrop;
 
-      // --- Right Flank Trees (Embankment & Outer Forest: +16m to +38m from centerline) ---
-      const numRight = rng() > 0.35 ? 1 : (rng() > 0.5 ? 2 : 0);
-      for (let k = 0; k < numRight; k++) {
-        if (instanceIdx >= MAX_TREES) break;
-
-        const lateralDist = 16.0 + rng() * 22.0; // +16m to +38m (strictly on solid embankment mesh)
-        const longitudinalJitter = (rng() - 0.5) * 4.5;
-        const scale = 0.85 + rng() * 0.70;
-
-        const lateralOffset = Math.abs(lateralDist);
-        const dFromBarrier = Math.max(0, lateralOffset - 10.05);
-        const yDrop = 0.35 + (dFromBarrier / 35.0) * 2.25;
-
-        const treePos = new THREE.Vector3(pos.x, pos.y, pos.z)
-          .addScaledVector(hRight, lateralDist)
-          .addScaledVector(sp.tangent, longitudinalJitter);
-        treePos.y -= yDrop;
-
-        // Spatial safety & Voronoi ownership verification
-        if (grid.isNearAnyTrackSegment(treePos.x, treePos.z, 12.0, idx)) {
-          continue;
+          if (!grid.isNearAnyTrackSegment(treePos.x, treePos.z, 12.0, idx)) {
+            dummy.position.copy(treePos);
+            dummy.rotation.set((rng() - 0.5) * 0.08, rng() * Math.PI * 2, (rng() - 0.5) * 0.08);
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            instancedMesh.setMatrixAt(instanceIdx++, dummy.matrix);
+          }
         }
-
-        // Suppress if tree falls within GP Stadium envelope
-        if (treePos.x > -2350 && treePos.x < -700 && treePos.z > 2650 && treePos.z < 4750) {
-          continue;
-        }
-
-        dummy.position.copy(treePos);
-        dummy.rotation.set(
-          (rng() - 0.5) * 0.08,
-          rng() * Math.PI * 2,
-          (rng() - 0.5) * 0.08
-        );
-        dummy.scale.set(scale, scale, scale);
-        dummy.updateMatrix();
-
-        instancedMesh.setMatrixAt(instanceIdx++, dummy.matrix);
       }
     }
 

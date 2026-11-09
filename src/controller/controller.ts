@@ -1,4 +1,8 @@
-import { ControllerPacketEncoder, TelemetryPacketDecoder, ControllerButtons } from '../common/protocol';
+import {
+  ControllerPacketEncoder,
+  TelemetryPacketDecoder,
+  ControllerButtons,
+} from '../common/protocol';
 import { DeviceOrientationManager } from './sensors/orientation';
 import { TouchZones } from './ui/touch-zones';
 import { DashDisplay } from './ui/dash-display';
@@ -37,6 +41,19 @@ class MobileControllerApp {
 
     this.setupButtons();
     this.setupGate();
+    this.setupVisibilityListener();
+    this.connectWebSocket();
+  }
+
+  private setupVisibilityListener(): void {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+          console.log('Mobile controller resumed from background, reconnecting WebSocket...');
+          this.connectWebSocket();
+        }
+      }
+    });
   }
 
   private setupButtons(): void {
@@ -138,6 +155,10 @@ class MobileControllerApp {
   }
 
   private connectWebSocket(): void {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws?role=controller`;
 
@@ -153,6 +174,7 @@ class MobileControllerApp {
     this.ws.onclose = () => {
       console.warn('Controller WebSocket closed. Reconnecting in 1s...');
       this.isConnected = false;
+      this.ws = null;
       setTimeout(() => this.connectWebSocket(), 1000);
     };
 

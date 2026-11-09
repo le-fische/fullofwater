@@ -652,7 +652,18 @@ export class TrackMeshGenerator {
         const pBarrierTopLeft = pGrassLeft.clone().addScaledVector(n, barrierH);
         const pBarrierTopRight = pGrassRight.clone().addScaledVector(n, barrierH);
 
+        // Phase 5 Step 5.4: Thickened Safety Barriers (depth >= 0.50m behind barrier face)
+        // Volumetric 3D collision envelope prevents tunneling & noclipping during 300+ km/h impacts
+        const barrierDepth = 0.60;
+        const pBarrierBackTopLeft = pBarrierTopLeft.clone().addScaledVector(b, -barrierDepth);
+        const pGrassBackLeft = pGrassLeft.clone().addScaledVector(b, -barrierDepth);
+
+        const pBarrierBackTopRight = pBarrierTopRight.clone().addScaledVector(b, barrierDepth);
+        const pGrassBackRight = pGrassRight.clone().addScaledVector(b, barrierDepth);
+
         const colSection = [
+          pGrassBackLeft,
+          pBarrierBackTopLeft,
           pBarrierTopLeft,
           pGrassLeft,
           pKerbLeft,
@@ -664,6 +675,8 @@ export class TrackMeshGenerator {
           pKerbRight,
           pGrassRight,
           pBarrierTopRight,
+          pBarrierBackTopRight,
+          pGrassBackRight,
         ];
 
         for (const p of colSection) {
@@ -673,7 +686,7 @@ export class TrackMeshGenerator {
       }
     }
 
-    const colVertsPerSection = 11;
+    const colVertsPerSection = 15;
     for (let i = 0; i < colSliceCount - 1; i++) {
       const row1 = i * colVertsPerSection;
       const row2 = (i + 1) * colVertsPerSection;

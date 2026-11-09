@@ -12,6 +12,5 @@
 
 ## Release & Publishing Policy
 
-- **No releases unless explicitly allowed by the user.**
-- The repository is strictly capped up to **Phase 2** right now.
-- Do not create GitHub releases, git tags, or production deployments without explicit user authorization.
+- **Playable progress (Phases 1–4) authorized for public push and browser hosting (Vercel).**
+- Do not create GitHub releases, git tags, or production deployments beyond authorized phases without explicit user authorization.

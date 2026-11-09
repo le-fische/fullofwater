@@ -23,7 +23,11 @@ export class DynamicCameraController {
   private chaseOffset = new THREE.Vector3(0, 1.8, -5.5);
   private chaseLookAhead = new THREE.Vector3(0, 0.8, 4.0);
 
-  // Smoothing buffers
+  // Phase 5 Step 5.10: Biomechanical Vestibulo-Ocular Reflex (VOR) Horizon Lock
+  // Heavily filters pitch and roll against world horizontal plane so driver sightlines
+  // onto apexes remain smooth and stable, eliminating simulator motion sickness.
+  public readonly vorHorizonLockFactor = 0.88; // 88% horizon lock
+  private smoothedCarPitch = 0;
   private currentCameraPos = new THREE.Vector3();
   private currentCameraLookAt = new THREE.Vector3();
 
@@ -82,7 +86,7 @@ export class DynamicCameraController {
   }
 
   private updateCockpitView(
-    _dt: number,
+    dt: number,
     carPos: THREE.Vector3,
     carQuat: THREE.Quaternion,
     _longG: number,
@@ -93,31 +97,46 @@ export class DynamicCameraController {
     const eyeWorld = carPos.clone().add(eyeLocal);
     this.camera.position.copy(eyeWorld);
 
-    // 2. Rear-View Mirror Mode vs Forward View
-    // Align camera's up vector with the car's local roof vector
-    const carUp = new THREE.Vector3(0, 1, 0).applyQuaternion(carQuat);
-    this.camera.up.copy(carUp);
-
     if (this.isRearViewActive) {
-      // Mount camera at the rear exterior of the car (above rear bumper / swan-neck wing looking backward -Z)
-      // Completely clear of interior cabin, bucket seats, and roll cage
+      // Rear exterior camera mode looking backward -Z
       const rearMountOffset = new THREE.Vector3(0, 1.15, -2.35).applyQuaternion(carQuat);
       const rearCamPos = carPos.clone().add(rearMountOffset);
       this.camera.position.copy(rearCamPos);
+
+      const carUp = new THREE.Vector3(0, 1, 0).applyQuaternion(carQuat);
+      this.camera.up.copy(carUp);
 
       const rearLookVec = new THREE.Vector3(0, -0.05, -50).applyQuaternion(carQuat);
       const targetLookAt = rearCamPos.clone().add(rearLookVec);
       this.camera.lookAt(targetLookAt);
     } else {
-      // 1. World position of driver eye (strictly anchored inside cockpit, zero position lag)
-      const eyeLocal = this.driverEyeOffset.clone().applyQuaternion(carQuat);
-      const eyeWorld = carPos.clone().add(eyeLocal);
-      this.camera.position.copy(eyeWorld);
+      // Phase 5 Step 5.10: 88% VOR Horizon Lock
+      // 1. Blend Camera Up Vector towards World Horizontal Vertical (0, 1, 0)
+      const carUp = new THREE.Vector3(0, 1, 0).applyQuaternion(carQuat);
+      const worldUp = new THREE.Vector3(0, 1, 0);
+      const stabilizedUp = new THREE.Vector3().lerpVectors(carUp, worldUp, this.vorHorizonLockFactor).normalize();
+      this.camera.up.copy(stabilizedUp);
 
-      // Orient camera facing forward (+Z in car space, fixed sightline onto apexes and full steering wheel assembly)
-      const forwardVec = new THREE.Vector3(0, -3.4, 30).applyQuaternion(carQuat);
-      const targetLookAt = eyeWorld.clone().add(forwardVec);
-      this.camera.lookAt(targetLookAt);
+      // 2. Extract forward racing heading in horizontal plane
+      const carFwd = new THREE.Vector3(0, 0, 1).applyQuaternion(carQuat);
+      const horizFwd = new THREE.Vector3(carFwd.x, 0, carFwd.z).normalize();
+      if (horizFwd.lengthSq() < 0.001) horizFwd.set(0, 0, 1);
+
+      // 3. Low-pass filter car pitch against world horizon
+      const carPitch = Math.asin(Math.max(-0.99, Math.min(0.99, carFwd.y)));
+      const filterRate = 1 - Math.exp(-8.0 * (dt || 0.016));
+      this.smoothedCarPitch += (carPitch - this.smoothedCarPitch) * filterRate;
+
+      // Blend car pitch with horizon-stabilized pitch
+      const effectivePitch = carPitch * (1.0 - this.vorHorizonLockFactor) + this.smoothedCarPitch * this.vorHorizonLockFactor;
+
+      const lookAheadM = 32.0;
+      const eyeLookPitchDown = -3.4; // Downward road sightline angle
+      const forwardTarget = eyeWorld.clone()
+        .addScaledVector(horizFwd, lookAheadM * Math.cos(effectivePitch))
+        .addScaledVector(worldUp, eyeLookPitchDown + lookAheadM * Math.sin(effectivePitch));
+
+      this.camera.lookAt(forwardTarget);
     }
   }
 

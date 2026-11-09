@@ -5,6 +5,7 @@ export class RenderStage {
   public camera: THREE.PerspectiveCamera;
   public renderer: THREE.WebGLRenderer;
   public sunLight!: THREE.DirectionalLight;
+  public hemiLight!: THREE.HemisphereLight;
   private container: HTMLElement;
 
   constructor(container: HTMLElement) {
@@ -43,9 +44,9 @@ export class RenderStage {
 
   private setupLighting(): void {
     // Hemisphere ambient light (sky/ground contrast)
-    const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x444455, 0.7);
-    hemiLight.position.set(0, 50, 0);
-    this.scene.add(hemiLight);
+    this.hemiLight = new THREE.HemisphereLight(0xddeeff, 0x444455, 0.7);
+    this.hemiLight.position.set(0, 50, 0);
+    this.scene.add(this.hemiLight);
 
     // Directional sunlight casting shadows
     this.sunLight = new THREE.DirectionalLight(0xfff8ee, 1.4);

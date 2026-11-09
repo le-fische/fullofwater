@@ -11,8 +11,45 @@ export class DrivingAssists {
   private isAbsActive = false;
   private isEspActive = false;
 
+  // Dynamic setup overrides
+  private tcLevel = 6; // 0 (off) to 10 (max)
+  private absEnabled = true;
+  private espGainOverride: number | null = null;
+  private counterSteerOverride: number | null = null;
+  private highSpeedLockOverride: number | null = null;
+
   constructor(profile: CarProfile) {
     this.profile = profile;
+    this.absEnabled = profile.assists.abs ?? true;
+    this.tcLevel = Math.round((profile.assists.tractionControl ?? 0.65) * 10);
+  }
+
+  public setTcLevel(level: number): void {
+    this.tcLevel = clamp(Math.round(level), 0, 10);
+  }
+
+  public getTcLevel(): number {
+    return this.tcLevel;
+  }
+
+  public setAbsEnabled(enabled: boolean): void {
+    this.absEnabled = enabled;
+  }
+
+  public getAbsEnabled(): boolean {
+    return this.absEnabled;
+  }
+
+  public setEspGain(gain: number): void {
+    this.espGainOverride = clamp(gain, 0.0, 1.0);
+  }
+
+  public setCounterSteerGain(gain: number): void {
+    this.counterSteerOverride = clamp(gain, 0.0, 1.0);
+  }
+
+  public setHighSpeedLockFraction(frac: number): void {
+    this.highSpeedLockOverride = clamp(frac, 0.20, 0.60);
   }
 
   /**
@@ -72,9 +109,10 @@ export class DrivingAssists {
     speedKmh: number,
     chassisSideslipRad = 0
   ): number {
-    const { maxWheelAngleDeg, maxRateDegPerS, highSpeedLockFraction, speedSensitivityStartKmh } =
+    const { maxWheelAngleDeg, maxRateDegPerS, speedSensitivityStartKmh } =
       this.profile.steering;
-    const counterSteerCoeff = this.profile.assists.counterSteer ?? 0.30;
+    const highSpeedLockFraction = this.highSpeedLockOverride ?? this.profile.steering.highSpeedLockFraction;
+    const counterSteerCoeff = this.counterSteerOverride ?? (this.profile.assists.counterSteer ?? 0.30);
 
     const absSpeed = Math.abs(speedKmh);
 
@@ -123,7 +161,7 @@ export class DrivingAssists {
     steerAngleRad: number,
     actualYawRateRadPerS: number
   ): number {
-    const stabilityGain = this.profile.assists.stability ?? 0.45;
+    const stabilityGain = this.espGainOverride ?? (this.profile.assists.stability ?? 0.45);
     // Low-speed steering freedom: allow natural pivot and rotation in low-speed hairpins/corners (< 65 km/h)
     const lowSpeedEspScale = clamp((Math.abs(forwardSpeedMs) - 5.0) / 12.0, 0.0, 1.0);
     const activeStabilityGain = stabilityGain * lowSpeedEspScale;
@@ -160,19 +198,20 @@ export class DrivingAssists {
    * Disables at low speeds (< 20 km/h) to allow standing start launches.
    */
   processTractionControl(rearSlipRatios: [number, number], speedKmh = 50): number {
-    if (Math.abs(speedKmh) < 20) {
+    if (this.tcLevel <= 0 || Math.abs(speedKmh) < 20) {
       this.isTcActive = false;
       return 1.0;
     }
 
+    const tcStrength = this.tcLevel / 6.0; // 1.0 at baseline level 6
     const maxRearSlip = Math.max(rearSlipRatios[0], rearSlipRatios[1]);
-    const slipThreshold = 0.18;
+    const slipThreshold = clamp(0.24 - this.tcLevel * 0.01, 0.12, 0.24);
 
     if (maxRearSlip > slipThreshold) {
       this.isTcActive = true;
       // Progressive reduction of drive torque
       const excess = maxRearSlip - slipThreshold;
-      const reduction = clamp(excess * 2.5, 0.0, 0.45);
+      const reduction = clamp(excess * 2.5 * tcStrength, 0.0, clamp(0.45 * tcStrength, 0.15, 0.75));
       return 1.0 - reduction;
     }
 
@@ -184,6 +223,10 @@ export class DrivingAssists {
    * Anti-lock Braking System: modulates brake torque when wheel slip ratio drops below threshold.
    */
   processAbs(slipRatio: number, rawBrakeTorque: number): number {
+    if (!this.absEnabled) {
+      this.isAbsActive = false;
+      return rawBrakeTorque;
+    }
     const absThreshold = -0.16; // Optimal braking slip (~14-16% longitudinal slip)
 
     if (slipRatio < absThreshold) {

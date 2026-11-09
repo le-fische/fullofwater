@@ -998,16 +998,16 @@ Answers to project design questions.
 
 ## 10. Changelog
 
-- **2026-11-09** - Git Commit Hash Traceability & Agent Version Control Protocol in `docs/skills.md`:
+- **2026-11-09** [Commit: `ee31b16`] - Git Commit Hash Traceability & Agent Version Control Protocol in `docs/skills.md`:
   - **Traceability Registry (Section 5):** Added git commit registry mapping every major platform milestone to short and full commit hashes (`821bad7`, `7ec4d17`, `7dbf059`, `c0a93cf`, `9f09850`, `3657d77`), dates, scope, implemented subsystems, primary files modified, and verification test commands.
   - **Inline Specification Badges:** Annotated all technical specifications across Sections 1 through 4 (track ribbon, cross-section extrusion, anti-noclip barriers, pit lane, forest engine, CAD ingestion, wheel rig, UV wrap mapper, lighting, cockpit VOR camera, Pacejka tires, consumables, engine harmonics, and headphone DSP) with direct `[Commit: <short-hash>]` badges.
   - **Agent Version Control Protocol (Section 6):** Codified mandatory instructions for future agents to record commit SHAs, file lists, and verification test commands in `docs/skills.md` and keep the living design doc in sync.
 
-- **2026-11-09** - Live Vercel Production Deployment:
+- **2026-11-09** [Commit: `ee31b16`] - Live Vercel Production Deployment:
   - **Production Hosting:** Linked and deployed platform to Vercel at `https://fullofwater-chi.vercel.app` (and `https://fullofwater-le-fisches-projects.vercel.app`) with clean URL routing for host simulation and phone controller (`/controller`).
   - **Build Integrity Fix:** Committed `src/host/render/trackside-assets.ts` and synchronized `package-lock.json` metadata, ensuring reproducible headless cloud builds.
 
-- **2026-11-09** - Phase 5 Nürburgring & Simulation Realism (Assetto Corsa Competizione Level) Complete & Validated:
+- **2026-11-09** [Commit: `3657d77`] - Phase 5 Nürburgring & Simulation Realism (Assetto Corsa Competizione Level) Complete & Validated:
   - **Surveyed Elevation Dynamics:** Verified 301.6m authentic vertical elevation drop (Breidscheid 323.1m to Hohe Acht 624.7m) with 33.0° banking at Caracciola-Karussell and smooth C2 spline orthonormal frames.
   - **Dense Eifel Forest ("The Green Hell"):** Implemented 3-tier dense vegetation engine (roadside undergrowth, mature spruce/pine canopies, deep mountain forest) rendering 1,379 trees per chunk with 2D spatial clearance hash grid anti-encroachment.
   - **Trackside Infrastructure:** Added 923 trackside assets including overhead steel truss sponsor bridges (Bilstein, Audi Sport, Yokohama, Dunlop), FIA debris catch fencing with dark wire mesh netting along spectator zones, and red-and-white tire barrier stacks and Tecpro energy absorption blocks at acute runoffs (Aremberg, Adenauer Forst, Wehrseifen, Brünnchen, Hohenrain).
@@ -1021,21 +1021,21 @@ Answers to project design questions.
   - **Headphone-Safe Transmission DSP:** Overhauled transmission whine with 2nd-order Butterworth low-pass filter at 3,200 Hz (-12 dB/octave), static parametric notch filter at 3,500 Hz (Q = 3.0, gain -8.0 dB), driveline torque scaling (-18 dB during coasting), and master DynamicsCompressorNode brickwall limiter (-6 dBFS, 8:1 ratio).
   - **Automated Validation:** Created `scripts/test-phase5.ts` (`npm run test:phase5`) validating all 11 subsystems with 100% pass rate.
 
-- **2026-11-09** - Official Project Re-Branding to "Full of Water":
+- **2026-11-09** [Commit: `c0a93cf`] - Official Project Re-Branding to "Full of Water":
   - **Platform Re-Branding:** Renamed the game from "Dual-Screen Web Racer" to **Full of Water** (`fullofwater`) across `package.json`, HTML document titles, Showroom Main Menu header branding, Vite and host startup console banners, and all technical documentation.
 
-- **2026-11-09** - Showroom Main Menu Side-Docking & Unblocked 3D Car Viewport:
+- **2026-11-09** [Commit: `c0a93cf`] - Showroom Main Menu Side-Docking & Unblocked 3D Car Viewport:
   - **Side-Docked Left Menu Column:** Re-architected both the Landing Portal (`landing-portal-wrap`) and Singleplayer 5-Step Sim Setup Wizard (`wizard-sidebar`) from center-screen overlays to an ultra-clean left-docked motorsport sidebar column (`width: min(460px, 36vw)`), leaving the right ~64% of the screen completely clear.
   - **Frustum-Shifted 3D Automotive Showroom Stage:** In `ShowroomStage`, dynamically offset camera projection matrix (`camera.setViewOffset`) rightward by half the sidebar width (`-Math.round(sidebarWidth / 2)`), centering the Porsche 911 RSR-19 directly in the open viewing space without skewing the 3D orbit pivot.
   - **Full Interactive Turntable & Discreet Control Hint:** Direct manipulation mouse/pointer drag (360° yaw swivel and stance pitch) and mouse wheel zoom remain 100% active across the entire open right viewport; added an obsidian glass viewport badge (`DRAG TO ROTATE • SCROLL TO ZOOM`).
   - **Responsive Viewport Support:** On smaller screens (< 860px), layout gracefully collapses to full width and resets camera frustum offset (`camera.clearViewOffset()`).
 
-- **2026-11-09** - Anti-Nausea Cockpit Stabilization, Smooth Spline Bumps & Sound Design Pipeline:
+- **2026-11-09** [Commit: `7ec4d17`] - Anti-Nausea Cockpit Stabilization, Smooth Spline Bumps & Sound Design Pipeline:
   - **Anti-Nausea Cockpit Camera:** Implemented 85–90% Vestibulo-Ocular Reflex (VOR) horizon lock on internal camera sightlines; decoupled cockpit interior and chassis body vibration so the car shakes over bumps while driver view remains stable, preventing simulator sickness.
   - **Smooth Spline Geometry & Multi-Band Bumps:** Faired track extrusion along C2 continuous spline (zero polygonal jaggedness or DEM staircasing) combined with procedural multi-band surface undulations and tar expansion joints for tactile suspension excitation.
   - **Sound Design Skill (`docs/skills.md` Section 4):** Standardized audio synthesis manual covering multi-harmonic flat-six combustion pulses, straight-cut gearbox whine attenuation (3.2 kHz low-pass, 3.5 kHz notch, torque load scaling) to prevent headphone ear fatigue, tire scrub noise, kerb thumps, and master brickwall compression.
 
-- **2026-11-09** - Phase 5 Nürburgring & Simulation Realism (Assetto Corsa Competizione Standard) Specification & Pipeline Manual:
+- **2026-11-09** [Commit: `7ec4d17`] - Phase 5 Nürburgring & Simulation Realism (Assetto Corsa Competizione Standard) Specification & Pipeline Manual:
   - **Strategic Re-Phasing:** Paused standalone Phase 3 and Phase 4; established Phase 5 (Nürburgring & Car Ultra-Realism) as active focus; shifted Private Multiplayer to Phase 6 and Multi-Class/Tracks to Phase 7.
   - **Surveyed Topography & Drastic Elevation Dynamics:** Calibrated vertical drop to authentic 306.8m (Breidscheid 320m to Hohe Acht 626.8m), sustained 11.7% Fuchsröhre plunge with severe G-compression, 300m Bergwerk climb, and authentic Karussell/Flugplatz camber.
   - **Dense Forest Immersion ("The Green Hell"):** Multi-tier forest walls with overhanging roadside canopies, 2D spatial clearance anti-encroachment grid, and GPU instancing with cross-quad billboard LODs maintaining 60–120 FPS.
@@ -1046,40 +1046,40 @@ Answers to project design questions.
   - **Lighting & Endurance Ambience:** Diffuse rear taillights/brake lights (no forward cockpit spill), physically based sunset/dawn atmospheric scattering, and continuous 24-hour day/night endurance cycle.
   - **Pipeline Manual (`docs/skills.md`):** Published complete engineering guide for procedural track extrusion and vehicle CAD/GLB ingestion, wheel rigging, and livery mapping.
 
-- **2026-11-07** - Dynamic Personal Hotspot IP Detection & Auto-Resolution:
+- **2026-11-07** [Commit: `7dbf059`] - Dynamic Personal Hotspot IP Detection & Auto-Resolution:
   - **Dynamic Interface Re-Evaluation:** Rewrote `getLocalIpAddress()` and `/api/network-info` in `vite.config.ts` to compute network interfaces on every request instead of caching the startup IP. When the laptop connects to a mobile Personal Hotspot (e.g. `172.20.10.x` on iPhone or `192.168.43.x` on Android), the QR code and controller link dynamically update to the hotspot IP (`https://172.20.10.2:5173/controller.html`) without restarting the server.
   - **Sub-5ms Hotspot Latency:** Direct P2P packet exchange over the cellular hotspot Wi-Fi or USB tethering connection between the iPhone controller and Mac host.
 
-- **2026-11-07** - Rolling Starts Completely Removed (Universal Standing F1 5-Red-Light Starts Everywhere):
+- **2026-11-07** [Commit: `7dbf059`] - Rolling Starts Completely Removed (Universal Standing F1 5-Red-Light Starts Everywhere):
   - **Eliminated Rolling Starts:** Deprecated and scrapped the rolling start state machine, 3-light countdown, and formation speed governor platform-wide per user directive (*"get rid of rolling starts entirely"*).
   - **Universal 2x2 Grid Placement:** Nordschleife, 24h Gesamtkurs, and GP-Strecke now consistently spawn in staggered 2x2 grid slots behind Start/Finish line (sample 0) facing downstream.
   - **Overhead FIA 5-Light Cluster & Launch Clamp:** All tracks feature the authentic overhead 5-red-light starting gantry, 1.0s sequential light ignition, random 0.4s–2.4s hold delay, jump-start detector (> 0.25m), and simultaneous lights out green flag release.
 
-- **2026-11-07** - Mobile Phone Controller Bridge & QR Network Realignment:
+- **2026-11-07** [Commit: `7dbf059`] - Mobile Phone Controller Bridge & QR Network Realignment:
   - **Local Network Wi-Fi QR Resolution:** In `MainMenu`, `generateQrCode()` previously defaulted to `window.location.origin` (`localhost:5173`), which caused mobile devices scanning the QR code to fail with unreachable host errors. Wired `/api/network-info` fetch so the QR code and pairing link dynamically encode the Mac host's true local network IPv4 address (`https://128.189.69.240:5173/controller.html`).
   - **Immediate Page-Load WebSocket Connection:** Mobile controller now initiates `connectWebSocket()` on page load rather than delaying until the "ENGINE START" push-button is tapped, giving immediate "WHEEL LINKED" confirmation on the host menu.
   - **Mobile Background Lifecycle Revival (`visibilitychange`):** Added `visibilitychange` event listeners to both [`controller.ts`](src/controller/controller.ts) and [`host-server.ts`](src/host/net/host-server.ts), automatically reconnecting dormant WebSockets when mobile Safari is resumed from lock screen or app switching.
 
-- **2026-11-07** - Reverse Lockout Resolution & Grand Prix Start/Finish Realignment:
+- **2026-11-07** [Commit: `7dbf059`] - Reverse Lockout Resolution & Grand Prix Start/Finish Realignment:
   - **Reverse Lockout during Starting Sequences:** Diagnosed and fixed vehicle reversing backwards during standing starts and rolling formations. Holding brakes at standstill accumulated `reverseHoldTimer > 0.30s`, shifting drivetrain into reverse gear (-1) under full throttle. Added `setReverseLock(locked: boolean)` on `Drivetrain` and `RaycastVehicle`, actively locking the transmission into 1st gear whenever `RaceProcedureDirector.isProcedureActive()`.
   - **Authentic Grand Prix Start/Finish Line (`osm_gp.json` & `stadium-assets.ts`):** Rotated surveyed GP-Strecke loop coordinates by 95 sample points, placing sample 0 directly on the main straight in front of the Haupttribüne and pit complex facing southwest towards Castrol-S Turn 1. Aligned start timing gantry, pit garages (samples 2–72, +26m right), and Haupttribüne (samples 0–75, -28m left) with 2x2 staggered starting grid boxes behind the line.
   - **Qualifying Auto-Broadcast & Grid Keybinding:** Completing a valid qualifying hotlap broadcasts the lap time to all room peers and opens the Grid Staging modal. Added `[G]` hotkey in race to toggle the official starting grid dialog.
 
-- **2026-11-07** - Direct Session Ingress, 2-Stage Multiplayer Ready Gates & Grid Seeding:
+- **2026-11-07** [Commit: `7dbf059`] - Direct Session Ingress, 2-Stage Multiplayer Ready Gates & Grid Seeding:
   - **Singleplayer Direct Launch:** Drivers proceed straight from configuration into race starting procedures without artificial 10s delay.
   - **Multiplayer 2-Stage Ready Architecture:**
     - Stage 1: All drivers ready up in lobby before host launches Qualifying Hotlap.
     - Stage 2: Post-quali leaderboard shows seeded grid (P1–P10); all drivers ready up before host launches Race starting sequence.
   - **Simplified HUD:** Redundant runtime toggles (`[U]`, `[T]`, etc.) removed from top-left HUD.
 
-- **2026-11-07** - Proper Sim Landing Hub, Stepped Configuration Flow, 10-Car Qualifying & HUD Simplification Architecture:
+- **2026-11-07** [Commit: `7dbf059`] - Proper Sim Landing Hub, Stepped Configuration Flow, 10-Car Qualifying & HUD Simplification Architecture:
   - **Landing Portal Selection:** Clean two-path sim entry separating Singleplayer Simulation from Multiplayer Paddock.
   - **Stepped Simulation Wizard:** Sequential setup (Class -> Vehicle -> Circuit -> Mode/Laps -> Weather/Time) creating an authentic, deliberate sim-racing paddock preparation experience.
   - **10-Second Staging Gate:** Added a pre-load readiness buffer with an audible 10-second countdown before loading into the track, eliminating the bug where rolling/standing start sequences fire while the driver is still browsing menus.
   - **10-Car Multiplayer & Pre-Race Qualifying:** Expanded lobby support to 10 cars with a pre-race qualifying shootout to determine starting grid order (P1–P10) based on fastest lap times.
   - **HUD Simplification:** Streamlined in-game top-left HUD by eliminating pre-configured environmental toggle chips (`[U]`, `[T]`), presenting an uncluttered professional timing & split cluster.
 
-- **2026-11-07** - Phase 4 Implementation: Private 4-Digit Lobbies, Dynamic Start Sequences, Smart Near-Crash Track Recovery & Kinematic Collision Modes:
+- **2026-11-07** [Commit: `7dbf059`] - Phase 4 Implementation: Private 4-Digit Lobbies, Dynamic Start Sequences, Smart Near-Crash Track Recovery & Kinematic Collision Modes:
   - **Step 4.1: Private 4-Digit Lobbies & Mesh Networking:**
     - Implemented 4-digit numeric room address space `[0000, 9999]` with `/api/create-room` endpoint and WebSocket signaling message `create_private_room`.
     - Added quick-join URL query parameter support (`?room=4821`) and one-click "COPY LINK" clipboard sharing.
@@ -1103,7 +1103,7 @@ Answers to project design questions.
     - Kinematic Impulse Mode: remote cars instantiate kinematic Rapier box colliders ($4.5\text{ m} \times 1.85\text{ m} \times 1.1\text{ m}$); local car bypasses contact during ghost invulnerability.
   - **Verification:** Built automated test suite `scripts/test-phase4.ts` and added `npm run test:phase4`, achieving 100% pass across all validation suites and `npm run build`.
 
-- **2026-11-07** - Phase 4 (Private 4-Digit Lobbies, Dynamic Start Sequences & Near-Crash Track Recovery) & Phase 5 (Multi-Class Motorsport Ecosystem & Dynamic Series) Specifications:
+- **2026-11-07** [Commit: `7dbf059`] - Phase 4 (Private 4-Digit Lobbies, Dynamic Start Sequences & Near-Crash Track Recovery) & Phase 5 (Multi-Class Motorsport Ecosystem & Dynamic Series) Specifications:
   - **Phase 4 Specification & Brainstorming Architecture:**
     - Documented private multiplayer lobbies addressed exclusively via memorable 4-digit join codes (e.g., `4821`, `7104`) with host controls (circuit, lap count, 2–16 max competitors, and collision toggle).
     - Specified format-specific race start procedures: Grand Prix standing start with official F1 5-red-light sequence (1.0s increments, random 0.4–2.4s hold, jump-start detection, no rolling start) versus Nürburgring Nordschleife rolling start with paced formation (60–80 km/h) and a floating 3-light HUD countdown rig.
@@ -1114,7 +1114,7 @@ Answers to project design questions.
     - Outlined iconic international circuits for roster expansion: Spa-Francorchamps, Monza, Circuit de la Sarthe (Le Mans), Suzuka, and Mount Panorama (Bathurst).
     - Designed multi-tier dynamic Main Menu evolution featuring championship series selection, class-filtered car grids, race calendars, and custom team livery options.
 
-- **2026-11-07** - Pit Lanes Scrapped (Infinite Tyre & Fuel Everywhere), Exterior-Only Rain (Zero Cockpit Rain), and Recessed High-Output Racing Headlights & Brake Lights:
+- **2026-11-07** [Commit: `7dbf059`] - Pit Lanes Scrapped (Infinite Tyre & Fuel Everywhere), Exterior-Only Rain (Zero Cockpit Rain), and Recessed High-Output Racing Headlights & Brake Lights:
   - **Pit Lanes Scrapped & Infinite Tyre/Fuel Active Everywhere:**
     - Deleted `src/host/gameplay/pit-lane.ts`, `src/host/ui/garage-setup-ui.ts`, and `src/controller/ui/pit-setup-menu.ts`, and removed all pit lane / garage setup buttons and protocol messages across Host and Controller.
     - Configured `RaycastVehicle` (`src/host/physics/raycast-vehicle.ts`) with `consumablesEnabled = false`, `wearRateMultiplier = 0.0`, and `fuelBurnMultiplier = 0.0` by default so infinite tyre life and infinite fuel remain active at all times, including in WebRTC P2P multiplayer with friends.
@@ -1128,7 +1128,7 @@ Answers to project design questions.
     - Upgraded racing headlight `THREE.SpotLight` beams (`distance = 280m`, `decay = 0.45`, `intensity = 24.0`) + wide cornering apron flood `SpotLight` (`distance = 115m`, `decay = 0.50`, `intensity = 14.0`) + recessed rear brake `THREE.PointLight` emitters driven by live brake telemetry.
   - **Verification:** Updated `scripts/test-phase3.ts` and verified 100% pass across `npm run build`, `npm test`, `npm run test:phase2`, and `npm run test:phase3`.
 
-- **2026-11-07** - Phase 3: Advanced Motorsport Systems Implementation & Verification (3.1, 3.2, 3.3, 3.4):
+- **2026-11-07** [Commit: `7dbf059`] - Phase 3: Advanced Motorsport Systems Implementation & Verification (3.1, 3.2, 3.3, 3.4):
   - **Phase 3.1: Interactive Pit Lane & Garage Setup UI (`pit-lane.ts`, `garage-setup-ui.ts`, `pit-setup-menu.ts`, `protocol.ts`):**
     - Built `PitLaneManager` with 3D Pit Box stall geometry, gantry, pit box entry detection ($\le 105\text{ km/h}$), automatic braking (`isPitAutoStopping`), overhead 3D Garage Bay spotlights, and mouse-orbitable inspection camera.
     - Built `GarageSetupUI` on Host and `ControllerPitSetupMenu` on Mobile Controller for tires (`slick_soft`, `slick_medium`, `slick_hard`, `wet`), fuel load (`10–110 L`), wing angle (`5°–18°`), brake bias (`50%–66%`), suspension springs, TC (`0–5`), and ABS.
@@ -1148,16 +1148,16 @@ Answers to project design questions.
     - Built `WebRTCMultiplayerLobby` (`<dialog>` modal UI opened via `[O]` or HUD button) with `RTCPeerConnection` + unordered `RTCDataChannel`, room signaling in `vite.config.ts`, manual SDP token exchange, 1-click in-browser Loopback P2P Pace Peer, 44-byte binary pose packets, and 3D remote peer car rendering.
   - **Verification:** Added `npm run test:phase3` (`scripts/test-phase3.ts`); verified 100% pass across `npm test`, `npm run test:phase2`, `npm run test:phase3`, and zero-error production build (`npm run build`).
 
-- **2026-11-07** - Strict Phase 2 Release Cap & User Authorization Policy:
+- **2026-11-07** [Commit: `821bad7`] - Strict Phase 2 Release Cap & User Authorization Policy:
   - Formally established release boundary: no releases permitted without explicit user authorization.
   - Project code and public repository state are strictly capped up to Phase 2; no GitHub releases, git tags, or production deployments will be triggered without explicit user sign-off.
 
-- **2026-11-07** - Version Control & Automatic GitHub Sync:
+- **2026-11-07** [Commit: `821bad7`] - Version Control & Automatic GitHub Sync:
   - Initialized dedicated Git repository in project root with clean `.gitignore`.
   - Added project `README.md` documenting architecture, local HTTPS setup, and validation commands.
   - Configured public GitHub repository push workflow (`dual-screen-web-racer`) to push all code, assets, and documentation once after every phase completion.
 
-- **2026-11-07** - Minimalist Luxury Motorsport Showroom Landing Page Polish & Unnecessary Text Eradication:
+- **2026-11-07** [Commit: `821bad7`] - Minimalist Luxury Motorsport Showroom Landing Page Polish & Unnecessary Text Eradication:
   - **Eradicated Unnecessary Description Texts & Clutter (`src/host/ui/main-menu.ts`):**
     - Removed multi-line `<p class="track-highlight">` description paragraphs, redundant difficulty badges, and emojis (`🏁`, `⮡`, `📱`) from all circuit cards.
     - Removed the floating `.menu-center-hint` banner (`"DRAG ANYWHERE TO SWIVEL..."`) that obstructed the Porsche 911 RSR's swan-neck rear wing in top-down camera views.
@@ -1170,7 +1170,7 @@ Answers to project design questions.
     - Replaced the bright cyan 64-segment torus ring (`0x38bdf8`) and cyan backlight with a subtle 128-segment brushed platinum chamfer ring (`0xe4e4e7`, `opacity: 0.16`) and neutral cool-silver studio rim lighting (`0xe2e8f0`).
   - **Verification:** Verified with `landing_page_polished_hero.png` and `landing_page_polished_topdown.png`, 100% pass on `npm test` and `npm run test:phase2`, and zero-error `npm run build`.
 
-- **2026-11-06** - Karussell Hairpin Voronoi Embankment Clamping, 2D Elevation Shelf Harmonization, Tree Voronoi Ownership & Extended DEM Sculpting:
+- **2026-11-06** [Commit: `821bad7`] - Karussell Hairpin Voronoi Embankment Clamping, 2D Elevation Shelf Harmonization, Tree Voronoi Ownership & Extended DEM Sculpting:
   - **2D Voronoi Perpendicular Bisector Embankment Clamping (`track-mesh-generator.ts`):**
     - Identified why the top (exit) part of the Karussell's terrain covered the bottom (entry) leg (`Steilstrecke`, $s = 11,830\text{ m}\dots 12,030\text{ m}$): at the hairpin neck, the entry and exit centerlines are only $27.9\text{ m}\text{–}45\text{ m}$ apart horizontally, yet `TrackMeshGenerator` previously extruded fixed $35\text{ m}$ embankments ($45.05\text{ m}$ from centerline), causing 163 embankment vertices from the upper exit leg ($s = 12,180\text{ m}\dots 12,350\text{ m}$) to stretch $17.15\text{ m}$ past the lower leg's centerline and form a green terrain roof directly over the lower road.
     - Implemented exact 2D Voronoi perpendicular bisector clamping ($s_{\text{bisector}} = \frac{D^2}{2u} - 1.2\text{ m}$) with $C^1$ Hermite sub-slice interpolation and vertical anti-roof floor clamping ($y \le y_{\text{nearbyMin}} - 0.80\text{ m}$). Reduced embankment vertices overlapping road from 163 to **0** across all circuits (minimum clearance to any non-adjacent centerline $\ge 15.66\text{ m}$).
@@ -1183,7 +1183,7 @@ Answers to project design questions.
     - Extended `dem.json` grid from $n_z = 102$ to $n_z = 118$ ($z_{\max} = 4,835.1\text{ m}$) to cover the entire southern loop of the GP-Strecke (`Dunlop-Kehre` at $z = 4,374\text{ m}$), and sculpted every DEM vertex within $75\text{ m}$ of any circuit to sit $3.5\text{ m}$ below the **minimum** nearby track elevation across all 3 layouts (`nordschleife`, `24h`, `gp`).
   - **Verification:** Verified 0 embankment-over-road vertices, 0 DEM clipping violations across all 3 circuits, 100% pass on `npm test` and `npm run test:phase2`, clean `npm run build`, and visual screenshot verification at $11.85\text{ km}$, $11.95\text{ km}$, $12.09\text{ km}$, and $12.26\text{ km}$.
 
-- **2026-11-06** - Elimination of Triangle-Step Bumpiness, Taubin Zero-Shrinkage Curve Fairing, Analytical Spline Frames & 2nd-Order Pneumatic Damper Filtering:
+- **2026-11-06** [Commit: `821bad7`] - Elimination of Triangle-Step Bumpiness, Taubin Zero-Shrinkage Curve Fairing, Analytical Spline Frames & 2nd-Order Pneumatic Damper Filtering:
   - **Fixed 4th-Order Tangent Z-Divisor Bug (`centerline.ts`):**
     - Fixed missing `/ 12` divisor on the $Z$ component of the 4th-order central-difference tangent in `centerline.ts`, which had previously scaled $t_z$ by $12\times$ relative to $t_x$ and $t_y$, causing `sp.normal` to wobble and tilt road cross-sections vertically across East-West segments.
   - **8-Pass Taubin Zero-Shrinkage Curve Fairing (`centerline.ts`):**

@@ -9,7 +9,7 @@ A sim-lite racing platform running directly in modern web browsers.
 
 ## Instant Play in Browser (Vercel)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fle-fische%2Fdual-screen-web-racer)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fle-fische%2Ffullofwater)
 
 You can play directly in any desktop browser without installing or launching a local server:
 - **Showroom:** Mouse drag to rotate the 3D turntable, scroll to zoom. Choose from 4 circuits (Nordschleife, 24h, GP-Strecke, Proving Ground), 8 liveries, and custom car numbers.
@@ -40,7 +40,7 @@ You can play directly in any desktop browser without installing or launching a l
 ## Architecture
 
 ```
-dual-screen-web-racer/
+fullofwater/
 ├── src/
 │   ├── host/                 # Host computer application (Three.js & Rapier 3D)
 │   │   ├── main.ts           # Game loop orchestrator
@@ -72,8 +72,8 @@ dual-screen-web-racer/
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/le-fische/dual-screen-web-racer.git
-cd dual-screen-web-racer
+git clone https://github.com/le-fische/fullofwater.git
+cd fullofwater
 
 # Install dependencies
 npm install

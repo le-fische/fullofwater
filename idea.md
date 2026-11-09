@@ -911,6 +911,7 @@ Agent suggestions. **None of these are accepted yet.** Move an item into the mai
 | P16 | **Mini steering wheel graphic in center of controller screen** | Visual indicator of current wheel angle on the phone. |
 | P17 | **Manual DRS and Hybrid ERS/Push-to-Pass Boost** | Triggerable via controller buttons and bounded by track marker zones like real racecars. |
 | P18 | **High-polygon animated driver arms with racing gloves** | Ultra-detailed 3D driver arms with Alpinestars/Sparco competition gloves wrapped around the steering wheel, animated with inverse kinematics or skeletal skinning matching wheel rotation (deferred per user request). |
+| P19 | **Client-Sided Multi-Tenant Controller Pairing on Vercel** | Ephemeral 4-digit PIN / query parameter (`?session=XXXX`) encoded in the host QR code paired via direct WebRTC DataChannels, allowing unlimited simultaneous players on Vercel without session collisions or backend logins. |
 
 ---
 

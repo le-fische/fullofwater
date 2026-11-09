@@ -4,8 +4,8 @@
 > Technical review, spec sheet and open questions are in [spec.md](spec.md).
 > Implementation roadmap and agent prompts are in [implementation.md](implementation.md).
 
-**Status:** Phase 1 Complete; Phase 2 Authentic Surveyed Nürburgring Nordschleife & 24h Layout Live; Phase 3 Paused (physics merged into Phase 5); Phase 4 Paused (moved to Phase 6); Phase 5 Nürburgring & Car Ultra-Realism (Assetto Corsa Competizione Level) Active; Phase 6 Private Multiplayer Planned; Phase 7 Multi-Class & Global Tracks Roadmap.
-**Last updated:** 2026-11-09 (Showroom Main Menu Side-Docking & Unblocked 3D Turntable Car Viewport; Phase 5 ACC Realism Active)
+**Status:** Phase 1 Complete; Phase 2 Authentic Surveyed Nürburgring Nordschleife & 24h Layout Live; Phase 3 Paused (physics merged into Phase 5); Phase 4 Paused (moved to Phase 6); Phase 5 Nürburgring & Car Ultra-Realism (Assetto Corsa Competizione Level) Complete & Validated; Phase 6 Private Multiplayer Planned; Phase 7 Multi-Class & Global Tracks Roadmap.
+**Last updated:** 2026-11-09 (Phase 5 ACC Realism Complete & Validated: 301.6m Elevation Drop, Dense Forest, CCD Barriers, Pit Lane, VOR Cockpit Camera, Sound DSP & Consumables)
 
 ---
 
@@ -991,10 +991,25 @@ Answers to project design questions.
 | 2026-11-09 | Dedicated Sound Design Skill & Ear-Fatigue Mitigation | Added Section 4 to docs/skills.md; overhauled transmission whine with 3.2 kHz Butterworth low-pass filter, 3.5 kHz parametric notch (-8 dB), and driveline torque attenuation to protect headphone users from painful ear fatigue. |
 | 2026-11-09 | Showroom Menu Side-Docking & Unblocked 3D Car View | User directive: *"in the menu right now all the options are blocking the car view, maybe move menu options to the side? and have car in middle/other side?"*. Re-architected showroom Main Menu (Landing Portal and 5-Step Sim Setup Wizard) into a left-docked 460px sidebar (`min(460px, 36vw)`). Utilized Three.js camera projection frustum offset (`camera.setViewOffset`) to shift optical focal center rightward by half the sidebar width, centering the 3D Porsche 911 RSR-19 turntable symmetrically in the open right viewport with 100% visibility, 360° direct-manipulation pointer swivel, and wheel zoom. |
 | 2026-11-09 | Project Re-Branding to "Full of Water" | User directive: *"change name to something cool though not dual screen web racer"*. Renamed the platform to **Full of Water** (`fullofwater`) across all metadata, UI headers, titles, and documentation. |
+| 2026-11-09 | Phase 5 Implementation & Verification | Completed and validated all 11 Phase 5 subsystems: 301.6m surveyed elevation drop, multi-tier dense Eifel forest (1,379 trees/chunk with spatial hash anti-encroachment), 923 trackside assets (FIA catch fencing, tire barriers, overhead sponsor bridges), thickened volumetric barriers (0.60m) with Rapier CCD, drivable pit lane (7.5m apron, concrete pit wall, 10 team stalls, 60 km/h limiter), HUD fake AI dot cleanup retaining player PB ghost, slip-energy tyre wear, dynamic fuel burn, 3-zone brake thermal curve, diffuse rear taillights, 88% VOR anti-nausea horizon lock cockpit camera, non-jagged C2 spline with multi-band bump dynamics, and headphone-safe audio DSP (3.2 kHz Butterworth low-pass, 3.5 kHz notch, torque attenuation). 100% test pass on npm run test:phase5. |
 
 ---
 
 ## 10. Changelog
+
+- **2026-11-09** - Phase 5 Nürburgring & Simulation Realism (Assetto Corsa Competizione Level) Complete & Validated:
+  - **Surveyed Elevation Dynamics:** Verified 301.6m authentic vertical elevation drop (Breidscheid 323.1m to Hohe Acht 624.7m) with 33.0° banking at Caracciola-Karussell and smooth C2 spline orthonormal frames.
+  - **Dense Eifel Forest ("The Green Hell"):** Implemented 3-tier dense vegetation engine (roadside undergrowth, mature spruce/pine canopies, deep mountain forest) rendering 1,379 trees per chunk with 2D spatial clearance hash grid anti-encroachment.
+  - **Trackside Infrastructure:** Added 923 trackside assets including overhead steel truss sponsor bridges (Bilstein, Audi Sport, Yokohama, Dunlop), FIA debris catch fencing with dark wire mesh netting along spectator zones, and red-and-white tire barrier stacks and Tecpro energy absorption blocks at acute runoffs (Aremberg, Adenauer Forst, Wehrseifen, Brünnchen, Hohenrain).
+  - **Anti-Noclip Thickened Barriers & Rapier CCD:** Extruded 3D volumetric barrier collision envelopes (depth $t = 0.60\text{ m} \ge 0.50\text{ m}$, 15 vertices per section) combined with Rapier Continuous Collision Detection (`bodyDesc.setCcdEnabled(true)`), preventing barrier tunneling on 300+ km/h impacts.
+  - **Dedicated Drivable Pit Lane & Speed Limiter:** Implemented physically separate 7.5m concrete pit apron parallel to Start-Ziel straight, partitioned by continuous 1.05m concrete pit wall, deceleration entry lane, 10 marked team pit stalls with overhead lollipop gantries, and automated/manual 60 km/h pit speed limiter (`[L]` hotkey or mobile button) with staccato audio governor cuts and pit crew service stops.
+  - **HUD Radar & Flag Cleanup:** Removed synthetic fake AI competitor dots from minimap radar and cockpit micro-radar; strictly retained player's personal best ghost car blip and real WebRTC peers; removed placeholder yellow flag cycling.
+  - **ACC Vehicle Physics & Consumables:** Implemented slip-energy tyre degradation reducing peak Pacejka friction D, dynamic fuel burn (0.75 kg/L) shifting chassis mass and balance, and 3-zone brake thermal curve (cold bite under 200°C, optimal window 350–650°C at 1.05 efficiency, thermal fade above 750°C down to 0.43 at 1,100°C).
+  - **Lighting & Atmospheric Ambience:** Calibrated rear taillights/brake lights to diffuse automotive luminance (`emissiveIntensity = 1.8` under braking) with localized ground bounce and zero forward cockpit light wash; continuous 24-hour day/night cycle with golden hour sunset and dawn scattering.
+  - **Anti-Nausea Cockpit Camera (VOR):** Implemented 88% Vestibulo-Ocular Reflex horizon lock stabilizing camera pitch and roll against world horizontal plane; decoupled cockpit interior and chassis micro-vibration ($\le 2.5\text{ mm}$ displacement) for visceral peripheral bump feedback with zero motion sickness.
+  - **Procedural Multi-Band Bump Dynamics:** Smooth non-jagged C2 cubic spline geometry overlaid with procedural Perlin undulations and tar expansion joints directly in 240 Hz suspension raycasting.
+  - **Headphone-Safe Transmission DSP:** Overhauled transmission whine with 2nd-order Butterworth low-pass filter at 3,200 Hz (-12 dB/octave), static parametric notch filter at 3,500 Hz (Q = 3.0, gain -8.0 dB), driveline torque scaling (-18 dB during coasting), and master DynamicsCompressorNode brickwall limiter (-6 dBFS, 8:1 ratio).
+  - **Automated Validation:** Created `scripts/test-phase5.ts` (`npm run test:phase5`) validating all 11 subsystems with 100% pass rate.
 
 - **2026-11-09** - Official Project Re-Branding to "Full of Water":
   - **Platform Re-Branding:** Renamed the game from "Dual-Screen Web Racer" to **Full of Water** (`fullofwater`) across `package.json`, HTML document titles, Showroom Main Menu header branding, Vite and host startup console banners, and all technical documentation.

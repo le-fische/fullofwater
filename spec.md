@@ -15,7 +15,7 @@ Full of Water decouples the user interface across two physical devices:
 - **Phase 2 (Dedicated Nürburgring Nordschleife):** Complete and validated. Proves 20,832m centerline spline, 11-chunk partition system with 100m collision overlaps, dynamic 3-chunk window streamer, floating origin, and lap timing.
 - **Phase 3 (Advanced Motorsport Systems):** Paused. Foundational telemetry (9-sector timing, local ghost recording) retained; pit lane removal reversed and merged into Phase 5 simulation realism.
 - **Phase 4 (Private Multiplayer, Start Procedures & Track Recovery):** Paused per user direction to prioritize simulation realism. Moved to Phase 6.
-- **Phase 5 (Nürburgring & Simulation Realism - Assetto Corsa Competizione Level):** Active Target. Elevates the circuit and vehicle to authentic sim-racing benchmarks: surveyed elevation profile with steep drops/climbs, dense multi-tier Eifel forest, FIA catch fencing, tire barriers, sponsor bridges, anti-noclip CCD guardrails, dedicated drivable pit lane with speed limiter & team stalls, radar ghost retention / fake dot cleanup, tyre wear, fuel mass burn, brake thermal curves, diffuse realistic rear lighting, 24-hour cycle, and track/car creation engineering documentation (`docs/skills.md`).
+- **Phase 5 (Nürburgring & Simulation Realism - Assetto Corsa Competizione Level):** Complete and validated. Elevates the circuit and vehicle to authentic sim-racing benchmarks: surveyed elevation profile with 301.6m vertical drop, 1,379 trees/chunk dense multi-tier Eifel forest, FIA catch fencing, red/white tire barriers, overhead sponsor bridges, anti-noclip CCD volumetric guardrails, dedicated drivable pit lane with 60 km/h speed limiter & 10 team stalls, radar ghost retention / fake dot cleanup, slip-energy tyre wear, fuel mass burn, 3-zone brake thermal efficiency curves, diffuse realistic rear lighting, 24-hour day/night cycle, 88% VOR anti-nausea horizon lock cockpit camera, smooth C2 spline with multi-band bump dynamics, headphone-safe transmission whine DSP, and track/car creation engineering documentation (`docs/skills.md`).
 - **Phase 6 (Private Multiplayer & Dynamic Race Procedures):** Paused (formerly Phase 4). 4-digit code private lobbies, universal FIA 5-red-light standing starts, and near-crash track recovery.
 - **Phase 7 (Multi-Class Motorsport Ecosystem & Dynamic Series):** Scheduled roadmap (formerly Phase 5). Multi-class vehicle homologation, international circuits, and dynamic series championship menu hub.
 
@@ -927,19 +927,19 @@ Phase 4: Private Multiplayer, Start Procedures & Track Recovery (Paused / Moved 
 ├── M4.4: Complete removal of rolling starts across all circuits in favor of universal 2x2 grid standing start [DONE]
 └── M4.5: Smart near-crash track recovery respawn with anti-exploit offset & 3s ghost invulnerability [DONE]
 
-Phase 5: Nürburgring & Simulation Realism - Assetto Corsa Competizione Level (Active Target)
-├── M5.1: Topographical elevation recalibration & steep gradient dynamics (Fuchsröhre, Breidscheid, Bergwerk)
-├── M5.2: Multi-layer dense Eifel forest immersion & roadside canopy engine
-├── M5.3: Trackside assets (FIA catch fencing, tire barriers, sponsor bridges)
-├── M5.4: Thickened safety barriers (>=0.5m) & Continuous Collision Detection (CCD)
-├── M5.5: Dedicated drivable pit lane, concrete pit wall & 10+ pit box stalls with 60 km/h limiter
-├── M5.6: HUD radar & flag cleanup (remove fake dots/flags, retain PB ghost car dot)
-├── M5.7: Vehicle physical realism (tyre wear, dynamic fuel mass, brake thermal curves)
-├── M5.8: Visual & lighting realism (diffuse rear lights, sunset/dawn overhaul, 24-hour cycle)
+Phase 5: Nürburgring & Simulation Realism - Assetto Corsa Competizione Level (Completed & Verified)
+├── M5.1: Topographical elevation recalibration & steep gradient dynamics (301.6m drop, 33.0° Karussell) [DONE]
+├── M5.2: Multi-layer dense Eifel forest immersion & roadside canopy engine (1,379 trees/chunk) [DONE]
+├── M5.3: Trackside assets (FIA catch fencing, tire barriers, sponsor bridges) [DONE]
+├── M5.4: Thickened safety barriers (>=0.5m) & Continuous Collision Detection (CCD) [DONE]
+├── M5.5: Dedicated drivable pit lane, concrete pit wall & 10+ pit box stalls with 60 km/h limiter [DONE]
+├── M5.6: HUD radar & flag cleanup (remove fake dots/flags, retain PB ghost car dot) [DONE]
+├── M5.7: Vehicle physical realism (tyre wear, dynamic fuel mass, brake thermal curves) [DONE]
+├── M5.8: Visual & lighting realism (diffuse rear lights, sunset/dawn overhaul, 24-hour cycle) [DONE]
 ├── M5.9: Track and vehicle creation engineering manual (`docs/skills.md`) [DONE]
-├── M5.10: Anti-nausea cockpit camera VOR horizon lock & chassis bump vibration
-├── M5.11: Non-jagged smooth C2 spline geometry with procedural multi-band surface bumps
-└── M5.12: Dedicated sound design pipeline & headphone-safe gearbox whine filtering [DONE in docs/skills.md]
+├── M5.10: Anti-nausea cockpit camera VOR horizon lock & chassis bump vibration [DONE]
+├── M5.11: Non-jagged smooth C2 spline geometry with procedural multi-band surface bumps [DONE]
+└── M5.12: Dedicated sound design pipeline & headphone-safe gearbox whine filtering [DONE]
 
 Phase 6: Private Multiplayer & Dynamic Race Procedures (Paused)
 ├── M6.1: Private 4-digit code lobby signaling & room join pipeline

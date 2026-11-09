@@ -249,7 +249,7 @@ function webSocketBridgePlugin(): Plugin {
 
       const currentIp = getLocalIpAddress();
       console.log('\n======================================================');
-      console.log('🏎️  DUAL-SCREEN WEB RACER READY');
+      console.log('🏎️  FULL OF WATER READY');
       console.log(`🖥️  Host Screen:       https://${currentIp}:5173/`);
       console.log(`📱 iPhone Controller: https://${currentIp}:5173/controller.html`);
       console.log('======================================================\n');

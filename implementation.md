@@ -1,4 +1,4 @@
-# Implementation Plan & Agent Prompts: Dual-Screen Web Racer
+# Implementation Plan & Agent Prompts: Full of Water
 
 Living technical roadmap and operational instructions for autonomous coding subagents.
 Companion documents: [idea.md](idea.md) (Design Doc) and [spec.md](spec.md) (Engineering Specification).

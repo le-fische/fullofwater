@@ -43,6 +43,7 @@ export class ShowroomStage {
   private boundOnPointerMove = this.onPointerMove.bind(this);
   private boundOnPointerUp = this.onPointerUp.bind(this);
   private boundOnWheel = this.onWheel.bind(this);
+  private boundOnResize = () => this.onResize(window.innerWidth, window.innerHeight);
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -59,6 +60,8 @@ export class ShowroomStage {
       0.1,
       100
     );
+    this.updateCameraOffset(window.innerWidth, window.innerHeight);
+    window.addEventListener('resize', this.boundOnResize);
 
     // 3. Materials
     this.paintMaterial = new THREE.MeshStandardMaterial({
@@ -441,7 +444,26 @@ export class ShowroomStage {
 
   public onResize(width: number, height: number): void {
     this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    this.updateCameraOffset(width, height);
+  }
+
+  /**
+   * Adjusts the camera projection frustum offset so the 3D car sits perfectly
+   * centered in the visible area to the right of the docked side menu.
+   */
+  public updateCameraOffset(width: number, height: number): void {
+    if (width < 860) {
+      this.camera.clearViewOffset();
+    } else {
+      // Left docked menu is min(460px, 36vw).
+      // Center of remaining viewport is shifted right by half the sidebar width.
+      const sidebarWidth = Math.min(460, Math.round(width * 0.36));
+      this.camera.setViewOffset(width, height, -Math.round(sidebarWidth / 2), 0, width, height);
+    }
+  }
+
+  public clearFrustumOffset(): void {
+    this.camera.clearViewOffset();
   }
 
   /**
@@ -480,6 +502,7 @@ export class ShowroomStage {
   }
 
   public dispose(): void {
+    window.removeEventListener('resize', this.boundOnResize);
     this.setEnabled(false);
   }
 }

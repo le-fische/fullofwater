@@ -1,4 +1,4 @@
-# Dual-Screen Web Racer
+# Full of Water
 
 A sim-lite racing platform running directly in modern web browsers.
 

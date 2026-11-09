@@ -136,6 +136,10 @@ export class HostHud {
   private notificationBannerEl!: HTMLElement;
   private notificationTimer: any = null;
 
+  // Phase 5 Dedicated Pit Lane & Limiter Display
+  private pitRow!: HTMLElement;
+  private pitStatusDisplay!: HTMLElement;
+
   // Minimap
   private minimapCanvas!: HTMLCanvasElement;
   private minimapCtx!: CanvasRenderingContext2D;
@@ -212,6 +216,10 @@ export class HostHud {
             <span class="meta-val" id="hud-sprint">--</span>
             <span class="meta-label">0-200:</span>
             <span class="meta-val" id="hud-sprint-200">--</span>
+          </div>
+          <!-- Phase 5: Pit Lane & Limiter Indicator -->
+          <div class="hud-meta-row" id="hud-pit-row" style="display: none; margin-top: 4px;">
+            <span id="hud-pit-status" style="font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: rgba(234, 179, 8, 0.25); border: 1px solid #eab308; color: #fef08a; letter-spacing: 0.5px;">PIT LANE</span>
           </div>
         </div>
 
@@ -335,6 +343,10 @@ export class HostHud {
     this.startPodsRowEl = this.container.querySelector('#hud-lights-pod-row')!;
     this.startBannerEl = this.container.querySelector('#hud-start-banner')!;
     this.notificationBannerEl = this.container.querySelector('#hud-notification-banner')!;
+
+    // Phase 5 Elements
+    this.pitRow = this.container.querySelector('#hud-pit-row')!;
+    this.pitStatusDisplay = this.container.querySelector('#hud-pit-status')!;
 
     // Modal
     this.trackModalBackdrop = this.container.querySelector('#track-menu-backdrop')!;
@@ -1323,6 +1335,27 @@ export class HostHud {
         ? `${weatherStr} (${wetPct}% WET) • ${timeStr}${hydroTag}`
         : `${weatherStr} • ${timeStr}`;
     this.envSummaryEl.style.color = data.telemetry.isHydroplaning ? '#ef4444' : '#f4f4f5';
+
+    // Phase 5: Dedicated Pit Lane & Speed Limiter Status Indicator
+    if (data.pitStatusLabel) {
+      this.pitRow.style.display = 'flex';
+      this.pitStatusDisplay.innerText = data.pitStatusLabel;
+      if (data.pitStatusLabel.includes('EXCEEDED')) {
+        this.pitStatusDisplay.style.background = 'rgba(239, 68, 68, 0.35)';
+        this.pitStatusDisplay.style.borderColor = '#ef4444';
+        this.pitStatusDisplay.style.color = '#fca5a5';
+      } else if (data.pitStatusLabel.includes('COMPLETE') || data.pitStatusLabel.includes('GO GO GO')) {
+        this.pitStatusDisplay.style.background = 'rgba(34, 197, 94, 0.35)';
+        this.pitStatusDisplay.style.borderColor = '#22c55e';
+        this.pitStatusDisplay.style.color = '#86efac';
+      } else {
+        this.pitStatusDisplay.style.background = 'rgba(234, 179, 8, 0.25)';
+        this.pitStatusDisplay.style.borderColor = '#eab308';
+        this.pitStatusDisplay.style.color = '#fef08a';
+      }
+    } else {
+      this.pitRow.style.display = 'none';
+    }
   }
 
   public setPaintName(name: string): void {

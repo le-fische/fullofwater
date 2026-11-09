@@ -21,6 +21,7 @@ import { EifelTerrain } from './render/terrain';
 import { ShowroomStage } from './render/showroom-stage';
 import { MainMenu } from './ui/main-menu';
 import { StadiumAssets } from './render/stadium-assets';
+import { TracksideAssetsManager } from './render/trackside-assets';
 import { CompetitionField, RaceFlagStatus } from './gameplay/competition-field';
 import { TrackDryingLine } from './physics/drying-line';
 import { EnvironmentManager } from './render/environment-manager';
@@ -68,6 +69,7 @@ class HostApplication {
   private latestLapTelemetry?: LapTelemetry;
   public competitionField = new CompetitionField();
   private stadiumAssets?: StadiumAssets;
+  public tracksideAssets?: TracksideAssetsManager;
 
   // Phase 3 Advanced Motorsport Subsystems
   public dryingLine = new TrackDryingLine(20832.0, 256, 7);
@@ -115,7 +117,7 @@ class HostApplication {
   private sessionMaxSpeed = 0;
 
   async start(): Promise<void> {
-    console.log('Initializing Dual-Screen Web Racer Host...');
+    console.log('Initializing Full of Water Host...');
 
     // 1. Initialize Rapier 3D physics
     await this.physicsWorld.init();
@@ -321,6 +323,14 @@ class HostApplication {
         this.stage.scene.add(this.stadiumAssets.group);
       }
 
+      // Phase 5 Trackside Realism: Sponsor bridges, catch fences, red/white barriers, dedicated pit lane
+      this.tracksideAssets?.dispose();
+      this.tracksideAssets = new TracksideAssetsManager(
+        this.stage.scene,
+        this.physicsWorld.world,
+        this.centerline.samples
+      );
+
       // Standing start: spawn in authentic 2x2 grid box behind Start/Finish line (sample 0)
       const spawnYaw = Math.atan2(sp0.tangent.x, sp0.tangent.z);
       this.streamer.update(0);
@@ -362,6 +372,9 @@ class HostApplication {
       this.raceDirector.setGantryTransform(new THREE.Vector3(0, 0, 15), new THREE.Vector3(0, 0, 1));
       this.raceDirector.startProcedure(new THREE.Vector3(0, 0.6, 0));
     }
+
+    // Phase 5: Enable dynamic consumables (tyre wear & fuel mass depletion)
+    this.vehicle.setConsumablesEnabled(true);
 
     // 2b. Attach Phase 3 Drying Line & Ghost Car to active track
     const trackLen = this.centerline?.totalLengthM ?? 6000.0;
@@ -514,7 +527,7 @@ class HostApplication {
           this.keyState.rearView = true;
           break;
         case 'KeyF':
-          this.competitionField.cycleFlag();
+          // Phase 5 Step 5.6: Placeholder yellow flag cycling decommissioned
           break;
         case 'KeyU': {
           const env = this.environmentManager.cycleWeather();
@@ -525,6 +538,14 @@ class HostApplication {
           this.environmentManager.cycleTimePreset();
           break;
         case 'KeyL':
+          // Phase 5 Step 5.5: Toggle Pit Lane 60 km/h Speed Limiter
+          if (this.tracksideAssets) {
+            this.tracksideAssets.isPitLimiterActive = !this.tracksideAssets.isPitLimiterActive;
+            this.vehicle?.setPitLimiter(this.tracksideAssets.isPitLimiterActive);
+          } else {
+            this.vehicle?.togglePitLimiter();
+          }
+          break;
         case 'KeyH':
           if (this.carMesh) {
             const on = this.carMesh.toggleHeadlights();
@@ -944,7 +965,34 @@ class HostApplication {
 
       const microRadar = this.carMesh.cockpit?.getMicroRadarDisplay?.();
       if (microRadar && this.centerline) {
-        const nearbyCars = this.competitionField.getNearbyCars(carPos, 35.0);
+        // Phase 5 Step 5.6: Strictly retain personal best ghost car or real peers; eliminate synthetic AI dots
+        const nearbyCars: any[] = [];
+        if (this.ghostCarManager.hasBestGhost()) {
+          const gPos = this.ghostCarManager.getCurrentPosition();
+          if (gPos && gPos.distanceTo(carPos) < 45.0) {
+            nearbyCars.push({
+              id: 'pb_ghost',
+              number: 'PB',
+              color: '#38bdf8',
+              worldPos: gPos,
+              headingRad: 0,
+              speedKmh: 0,
+            });
+          }
+        }
+        for (const peer of this.webrtcLobby.getRemotePeers()) {
+          const pPos = new THREE.Vector3(peer.pos[0], peer.pos[1], peer.pos[2]);
+          if (pPos.distanceTo(carPos) < 45.0) {
+            nearbyCars.push({
+              id: peer.peerId,
+              number: peer.peerId,
+              color: '#e11d48',
+              worldPos: pPos,
+              headingRad: 0,
+              speedKmh: peer.speedKmh,
+            });
+          }
+        }
         microRadar.update(
           carPos,
           carQuat,
@@ -953,6 +1001,23 @@ class HostApplication {
           nearbyCars,
           frameDelta
         );
+      }
+    }
+
+    // Phase 5 Step 5.5: Update Dedicated Pit Lane Manager & Limiter State
+    let pitStatusLabel: string | undefined;
+    if (this.tracksideAssets) {
+      const carPosVec = new THREE.Vector3(chassisPos.x, chassisPos.y, chassisPos.z);
+      const pitInfo = this.tracksideAssets.update(
+        frameDelta,
+        carPosVec,
+        speed,
+        telemetry.distanceM ?? 0
+      );
+      this.vehicle.setPitLimiter(pitInfo.speedLimiterActive);
+      pitStatusLabel = pitInfo.pitStatusLabel;
+      if (pitInfo.triggerServiceComplete) {
+        this.vehicle.serviceCar(true, 60.0);
       }
     }
 
@@ -987,19 +1052,26 @@ class HostApplication {
       liveDeltaMs: this.latestLapTelemetry?.liveDeltaMs,
       weatherLabel: envState.weather.replace('_', ' ').toUpperCase(),
       timeOfDayLabel: this.environmentManager.formatTimeOfDay(),
+      pitStatusLabel,
       ghostActive: this.ghostCarManager.hasBestGhost(),
       p2pPeerCount: this.webrtcLobby.getConnectedPeerCount(),
     });
 
-    // Update Live Circuit Radar Minimap with dynamic flags, AI cars, and WebRTC P2P peers
-    const opponentDots = this.competitionField.cars.map((c) => ({
-      x: c.worldPos.x,
-      z: c.worldPos.z,
-      color: c.color,
-      number: c.number,
-    }));
+    // Phase 5 Step 5.6: Update Live Circuit Radar Minimap retaining strictly PB ghost car and real WebRTC peers
+    const radarDots: Array<{ x: number; z: number; color: string; number: string }> = [];
+    if (this.ghostCarManager.hasBestGhost()) {
+      const gPos = this.ghostCarManager.getCurrentPosition();
+      if (gPos) {
+        radarDots.push({
+          x: gPos.x,
+          z: gPos.z,
+          color: '#38bdf8', // Cyan PB Ghost
+          number: 'PB',
+        });
+      }
+    }
     for (const peer of this.webrtcLobby.getRemotePeers()) {
-      opponentDots.push({
+      radarDots.push({
         x: peer.pos[0],
         z: peer.pos[2],
         color: '#e11d48',
@@ -1011,8 +1083,8 @@ class HostApplication {
       chassisPos.z,
       chassisRot,
       this.currentTrack,
-      this.competitionField.flagStatus,
-      opponentDots
+      'GREEN', // Clean all-clear FIA flag status
+      radarDots
     );
 
     // Render Three.js frame

@@ -223,7 +223,7 @@ export class MainMenu {
       <!-- Top Studio Header Bar -->
       <header class="menu-header">
         <div class="menu-brand">
-          <span class="menu-logo-mark">PORSCHE</span>
+          <span class="menu-logo-mark">FULL OF WATER</span>
           <span class="menu-brand-sep"></span>
           <span class="menu-title">MOTORSPORT SIMULATOR</span>
           <span class="menu-model-tag">FIA SIM-LITE</span>
@@ -249,7 +249,7 @@ export class MainMenu {
       <!-- Center Landing Portal Choice Cards -->
       <div class="landing-portal-wrap">
         <div class="landing-headline-block">
-          <span class="landing-badge">AUTHENTIC DUAL-SCREEN MOTORSPORT</span>
+          <span class="landing-badge">FULL OF WATER • MOTORSPORT SIMULATION</span>
           <h1 class="landing-title">SELECT RACING PLATFORM</h1>
           <p class="landing-sub">Experience dedicated singleplayer career & time attack simulations or enter a 10-car private multiplayer paddock with pre-race qualifying.</p>
         </div>
@@ -268,7 +268,7 @@ export class MainMenu {
             <div class="landing-feature-chips">
               <span>5-Step Sim Setup</span>
               <span>Direct Session Ingress</span>
-              <span>Standing & Rolling Starts</span>
+              <span>Standing Starts</span>
               <span>Local Ghost Lap</span>
             </div>
             <div class="landing-card-cta cta-sp">
@@ -299,6 +299,12 @@ export class MainMenu {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- 3D Turntable Viewport Controls Hint -->
+      <div class="showroom-viewport-hint">
+        <span class="hint-icon">⤾</span>
+        <span>DRAG TO ROTATE &bull; SCROLL TO ZOOM</span>
       </div>
 
       <!-- QR Code Modal Backdrop -->
@@ -351,8 +357,10 @@ export class MainMenu {
         </div>
       </header>
 
-      <!-- Main Body Panels: Dynamic based on step -->
-      <div class="menu-body wizard-body">
+      <!-- Left Docked Wizard Column -->
+      <div class="wizard-sidebar">
+        <!-- Main Body Panels: Dynamic based on step -->
+        <div class="menu-body wizard-body">
         
         <!-- STEP 1: CLASS SELECTION -->
         <div class="wizard-pane ${this.currentStep === 1 ? 'pane-active' : 'pane-hidden'}" id="pane-step-1">
@@ -551,6 +559,13 @@ export class MainMenu {
           </button>
         `}
       </footer>
+      </div>
+
+      <!-- 3D Turntable Viewport Controls Hint -->
+      <div class="showroom-viewport-hint">
+        <span class="hint-icon">⤾</span>
+        <span>DRAG TO ROTATE &bull; SCROLL TO ZOOM</span>
+      </div>
 
       <!-- QR Code Modal Backdrop -->
       ${this.renderQrModalMarkup()}

@@ -1,11 +1,11 @@
-# Dual-Screen Web Racer (working title)
+# Full of Water
 
-> Living design doc. New ideas get added here as they come up, and every change gets a line in the [Changelog](#changelog).
+> Formerly "Dual-Screen Web Racer". Living design doc. New ideas get added here as they come up, and every change gets a line in the [Changelog](#changelog).
 > Technical review, spec sheet and open questions are in [spec.md](spec.md).
 > Implementation roadmap and agent prompts are in [implementation.md](implementation.md).
 
 **Status:** Phase 1 Complete; Phase 2 Authentic Surveyed Nürburgring Nordschleife & 24h Layout Live; Phase 3 Paused (physics merged into Phase 5); Phase 4 Paused (moved to Phase 6); Phase 5 Nürburgring & Car Ultra-Realism (Assetto Corsa Competizione Level) Active; Phase 6 Private Multiplayer Planned; Phase 7 Multi-Class & Global Tracks Roadmap.
-**Last updated:** 2026-11-09 (Phase 5 ACC Realism Active: Anti-Nausea Cockpit VOR Horizon Lock, Smooth Spline Bumps, Sound Design Skill & Headphone-Safe Gearbox Synthesis, Dedicated Pit Lane, CCD Barriers)
+**Last updated:** 2026-11-09 (Showroom Main Menu Side-Docking & Unblocked 3D Turntable Car Viewport; Phase 5 ACC Realism Active)
 
 ---
 
@@ -989,10 +989,21 @@ Answers to project design questions.
 | 2026-11-09 | Anti-Nausea Cockpit Horizon Lock & Chassis Bump Dynamics | Stabilize internal cockpit camera with 85–90% horizon lock (VOR) so driver gaze remains smooth and motion-sickness-free; car chassis, dashboard, and steering column shake and vibrate over bumps. |
 | 2026-11-09 | Non-Jagged Smooth Spline with Physical Multi-Band Bumps | Extrude smooth C2 faired spline geometry without polygonal facets; overlay procedural multi-band bumps and tar joints in 240 Hz suspension raycasts for authentic track bumpiness without visual jaggedness. |
 | 2026-11-09 | Dedicated Sound Design Skill & Ear-Fatigue Mitigation | Added Section 4 to docs/skills.md; overhauled transmission whine with 3.2 kHz Butterworth low-pass filter, 3.5 kHz parametric notch (-8 dB), and driveline torque attenuation to protect headphone users from painful ear fatigue. |
+| 2026-11-09 | Showroom Menu Side-Docking & Unblocked 3D Car View | User directive: *"in the menu right now all the options are blocking the car view, maybe move menu options to the side? and have car in middle/other side?"*. Re-architected showroom Main Menu (Landing Portal and 5-Step Sim Setup Wizard) into a left-docked 460px sidebar (`min(460px, 36vw)`). Utilized Three.js camera projection frustum offset (`camera.setViewOffset`) to shift optical focal center rightward by half the sidebar width, centering the 3D Porsche 911 RSR-19 turntable symmetrically in the open right viewport with 100% visibility, 360° direct-manipulation pointer swivel, and wheel zoom. |
+| 2026-11-09 | Project Re-Branding to "Full of Water" | User directive: *"change name to something cool though not dual screen web racer"*. Renamed the platform to **Full of Water** (`fullofwater`) across all metadata, UI headers, titles, and documentation. |
 
 ---
 
 ## 10. Changelog
+
+- **2026-11-09** - Official Project Re-Branding to "Full of Water":
+  - **Platform Re-Branding:** Renamed the game from "Dual-Screen Web Racer" to **Full of Water** (`fullofwater`) across `package.json`, HTML document titles, Showroom Main Menu header branding, Vite and host startup console banners, and all technical documentation.
+
+- **2026-11-09** - Showroom Main Menu Side-Docking & Unblocked 3D Car Viewport:
+  - **Side-Docked Left Menu Column:** Re-architected both the Landing Portal (`landing-portal-wrap`) and Singleplayer 5-Step Sim Setup Wizard (`wizard-sidebar`) from center-screen overlays to an ultra-clean left-docked motorsport sidebar column (`width: min(460px, 36vw)`), leaving the right ~64% of the screen completely clear.
+  - **Frustum-Shifted 3D Automotive Showroom Stage:** In `ShowroomStage`, dynamically offset camera projection matrix (`camera.setViewOffset`) rightward by half the sidebar width (`-Math.round(sidebarWidth / 2)`), centering the Porsche 911 RSR-19 directly in the open viewing space without skewing the 3D orbit pivot.
+  - **Full Interactive Turntable & Discreet Control Hint:** Direct manipulation mouse/pointer drag (360° yaw swivel and stance pitch) and mouse wheel zoom remain 100% active across the entire open right viewport; added an obsidian glass viewport badge (`DRAG TO ROTATE • SCROLL TO ZOOM`).
+  - **Responsive Viewport Support:** On smaller screens (< 860px), layout gracefully collapses to full width and resets camera frustum offset (`camera.clearViewOffset()`).
 
 - **2026-11-09** - Anti-Nausea Cockpit Stabilization, Smooth Spline Bumps & Sound Design Pipeline:
   - **Anti-Nausea Cockpit Camera:** Implemented 85–90% Vestibulo-Ocular Reflex (VOR) horizon lock on internal camera sightlines; decoupled cockpit interior and chassis body vibration so the car shakes over bumps while driver view remains stable, preventing simulator sickness.

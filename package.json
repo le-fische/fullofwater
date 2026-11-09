@@ -1,5 +1,5 @@
 {
-  "name": "dual-screen-web-racer",
+  "name": "fullofwater",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,6 +9,7 @@
     "test:phase2": "tsx scripts/test-phase2.ts",
     "test:phase3": "tsx scripts/test-phase3.ts",
     "test:phase4": "tsx scripts/test-phase4.ts",
+    "test:phase5": "tsx scripts/test-phase5.ts",
     "generate:track": "tsx scripts/track-pipeline/generate-track.ts",
     "build": "tsc && vite build",
     "preview": "vite preview --host"

@@ -1,6 +1,6 @@
 # Sim-Racing Asset Creation & Engineering Pipeline (skills.md)
 
-Standard technical specifications and step-by-step procedures for constructing circuits, vehicles, physical simulation models, and liveries for the Dual-Screen Web Racer platform.
+Standard technical specifications and step-by-step procedures for constructing circuits, vehicles, physical simulation models, and liveries for the Full of Water platform.
 
 ---
 

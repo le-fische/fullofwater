@@ -495,13 +495,15 @@ export class WebRTCMultiplayerLobby {
     return count;
   }
 
-  public getRemotePeers(): { peerId: string; pos: [number, number, number]; speedKmh: number }[] {
-    const list: { peerId: string; pos: [number, number, number]; speedKmh: number }[] = [];
+  public getRemotePeers(): { peerId: string; pos: [number, number, number]; speedKmh: number; steer: number; carNumber: string }[] {
+    const list: { peerId: string; pos: [number, number, number]; speedKmh: number; steer: number; carNumber: string }[] = [];
     for (const p of this.peers.values()) {
       list.push({
         peerId: p.peerId,
         pos: [p.meshGroup.position.x, p.meshGroup.position.y, p.meshGroup.position.z],
         speedKmh: p.speedKmh,
+        steer: p.steerAngleRad,
+        carNumber: p.carNumber,
       });
     }
     return list;

@@ -1,4 +1,4 @@
-# Dual-Screen Web Racer: Engineering Specification Sheet
+# Full of Water: Engineering Specification Sheet
 
 Companion to [idea.md](idea.md) (Design Doc) and [implementation.md](implementation.md) (Implementation Roadmap).
 
@@ -6,7 +6,7 @@ Companion to [idea.md](idea.md) (Design Doc) and [implementation.md](implementat
 
 ## Executive Summary & System Overview
 
-The Dual-Screen Web Racer decouples the user interface across two physical devices:
+Full of Water decouples the user interface across two physical devices:
 1. **Host Display (MacBook Pro / External Monitor):** Runs Three.js WebGL2/WebGPU rendering, Rapier 3D 240 Hz vehicle physics, sound synthesis, and the track streaming engine.
 2. **Mobile Controller (iPhone / iPad):** Runs in Safari via local HTTPS (`mkcert`) and WebSocket, serving as the steering column (in-plane gravity sensing), throttle/brake pedals (split-screen touch), and digital instrument cluster.
 
@@ -247,7 +247,7 @@ Offset  Type   Description
   This layout standardizes liveries so any single 2D flat wrap image wraps cleanly around the car with zero distortion and un-mirrored left-to-right text readability.
 - **AO Racing "Rexy" Dinosaur Livery & Competition Roster:** High-resolution $2048 \times 2048$ PBR canvas generator featuring the official AO Racing GT3 R / RSR "Rexy" livery (`rexy_ao_racing_77`): vibrant dinosaur emerald green (`#12c949`), 24 curved upper razor fangs and 18 interlocking lower fangs along the visible front bumper chin lip, giant sabre fangs under headlights, sneering mouth corners with cheek snarl folds, flared reptilian hood nostrils with dark green brow ridges, endurance yellow headlights (`#fbbf24`, emissive intensity 2.4), official IMSA WeatherTech rectangular number plates (#80 default) on doors and hood, little T-Rex claw arms with 3 white talons reaching forward around door handles, and 18 cream/ivory scalloped belly scutes along rocker sills. Full roster also includes Manthey Grello (#911), Martini Racing (#77), Rothmans (#1), Pink Pig (#92), Gulf Racing (#20), Weissach (#93), and Stealth (#00).
 - **Dynamic Player-Selected Competition Car Number Picker:** Interactive `#custom-car-number-input` (#0–#999) with a symmetrical 4×2 grid of quick selection pills (#80, #911, #77, #1, #92, #20, #93, #00) that dynamically re-renders competition roundels and IMSA plates on both doors and the hood in real time in Showroom and carries through to the live Race Session. Defaulted to `#80` for Rexy.
-- **Minimalist Luxury Motorsport Showroom UI (`MainMenu` & `ShowroomStage`):** Obsidian carbon glass panels (`backdrop-filter: blur(24px) saturate(140%)`), single-line circuit selector cards (`KM · TURNS`) with Guards Red active bar and zero verbose description paragraphs, 4-column hairline telemetry strip (`515 HP`, `9,000`, `318 KM/H`, `1,245 KG`), non-clipping 4×2 livery swatch grid, unobstructed upper-center 3D turntable viewport, 128-segment brushed platinum turntable chamfer ring (`0xe4e4e7`, `opacity: 0.16`), and neutral silver studio rim lighting.
+- **Minimalist Luxury Motorsport Showroom UI (`MainMenu` & `ShowroomStage`):** Obsidian carbon glass panels (`backdrop-filter: blur(24px) saturate(140%)`), side-docked left column layout (`width: min(460px, 36vw)`) for Landing Portal and 5-Step Sim Setup Wizard, optical camera frustum offset (`camera.setViewOffset`) positioning the 3D Porsche 911 RSR-19 turntable symmetrically in the open right viewport, single-line circuit selector cards (`KM · TURNS`) with Guards Red active bar and zero verbose description paragraphs, 4-column hairline telemetry strip (`515 HP`, `9,000`, `318 KM/H`, `1,245 KG`), non-clipping 4×2 livery swatch grid, unobstructed 360° interactive turntable viewport with drag-to-rotate and scroll-to-zoom controls, 128-segment brushed platinum turntable chamfer ring (`0xe4e4e7`, `opacity: 0.16`), and neutral silver studio rim lighting.
 
 ---
 

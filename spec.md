@@ -680,6 +680,7 @@ Phase 5 elevates the Nürburgring Nordschleife circuit and vehicle dynamics to s
   - Vehicle glTF model ingestion, node sanitization, concentric wheel extraction, and flat UV wrap livery mapping.
   - Rapier 3D compound colliders, raycast suspension tuning, and telemetry dash bindings.
   - Sound design pipeline: Headphone-safe audio synthesis, engine pulse layering, straight-cut gearbox filtering, and safety compression.
+  - Engineering change & Git commit traceability registry (Section 5) and agent version control protocol (Section 6), indexing every major subsystem by commit hash code for verification and version rollback.
 
 ---
 

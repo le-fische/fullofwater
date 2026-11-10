@@ -1021,8 +1021,21 @@ export class DriverDatabase {
     payload: any
   ): { success: boolean; deliveredTo: number } {
     const code = (roomCode || '').trim().toUpperCase();
-    const room = this.signalRooms.get(code);
-    if (!room) return { success: false, deliveredTo: 0 };
+    let room = this.signalRooms.get(code);
+    if (!room) {
+      room = {
+        roomCode: code,
+        circuit: 'nordschleife',
+        sessionStage: 'lobby',
+        lapCount: 3,
+        maxDrivers: 10,
+        collisionEnabled: false,
+        peers: new Map(),
+        peerInboxes: new Map(),
+        lastActivity: Date.now(),
+      };
+      this.signalRooms.set(code, room);
+    }
 
     const now = Date.now();
     room.lastActivity = now;
@@ -1051,11 +1064,13 @@ export class DriverDatabase {
 
     let count = 0;
     if (to && to !== 'all') {
-      const inbox = room.peerInboxes.get(to);
-      if (inbox) {
-        inbox.push(msg);
-        count++;
+      let inbox = room.peerInboxes.get(to);
+      if (!inbox) {
+        inbox = [];
+        room.peerInboxes.set(to, inbox);
       }
+      inbox.push(msg);
+      count++;
     } else {
       // Broadcast to all other peers in room
       for (const [peerId, inbox] of room.peerInboxes.entries()) {
@@ -1082,22 +1097,40 @@ export class DriverDatabase {
     collisionEnabled?: boolean;
   } {
     const code = (roomCode || '').trim().toUpperCase();
-    const room = this.signalRooms.get(code);
-    if (!room) return { success: false, messages: [], activePeers: [] };
+    let room = this.signalRooms.get(code);
+    if (!room) {
+      room = {
+        roomCode: code,
+        circuit: 'nordschleife',
+        sessionStage: 'lobby',
+        lapCount: 3,
+        maxDrivers: 10,
+        collisionEnabled: false,
+        peers: new Map(),
+        peerInboxes: new Map(),
+        lastActivity: Date.now(),
+      };
+      this.signalRooms.set(code, room);
+    }
 
     const now = Date.now();
     room.lastActivity = now;
 
-    const peer = room.peers.get(peerId);
+    let peer = room.peers.get(peerId);
     if (peer) {
       peer.lastSeen = now;
+    } else {
+      peer = { peerId, driverTag: peerId, isHost: false, lastSeen: now };
+      room.peers.set(peerId, peer);
     }
 
-    const inbox = room.peerInboxes.get(peerId);
-    const messages = inbox ? [...inbox] : [];
-    if (inbox) {
-      inbox.length = 0; // Drain messages atomically
+    let inbox = room.peerInboxes.get(peerId);
+    if (!inbox) {
+      inbox = [];
+      room.peerInboxes.set(peerId, inbox);
     }
+    const messages = [...inbox];
+    inbox.length = 0; // Drain messages atomically
 
     const activePeers = Array.from(room.peers.keys()).filter((id) => id !== peerId);
 

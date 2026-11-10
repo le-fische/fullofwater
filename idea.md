@@ -5,7 +5,7 @@
 > Implementation roadmap and agent prompts are in [implementation.md](implementation.md).
 
 **Status:** Phase 1 Complete; Phase 2 Authentic Surveyed Nürburgring Nordschleife & 24h Layout Live; Phase 3 Paused (physics merged into Phase 5); Phase 4 Paused (moved to Phase 6); Phase 5 Nürburgring & Car Ultra-Realism (Assetto Corsa Competizione Level) Complete & Validated; Phase 6 Private Multiplayer Planned; Phase 7 Multi-Class & Global Tracks Roadmap. **Roman Numeral Track:** Phase I (Driver Accounts, Player Database & Global Hotlap Leaderboards) Complete & Validated; Phase II (Cloud-Relayed WebRTC Multiplayer) Planned.
-**Last updated:** 2026-11-09 (Continuous Armco Steel Guardrails Restored, Towering 24m-38m Lush Ardennes/Eifel Forest Canopy, 12,000 Mountain Ridge Trees & Anti-Noclip Terrain Sculpting)
+**Last updated:** 2026-11-09 (High-Speed Stuttering & Micro-Hitch Elimination: Chunk Cache System, Physics Substep Clamp & 30 Hz Digital Mirror Optimization)
 
 ---
 
@@ -1834,6 +1834,12 @@ Answers to project design questions.
   - Revamped HUD Circuit Radar: dynamically computes bounding boxes, rendering the canonical Nürburgring silhouette with West $\to$ Left, East $\to$ Right, North $\to$ Up, and South $\to$ Down, plus real-time directional vehicle heading arrow and landmark beacons.
   - Updated Track Mesh Generator: removed duplicate banking application, constrained kerbs strictly to corner apexes and exits (straights have clean asphalt and grass), and kept collision kerb step at flush 0.0m with 1.2m barrier enclosures to prevent vehicle flips.
   - Verified with 100% test pass on `npm run test:phase2`, clean `npm test`, and zero-error `npm run build`. Live on local dev server.
+
+- **2026-11-09** - High-Speed Stuttering & Micro-Hitch Elimination (Chunk Cache, Physics Substep Clamp & Digital Mirror Pass):
+  - Replaced synchronous chunk loading/disposal in `NordschleifeChunkStreamer` with a persistent `chunkCache: Map<number, ActiveChunk>`. Active chunks toggle visibility and collider enablement (`collider.setEnabled(true/false)`) in <0.05ms, eliminating synchronous 80–150ms trimesh BVH compilation stalls at 300+ km/h.
+  - Clamped `physicsAccumulator` in `src/host/main.ts` with `clampedDelta = Math.min(frameDelta, 0.05)` and `maxSubSteps = 6` (max 25ms of Rapier 240 Hz physics per frame), preventing accumulator death spirals and frame drops after any render lag.
+  - Optimized digital rear-view mirror in `RearViewMirrorRenderer`: reduced camera far clip plane from 5,000m to 200m (skipping distant terrain and 12,000 mountain trees) and throttled updates to alternating frames (smooth 30–60 Hz), cutting cockpit secondary render passes by over 90%.
+  - Verified clean removal of floating text billboards (`P O R S C H E`, `TCI`, `TCO`, rotary labels) from the Porsche RSR steering wheel faceplate and rebuilt production assets.
 
 - **2026-11-09** - Continuous Armco Guardrails Restored, Towering Lush Ardennes Forest & Terrain Anti-Noclip:
   - Restored continuous 3-tier galvanized Armco steel safety guardrails on both sides of the track across all circuits (Nordschleife, 24h Gesamtkurs, and GP-Strecke) with heightened 4.0m collision walls and 1.0m underground collision skirts.

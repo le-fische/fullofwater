@@ -6,11 +6,17 @@ export interface PeerTelemetryPacket {
   carNumber: string;
   pos: [number, number, number];
   quat: [number, number, number, number];
+  vel: [number, number, number];
   speedKmh: number;
   steerAngleRad: number;
   wheelSpinRad: number;
   timestampMs: number;
 }
+
+export const PEER_POSE_MAGIC_V1 = 0x50325031; // 'P2P1' (Legacy 44-byte frame)
+export const PEER_POSE_MAGIC_V2 = 0x50325032; // 'P2P2' (Phase II-A 56-byte frame with velocity)
+export const PEER_POSE_V1_SIZE = 44;
+export const PEER_POSE_V2_SIZE = 56;
 
 export interface LobbyConfig {
   roomCode: string;          // 4-digit code e.g. "4821"
@@ -18,63 +24,298 @@ export interface LobbyConfig {
   lapCount: number;          // 1 to 25
   maxDrivers: number;        // 2 to 10
   collisionEnabled: boolean; // false = Ghost Mode, true = Kinematic Impulse
-  startFormat: 'standing_f1_5lights' | 'rolling_3lights';
+  startFormat: 'standing_f1_5lights';
   sessionStage?: 'lobby' | 'qualifying' | 'grid_staging' | 'race';
+  isRandomGrid?: boolean;
 }
 
 /**
- * Encodes a peer vehicle pose into a compact 44-byte binary ArrayBuffer for
- * unordered, zero-retransmit WebRTC DataChannel transmission at 60 Hz.
+ * Encodes a peer vehicle pose into an ArrayBuffer:
+ * - If 3rd parameter is a velocity vector [vx, vy, vz]: encodes 56 bytes (0x50325032, Phase II-A)
+ * - If 3rd parameter is a number: encodes legacy 44 bytes (0x50325031, Phase 4)
  */
 export function encodePeerPoseBinary(
   pos: [number, number, number],
   quat: [number, number, number, number],
-  speedKmh: number,
-  steerAngleRad: number,
-  wheelSpinRad: number,
-  timestampMs: number
+  velOrSpeed: [number, number, number] | number,
+  speedOrSteer?: number,
+  steerOrSpin?: number,
+  wheelSpinOrTimestamp?: number,
+  timestampMs?: number
 ): ArrayBuffer {
-  const buf = new ArrayBuffer(44);
-  const view = new DataView(buf);
-  view.setUint32(0, 0x50325031, true); // Magic 'P2P1'
-  view.setFloat32(4, pos[0], true);
-  view.setFloat32(8, pos[1], true);
-  view.setFloat32(12, pos[2], true);
-  view.setFloat32(16, quat[0], true);
-  view.setFloat32(20, quat[1], true);
-  view.setFloat32(24, quat[2], true);
-  view.setFloat32(28, quat[3], true);
-  view.setFloat32(32, speedKmh, true);
-  view.setFloat32(36, steerAngleRad, true);
-  view.setFloat32(40, wheelSpinRad, true);
-  void timestampMs;
-  return buf;
+  if (Array.isArray(velOrSpeed)) {
+    // 56-byte Phase II-A packet: pos(12), quat(16), vel(12), speed(4), steer(4), wheelSpin(4)
+    const vel = velOrSpeed;
+    const speedKmh = speedOrSteer ?? 0;
+    const steerAngleRad = steerOrSpin ?? 0;
+    const wheelSpinRad = wheelSpinOrTimestamp ?? 0;
+
+    const buf = new ArrayBuffer(PEER_POSE_V2_SIZE);
+    const view = new DataView(buf);
+    view.setUint32(0, PEER_POSE_MAGIC_V2, true); // Magic 'P2P2'
+    view.setFloat32(4, pos[0], true);
+    view.setFloat32(8, pos[1], true);
+    view.setFloat32(12, pos[2], true);
+    view.setFloat32(16, quat[0], true);
+    view.setFloat32(20, quat[1], true);
+    view.setFloat32(24, quat[2], true);
+    view.setFloat32(28, quat[3], true);
+    view.setFloat32(32, vel[0], true);
+    view.setFloat32(36, vel[1], true);
+    view.setFloat32(40, vel[2], true);
+    view.setFloat32(44, speedKmh, true);
+    view.setFloat32(48, steerAngleRad, true);
+    view.setFloat32(52, wheelSpinRad, true);
+    void timestampMs;
+    return buf;
+  } else {
+    // 44-byte Legacy Phase 4 packet
+    const speedKmh = velOrSpeed;
+    const steerAngleRad = speedOrSteer ?? 0;
+    const wheelSpinRad = steerOrSpin ?? 0;
+
+    const buf = new ArrayBuffer(PEER_POSE_V1_SIZE);
+    const view = new DataView(buf);
+    view.setUint32(0, PEER_POSE_MAGIC_V1, true); // Magic 'P2P1'
+    view.setFloat32(4, pos[0], true);
+    view.setFloat32(8, pos[1], true);
+    view.setFloat32(12, pos[2], true);
+    view.setFloat32(16, quat[0], true);
+    view.setFloat32(20, quat[1], true);
+    view.setFloat32(24, quat[2], true);
+    view.setFloat32(28, quat[3], true);
+    view.setFloat32(32, speedKmh, true);
+    view.setFloat32(36, steerAngleRad, true);
+    view.setFloat32(40, wheelSpinRad, true);
+    void wheelSpinOrTimestamp;
+    void timestampMs;
+    return buf;
+  }
 }
 
 /**
- * Decodes a 44-byte binary WebRTC DataChannel pose packet.
+ * Explicit 56-byte Phase II-A packet encoder with velocity vectors.
+ */
+export function encodePeerPoseBinary56(
+  pos: [number, number, number],
+  quat: [number, number, number, number],
+  vel: [number, number, number],
+  speedKmh: number,
+  steerAngleRad: number,
+  wheelSpinRad: number,
+  timestampMs?: number
+): ArrayBuffer {
+  return encodePeerPoseBinary(pos, quat, vel, speedKmh, steerAngleRad, wheelSpinRad, timestampMs);
+}
+
+/**
+ * Decodes either 56-byte (P2P2) or legacy 44-byte (P2P1) WebRTC DataChannel pose packet.
  */
 export function decodePeerPoseBinary(buf: ArrayBuffer): Omit<
   PeerTelemetryPacket,
   'peerId' | 'carNumber' | 'timestampMs'
 > | null {
-  if (buf.byteLength < 44) return null;
+  if (buf.byteLength < PEER_POSE_V1_SIZE) return null;
   const view = new DataView(buf);
   const magic = view.getUint32(0, true);
-  if (magic !== 0x50325031) return null;
 
-  return {
-    pos: [view.getFloat32(4, true), view.getFloat32(8, true), view.getFloat32(12, true)],
-    quat: [
-      view.getFloat32(16, true),
-      view.getFloat32(20, true),
-      view.getFloat32(24, true),
-      view.getFloat32(28, true),
-    ],
-    speedKmh: view.getFloat32(32, true),
-    steerAngleRad: view.getFloat32(36, true),
-    wheelSpinRad: view.getFloat32(40, true),
-  };
+  if (magic === PEER_POSE_MAGIC_V2 && buf.byteLength >= PEER_POSE_V2_SIZE) {
+    // 56-byte Phase II-A packet with velocity vector
+    return {
+      pos: [view.getFloat32(4, true), view.getFloat32(8, true), view.getFloat32(12, true)],
+      quat: [
+        view.getFloat32(16, true),
+        view.getFloat32(20, true),
+        view.getFloat32(24, true),
+        view.getFloat32(28, true),
+      ],
+      vel: [view.getFloat32(32, true), view.getFloat32(36, true), view.getFloat32(40, true)],
+      speedKmh: view.getFloat32(44, true),
+      steerAngleRad: view.getFloat32(48, true),
+      wheelSpinRad: view.getFloat32(52, true),
+    };
+  } else if (magic === PEER_POSE_MAGIC_V1) {
+    // 44-byte Legacy Phase 4 packet
+    return {
+      pos: [view.getFloat32(4, true), view.getFloat32(8, true), view.getFloat32(12, true)],
+      quat: [
+        view.getFloat32(16, true),
+        view.getFloat32(20, true),
+        view.getFloat32(24, true),
+        view.getFloat32(28, true),
+      ],
+      vel: [0, 0, 0],
+      speedKmh: view.getFloat32(32, true),
+      steerAngleRad: view.getFloat32(36, true),
+      wheelSpinRad: view.getFloat32(40, true),
+    };
+  }
+
+  return null;
+}
+
+export interface PeerTrajectorySnapshot {
+  timeMs: number;
+  pos: THREE.Vector3;
+  quat: THREE.Quaternion;
+  vel: THREE.Vector3;
+  speedKmh: number;
+  steerAngleRad: number;
+  wheelSpinRad: number;
+}
+
+/**
+ * Emergency Phase II-A: Hermite Cubic Spline Trajectory Interpolator & Velocity Dead Reckoning.
+ * - 100ms snapshot ring buffer (N = 10..16)
+ * - Render delay delta_t_buffer = 70ms (adaptive 50-90ms)
+ * - Cubic Hermite position evaluation with velocity-scaled tangents
+ * - Spherical Linear Interpolation (SLERP) for orientation
+ * - Velocity dead reckoning forward extrapolation with exponential decay (lambda = 1.8 s^-1)
+ */
+export class HermiteTrajectoryInterpolator {
+  private snapshots: PeerTrajectorySnapshot[] = [];
+  private maxSnapshots = 16;
+  public bufferDelayMs = 70; // 70ms target buffer delay
+  private lambda = 1.8; // Dead reckoning damping coefficient (s^-1)
+
+  public pushSnapshot(
+    timeMs: number,
+    pos: [number, number, number],
+    quat: [number, number, number, number],
+    vel: [number, number, number],
+    speedKmh: number,
+    steerAngleRad: number,
+    wheelSpinRad: number
+  ): void {
+    const p = new THREE.Vector3(pos[0], pos[1], pos[2]);
+    const q = new THREE.Quaternion(quat[0], quat[1], quat[2], quat[3]);
+    let v = new THREE.Vector3(vel[0], vel[1], vel[2]);
+
+    // If zero velocity (legacy 44-byte frame), approximate from finite difference
+    if (v.lengthSq() < 1e-4 && this.snapshots.length > 0) {
+      const prev = this.snapshots[this.snapshots.length - 1];
+      const dtSec = Math.max(0.001, (timeMs - prev.timeMs) * 0.001);
+      v = p.clone().sub(prev.pos).divideScalar(dtSec);
+    }
+
+    this.snapshots.push({
+      timeMs,
+      pos: p,
+      quat: q,
+      vel: v,
+      speedKmh,
+      steerAngleRad,
+      wheelSpinRad,
+    });
+
+    if (this.snapshots.length > this.maxSnapshots) {
+      this.snapshots.shift();
+    }
+  }
+
+  public evaluate(nowMs: number): {
+    pos: THREE.Vector3;
+    quat: THREE.Quaternion;
+    speedKmh: number;
+    steerAngleRad: number;
+    wheelSpinRad: number;
+  } | null {
+    if (this.snapshots.length === 0) return null;
+    if (this.snapshots.length === 1) {
+      const s = this.snapshots[0];
+      return {
+        pos: s.pos.clone(),
+        quat: s.quat.clone(),
+        speedKmh: s.speedKmh,
+        steerAngleRad: s.steerAngleRad,
+        wheelSpinRad: s.wheelSpinRad,
+      };
+    }
+
+    const tRender = nowMs - this.bufferDelayMs;
+    const oldest = this.snapshots[0];
+    const latest = this.snapshots[this.snapshots.length - 1];
+
+    // Case 1: Render time older than oldest snapshot
+    if (tRender <= oldest.timeMs) {
+      return {
+        pos: oldest.pos.clone(),
+        quat: oldest.quat.clone(),
+        speedKmh: oldest.speedKmh,
+        steerAngleRad: oldest.steerAngleRad,
+        wheelSpinRad: oldest.wheelSpinRad,
+      };
+    }
+
+    // Case 2: Render time newer than latest snapshot (jitter / packet delay)
+    // Perform Velocity Dead Reckoning forward extrapolation with exponential decay
+    if (tRender >= latest.timeMs) {
+      const dtLateSec = (tRender - latest.timeMs) * 0.001;
+      const decay = Math.exp(-this.lambda * dtLateSec);
+      const extPos = latest.pos.clone().addScaledVector(latest.vel, dtLateSec * decay);
+      return {
+        pos: extPos,
+        quat: latest.quat.clone(),
+        speedKmh: latest.speedKmh * decay,
+        steerAngleRad: latest.steerAngleRad,
+        wheelSpinRad: latest.wheelSpinRad,
+      };
+    }
+
+    // Case 3: Hermite Cubic Spline Interpolation between bounding snapshots A and B
+    let idxA = 0;
+    for (let i = 0; i < this.snapshots.length - 1; i++) {
+      if (this.snapshots[i].timeMs <= tRender && tRender <= this.snapshots[i + 1].timeMs) {
+        idxA = i;
+        break;
+      }
+    }
+    const A = this.snapshots[idxA];
+    const B = this.snapshots[idxA + 1];
+
+    const dtMs = B.timeMs - A.timeMs;
+    const u = dtMs > 0.001 ? Math.max(0, Math.min(1, (tRender - A.timeMs) / dtMs)) : 0;
+    const dtSec = dtMs * 0.001;
+
+    // Hermite tangents scaled by segment duration
+    const mA = A.vel.clone().multiplyScalar(dtSec);
+    const mB = B.vel.clone().multiplyScalar(dtSec);
+
+    // Hermite cubic basis polynomials
+    const u2 = u * u;
+    const u3 = u2 * u;
+    const h00 = 2 * u3 - 3 * u2 + 1;
+    const h10 = u3 - 2 * u2 + u;
+    const h01 = -2 * u3 + 3 * u2;
+    const h11 = u3 - u2;
+
+    const interpPos = new THREE.Vector3()
+      .addScaledVector(A.pos, h00)
+      .addScaledVector(mA, h10)
+      .addScaledVector(B.pos, h01)
+      .addScaledVector(mB, h11);
+
+    const interpQuat = A.quat.clone().slerp(B.quat, u);
+    const interpSpeed = A.speedKmh + u * (B.speedKmh - A.speedKmh);
+    const interpSteer = A.steerAngleRad + u * (B.steerAngleRad - A.steerAngleRad);
+    const interpSpin = A.wheelSpinRad + u * (B.wheelSpinRad - A.wheelSpinRad);
+
+    return {
+      pos: interpPos,
+      quat: interpQuat,
+      speedKmh: interpSpeed,
+      steerAngleRad: interpSteer,
+      wheelSpinRad: interpSpin,
+    };
+  }
+
+  public getSnapshotCount(): number {
+    return this.snapshots.length;
+  }
+
+  public clear(): void {
+    this.snapshots.length = 0;
+  }
 }
 
 interface RemotePeerSession {
@@ -88,10 +329,12 @@ interface RemotePeerSession {
   wheelGroups: THREE.Group[];
   targetPos: THREE.Vector3;
   targetQuat: THREE.Quaternion;
+  vel: [number, number, number];
   speedKmh: number;
   steerAngleRad: number;
   wheelSpinRad: number;
   lastUpdateMs: number;
+  interpolator: HermiteTrajectoryInterpolator;
   kinematicBody?: any;
   kinematicCollider?: any;
 }
@@ -111,6 +354,7 @@ export class WebRTCMultiplayerLobby {
   private isHost = true;
   private isLocalReady = false;
   private signalingWs: WebSocket | null = null;
+  private signalPollTimer: number | null = null;
   private peers: Map<string, RemotePeerSession> = new Map();
 
   // Physics collision world & Rapier handles (Phase 4.6 Kinematic Impulse Mode)
@@ -138,6 +382,8 @@ export class WebRTCMultiplayerLobby {
   private gridRosterTableEl: HTMLElement | null = null;
   private gridReadyBtnEl: HTMLButtonElement | null = null;
   private gridLaunchBtnEl: HTMLButtonElement | null = null;
+  private gridShuffleBtnEl: HTMLButtonElement | null = null;
+  private customGridOrder: string[] | null = null;
 
   // In-browser loopback RTCPeerConnection for solo P2P verification
   private loopbackRemotePc: RTCPeerConnection | null = null;
@@ -152,6 +398,8 @@ export class WebRTCMultiplayerLobby {
   private manualSdpTextarea: HTMLTextAreaElement | null = null;
   private hostSettingsPanelEl: HTMLElement | null = null;
   private startRaceBtnEl: HTMLButtonElement | null = null;
+  private startQualiBtnEl: HTMLButtonElement | null = null;
+  private skipQualiBtnEl: HTMLButtonElement | null = null;
   private readyBtnEl: HTMLButtonElement | null = null;
   private collisionBtnEl: HTMLButtonElement | null = null;
   private circuitSelectEl: HTMLSelectElement | null = null;
@@ -240,8 +488,8 @@ export class WebRTCMultiplayerLobby {
               <div class="webrtc-setting-item">
                 <label for="webrtc-circuit-select">CIRCUIT</label>
                 <select id="webrtc-circuit-select" class="webrtc-select">
-                  <option value="${TrackMode.NORDSCHLEIFE}" selected>Nordschleife (20.8 km) - Rolling 3-Light</option>
-                  <option value="${TrackMode.NURBURGRING_24H}">24h Gesamtkurs (24.3 km) - Rolling 3-Light</option>
+                  <option value="${TrackMode.NORDSCHLEIFE}" selected>Nordschleife (20.8 km) - Standing F1 5-Light</option>
+                  <option value="${TrackMode.NURBURGRING_24H}">24h Gesamtkurs (24.3 km) - Standing F1 5-Light</option>
                   <option value="${TrackMode.GP_STRECKE}">GP-Strecke (5.1 km) - Standing F1 5-Light</option>
                   <option value="${TrackMode.PROVING_GROUND}">Proving Ground Runway - Standing Start</option>
                 </select>
@@ -279,13 +527,16 @@ export class WebRTCMultiplayerLobby {
             </div>
           </div>
 
-          <!-- Bottom Action Bar: Ready Checkmark + Host Start Race -->
+          <!-- Bottom Action Bar: Ready Checkmark + Host Start / Skip Options -->
           <div class="webrtc-actions-bar">
             <button type="button" id="webrtc-ready-btn" class="webrtc-btn webrtc-btn-ready">
               TOGGLE READY: NOT READY
             </button>
-            <button type="button" id="webrtc-start-race-btn" class="webrtc-btn webrtc-btn-launch">
+            <button type="button" id="webrtc-start-quali-btn" class="webrtc-btn webrtc-btn-launch">
               START QUALIFYING [HOST]
+            </button>
+            <button type="button" id="webrtc-skip-quali-btn" class="webrtc-btn webrtc-btn-skip">
+              SKIP QUALI & RACE (RANDOM GRID) [HOST]
             </button>
           </div>
 
@@ -316,7 +567,9 @@ export class WebRTCMultiplayerLobby {
     this.statusBadgeEl = this.dialogEl.querySelector('#webrtc-status-badge') as HTMLElement;
     this.manualSdpTextarea = this.dialogEl.querySelector('#webrtc-sdp-textarea') as HTMLTextAreaElement;
     this.hostSettingsPanelEl = this.dialogEl.querySelector('#webrtc-host-settings') as HTMLElement;
-    this.startRaceBtnEl = this.dialogEl.querySelector('#webrtc-start-race-btn') as HTMLButtonElement;
+    this.startQualiBtnEl = this.dialogEl.querySelector('#webrtc-start-quali-btn') as HTMLButtonElement;
+    this.skipQualiBtnEl = this.dialogEl.querySelector('#webrtc-skip-quali-btn') as HTMLButtonElement;
+    this.startRaceBtnEl = this.startQualiBtnEl; // Backward compatibility alias
     this.readyBtnEl = this.dialogEl.querySelector('#webrtc-ready-btn') as HTMLButtonElement;
     this.collisionBtnEl = this.dialogEl.querySelector('#webrtc-collision-toggle-btn') as HTMLButtonElement;
     this.circuitSelectEl = this.dialogEl.querySelector('#webrtc-circuit-select') as HTMLSelectElement;
@@ -391,6 +644,10 @@ export class WebRTCMultiplayerLobby {
 
     this.startRaceBtnEl?.addEventListener('click', () => {
       this.launchHostQualifying();
+    });
+
+    this.skipQualiBtnEl?.addEventListener('click', () => {
+      this.launchHostRaceWithRandomGrid();
     });
 
     const loopbackBtn = this.dialogEl.querySelector('#webrtc-loopback-btn') as HTMLButtonElement;
@@ -483,6 +740,10 @@ export class WebRTCMultiplayerLobby {
     if (this.hostSettingsPanelEl) {
       this.hostSettingsPanelEl.style.opacity = val ? '1' : '0.85';
     }
+    this.refreshLobbyUI();
+    if (this.gridDialogEl?.open) {
+      this.refreshGridStagingUI();
+    }
   }
 
   public getConnectedPeerCount(): number {
@@ -514,7 +775,7 @@ export class WebRTCMultiplayerLobby {
   }
 
   /**
-   * Connects to the WebSocket signaling room for automatic WebRTC P2P discovery.
+   * Connects to the serverless signaling broker and WebSocket (if available) for automatic WebRTC P2P discovery.
    */
   public joinSignalingRoom(roomId: string): void {
     this.roomId = roomId.trim().toUpperCase();
@@ -529,88 +790,205 @@ export class WebRTCMultiplayerLobby {
       this.signalingWs = null;
     }
 
+    if (this.signalPollTimer) {
+      clearInterval(this.signalPollTimer);
+      this.signalPollTimer = null;
+    }
+
     if (typeof window === 'undefined') return;
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws?role=peer&room=${encodeURIComponent(
-      this.roomId
-    )}&peerId=${encodeURIComponent(this.localPeerId)}`;
 
-    this.signalingWs = new WebSocket(wsUrl);
-    this.signalingWs.onopen = () => {
-      this.refreshLobbyUI(`ROOM: ${this.roomId}`);
-      this.broadcastLobbyConfig();
-    };
+    // 1. Join serverless signaling room on Vercel (/api/signal/join)
+    if (typeof fetch !== 'undefined') {
+      fetch('/api/signal/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomCode: this.roomId,
+          peerId: this.localPeerId,
+          driverTag: this.localPeerId,
+          isHost: this.isHost,
+        }),
+      })
+        .then((r) => r.json())
+        .then(async (data) => {
+          if (data && data.success) {
+            this.isHost = data.isHost;
+            if (data.circuit && !this.isHost) {
+              this.applyIncomingLobbyConfig({ circuit: data.circuit } as any);
+            }
+            if (Array.isArray(data.activePeers) && this.isHost) {
+              for (const pid of data.activePeers) {
+                if (!this.peers.has(pid)) {
+                  await this.initiatePeerConnection(pid);
+                }
+              }
+            }
+            this.refreshLobbyUI(`ROOM: ${this.roomId}`);
+          }
+        })
+        .catch(() => {});
 
-    this.signalingWs.onmessage = async (ev) => {
-      if (typeof ev.data !== 'string') return;
-      try {
-        const msg = JSON.parse(ev.data);
-        if (msg.type === 'webrtc_room_peers' && Array.isArray(msg.peers)) {
-          for (const remotePeerId of msg.peers) {
-            await this.initiatePeerConnection(remotePeerId);
-          }
-        } else if (msg.type === 'webrtc_offer' && msg.from && msg.sdp) {
-          await this.handleIncomingOffer(msg.from, msg.sdp);
-        } else if (msg.type === 'webrtc_answer' && msg.from && msg.sdp) {
-          await this.handleIncomingAnswer(msg.from, msg.sdp);
-        } else if (msg.type === 'webrtc_ice' && msg.from && msg.candidate) {
-          const session = this.peers.get(msg.from);
-          if (session) {
-            await session.pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-          }
-        } else if (msg.type === 'lobby_config_update' && msg.config) {
-          // Received host authoritative race settings
-          this.applyIncomingLobbyConfig(msg.config);
-        } else if (msg.type === 'peer_ready_sync' && msg.from) {
-          const session = this.peers.get(msg.from);
-          if (session) {
-            session.isReady = !!msg.isReady;
-            this.refreshLobbyUI();
-          }
-        } else if (msg.type === 'race_start_qualifying' && msg.config) {
-          this.closeModal();
-          this.lobbyConfig.sessionStage = 'qualifying';
-          this.applyIncomingLobbyConfig(msg.config);
-          this.onStartQualifying?.(this.lobbyConfig);
-        } else if (msg.type === 'quali_lap_result' && msg.from) {
-          this.recordQualiResult(msg.from, msg.carNumber, msg.bestLapMs);
-        } else if (msg.type === 'grid_ready_sync' && msg.from) {
-          // Update remote driver grid readiness
-          this.refreshGridStagingUI();
-        } else if (msg.type === 'race_start_launch' && msg.config) {
-          // Host has launched the race from grid!
-          this.closeModal();
-          this.closeGridModal();
-          this.lobbyConfig.sessionStage = 'race';
-          this.applyIncomingLobbyConfig(msg.config);
-          this.onStartRace?.(this.lobbyConfig, msg.gridOrder);
-        } else if (msg.type === 'webrtc_peer_left' && msg.peerId) {
-          this.removePeer(msg.peerId);
+      // Poll serverless signaling broker every 400ms for SDP offers/answers/ICE
+      this.signalPollTimer = window.setInterval(() => {
+        void this.pollSignalBroker();
+      }, 400);
+    }
+
+    // 2. Also connect to local WebSocket if dev bridge is active
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws?role=peer&room=${encodeURIComponent(
+        this.roomId
+      )}&peerId=${encodeURIComponent(this.localPeerId)}`;
+
+      this.signalingWs = new WebSocket(wsUrl);
+      this.signalingWs.onopen = () => {
+        this.refreshLobbyUI(`ROOM: ${this.roomId}`);
+        this.broadcastLobbyConfig();
+      };
+
+      this.signalingWs.onmessage = async (ev) => {
+        if (typeof ev.data !== 'string') return;
+        try {
+          const msg = JSON.parse(ev.data);
+          await this.handleIncomingBrokerMessage(msg);
+        } catch (_e) {
+          // Ignore
         }
+      };
+
+      this.signalingWs.onerror = () => {
+        // WebSocket unavailable (e.g. on serverless Vercel), serverless HTTP broker will handle signaling
+      };
+    } catch (_err) {
+      // Ignore WebSocket init failure on serverless host
+    }
+  }
+
+  public async sendSignalBrokerMessage(type: string, payload: any, to?: string): Promise<void> {
+    // 1. Send via WebSocket if connected
+    if (this.signalingWs && this.signalingWs.readyState === WebSocket.OPEN) {
+      try {
+        this.signalingWs.send(
+          JSON.stringify({
+            type,
+            from: this.localPeerId,
+            to,
+            ...payload,
+          })
+        );
       } catch (_e) {
-        // Ignore signaling errors
+        // Ignore
       }
-    };
+    }
+
+    // 2. Send via serverless signaling endpoint on Vercel
+    if (typeof fetch !== 'undefined') {
+      try {
+        await fetch('/api/signal/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roomCode: this.roomId,
+            from: this.localPeerId,
+            to,
+            type,
+            payload,
+          }),
+        });
+      } catch (_e) {
+        // Ignore
+      }
+    }
+  }
+
+  public async pollSignalBroker(): Promise<void> {
+    if (typeof fetch === 'undefined') return;
+    try {
+      const res = await fetch(
+        `/api/signal/poll?room=${encodeURIComponent(this.roomId)}&peerId=${encodeURIComponent(this.localPeerId)}`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || !data.success) return;
+
+      // Check active peers: if host, connect to any newly discovered peers
+      if (Array.isArray(data.activePeers) && this.isHost) {
+        for (const peerId of data.activePeers) {
+          if (!this.peers.has(peerId)) {
+            await this.initiatePeerConnection(peerId);
+          }
+        }
+      }
+
+      // Process pending queued messages
+      if (Array.isArray(data.messages)) {
+        for (const msg of data.messages) {
+          await this.handleIncomingBrokerMessage(msg);
+        }
+      }
+    } catch (_e) {
+      // Ignore poll network failures
+    }
+  }
+
+  private async handleIncomingBrokerMessage(msg: any): Promise<void> {
+    if (!msg || !msg.type) return;
+
+    if (msg.type === 'peer_joined' && msg.from) {
+      if (this.isHost && !this.peers.has(msg.from)) {
+        await this.initiatePeerConnection(msg.from);
+      }
+    } else if (msg.type === 'webrtc_room_peers' && Array.isArray(msg.peers)) {
+      for (const remotePeerId of msg.peers) {
+        await this.initiatePeerConnection(remotePeerId);
+      }
+    } else if (msg.type === 'webrtc_offer' && msg.from && (msg.sdp || msg.payload?.sdp)) {
+      await this.handleIncomingOffer(msg.from, msg.sdp || msg.payload?.sdp);
+    } else if (msg.type === 'webrtc_answer' && msg.from && (msg.sdp || msg.payload?.sdp)) {
+      await this.handleIncomingAnswer(msg.from, msg.sdp || msg.payload?.sdp);
+    } else if (msg.type === 'webrtc_ice' && msg.from && (msg.candidate || msg.payload?.candidate)) {
+      const session = this.peers.get(msg.from);
+      if (session) {
+        await session.pc.addIceCandidate(new RTCIceCandidate(msg.candidate || msg.payload?.candidate));
+      }
+    } else if (msg.type === 'lobby_config_update' && (msg.config || msg.payload?.config)) {
+      this.applyIncomingLobbyConfig(msg.config || msg.payload?.config);
+    } else if (msg.type === 'peer_ready_sync' && msg.from) {
+      const session = this.peers.get(msg.from);
+      if (session) {
+        session.isReady = !!(msg.isReady ?? msg.payload?.isReady);
+        this.refreshLobbyUI();
+      }
+    } else if (msg.type === 'race_start_qualifying' && (msg.config || msg.payload?.config)) {
+      this.closeModal();
+      this.lobbyConfig.sessionStage = 'qualifying';
+      this.applyIncomingLobbyConfig(msg.config || msg.payload?.config);
+      this.onStartQualifying?.(this.lobbyConfig);
+    } else if (msg.type === 'quali_lap_result' && msg.from) {
+      this.recordQualiResult(msg.from, msg.carNumber || msg.payload?.carNumber, msg.bestLapMs || msg.payload?.bestLapMs);
+    } else if (msg.type === 'grid_ready_sync' && msg.from) {
+      this.refreshGridStagingUI();
+    } else if (msg.type === 'grid_order_update' && (Array.isArray(msg.gridOrder) || Array.isArray(msg.payload?.gridOrder))) {
+      this.customGridOrder = msg.gridOrder || msg.payload?.gridOrder;
+      this.refreshGridStagingUI();
+    } else if (msg.type === 'race_start_launch' && (msg.config || msg.payload?.config)) {
+      this.closeModal();
+      this.closeGridModal();
+      this.lobbyConfig.sessionStage = 'race';
+      this.applyIncomingLobbyConfig(msg.config || msg.payload?.config);
+      this.onStartRace?.(this.lobbyConfig, msg.gridOrder || msg.payload?.gridOrder);
+    } else if (msg.type === 'webrtc_peer_left' && msg.peerId) {
+      this.removePeer(msg.peerId);
+    }
   }
 
   private broadcastLobbyConfig(): void {
-    if (!this.signalingWs || this.signalingWs.readyState !== WebSocket.OPEN) return;
-    this.signalingWs.send(
-      JSON.stringify({
-        type: 'lobby_config_update',
-        config: this.lobbyConfig,
-      })
-    );
+    void this.sendSignalBrokerMessage('lobby_config_update', { config: this.lobbyConfig });
   }
 
   private broadcastReadyState(): void {
-    if (!this.signalingWs || this.signalingWs.readyState !== WebSocket.OPEN) return;
-    this.signalingWs.send(
-      JSON.stringify({
-        type: 'peer_ready_sync',
-        isReady: this.isLocalReady,
-      })
-    );
+    void this.sendSignalBrokerMessage('peer_ready_sync', { isReady: this.isLocalReady });
   }
 
   private applyIncomingLobbyConfig(config: LobbyConfig): void {
@@ -627,14 +1005,7 @@ export class WebRTCMultiplayerLobby {
   public launchHostQualifying(): void {
     this.closeModal();
     this.lobbyConfig.sessionStage = 'qualifying';
-    if (this.signalingWs && this.signalingWs.readyState === WebSocket.OPEN) {
-      this.signalingWs.send(
-        JSON.stringify({
-          type: 'race_start_qualifying',
-          config: this.lobbyConfig,
-        })
-      );
-    }
+    void this.sendSignalBrokerMessage('race_start_qualifying', { config: this.lobbyConfig });
     this.onStartQualifying?.(this.lobbyConfig);
   }
 
@@ -645,16 +1016,7 @@ export class WebRTCMultiplayerLobby {
 
   public broadcastQualiResult(bestLapMs: number, carNumber: string = '80'): void {
     this.qualiResults.set(this.localPeerId, { carNumber, bestLapMs });
-    if (this.signalingWs && this.signalingWs.readyState === WebSocket.OPEN) {
-      this.signalingWs.send(
-        JSON.stringify({
-          type: 'quali_lap_result',
-          from: this.localPeerId,
-          carNumber,
-          bestLapMs,
-        })
-      );
-    }
+    void this.sendSignalBrokerMessage('quali_lap_result', { carNumber, bestLapMs });
     this.refreshGridStagingUI();
   }
 
@@ -676,13 +1038,24 @@ export class WebRTCMultiplayerLobby {
       });
     }
 
-    // Sort by bestLapMs ascending (fastest first). null times go to back.
-    drivers.sort((a, b) => {
-      if (a.lapMs === null && b.lapMs === null) return 0;
-      if (a.lapMs === null) return 1;
-      if (b.lapMs === null) return -1;
-      return a.lapMs - b.lapMs;
-    });
+    // If host set a custom/shuffled random grid order, honor it; otherwise sort by hotlap
+    if (this.customGridOrder && this.customGridOrder.length > 0) {
+      const orderMap = new Map<string, number>();
+      this.customGridOrder.forEach((id, idx) => orderMap.set(id, idx));
+      drivers.sort((a, b) => {
+        const orderA = orderMap.has(a.peerId) ? orderMap.get(a.peerId)! : 999;
+        const orderB = orderMap.has(b.peerId) ? orderMap.get(b.peerId)! : 999;
+        return orderA - orderB;
+      });
+    } else {
+      // Sort by bestLapMs ascending (fastest first). null times go to back.
+      drivers.sort((a, b) => {
+        if (a.lapMs === null && b.lapMs === null) return 0;
+        if (a.lapMs === null) return 1;
+        if (b.lapMs === null) return -1;
+        return a.lapMs - b.lapMs;
+      });
+    }
 
     return drivers.slice(0, 10).map((d, idx) => ({
       gridPos: idx + 1,
@@ -735,6 +1108,9 @@ export class WebRTCMultiplayerLobby {
             <button type="button" id="webrtc-grid-ready-btn" class="webrtc-btn webrtc-btn-ready">
               RACE READY: NOT READY
             </button>
+            <button type="button" id="webrtc-grid-shuffle-btn" class="webrtc-btn webrtc-btn-skip">
+              🎲 SHUFFLE RANDOM GRID [HOST]
+            </button>
             <button type="button" id="webrtc-grid-launch-btn" class="webrtc-btn webrtc-btn-launch">
               START RACE [HOST] &rarr; SPAWN ON GRID
             </button>
@@ -746,6 +1122,7 @@ export class WebRTCMultiplayerLobby {
     document.body.appendChild(this.gridDialogEl);
     this.gridRosterTableEl = this.gridDialogEl.querySelector('#webrtc-grid-roster-table');
     this.gridReadyBtnEl = this.gridDialogEl.querySelector('#webrtc-grid-ready-btn');
+    this.gridShuffleBtnEl = this.gridDialogEl.querySelector('#webrtc-grid-shuffle-btn');
     this.gridLaunchBtnEl = this.gridDialogEl.querySelector('#webrtc-grid-launch-btn');
 
     this.gridDialogEl.querySelector('#webrtc-grid-close-btn')?.addEventListener('click', () => {
@@ -758,9 +1135,11 @@ export class WebRTCMultiplayerLobby {
         this.gridReadyBtnEl.textContent = this.isGridReady ? 'RACE READY: ✅ READY' : 'RACE READY: NOT READY';
         this.gridReadyBtnEl.classList.toggle('ready-active', this.isGridReady);
       }
-      if (this.signalingWs && this.signalingWs.readyState === WebSocket.OPEN) {
-        this.signalingWs.send(JSON.stringify({ type: 'grid_ready_sync', isReady: this.isGridReady }));
-      }
+      void this.sendSignalBrokerMessage('grid_ready_sync', { isReady: this.isGridReady });
+    });
+
+    this.gridShuffleBtnEl?.addEventListener('click', () => {
+      this.shuffleGridOrder();
     });
 
     this.gridLaunchBtnEl?.addEventListener('click', () => {
@@ -812,6 +1191,44 @@ export class WebRTCMultiplayerLobby {
         ${rows.join('')}
       </div>
     `;
+
+    if (this.gridShuffleBtnEl) {
+      this.gridShuffleBtnEl.style.display = this.isHost ? 'inline-block' : 'none';
+    }
+    if (this.gridLaunchBtnEl) {
+      this.gridLaunchBtnEl.style.display = this.isHost ? 'inline-block' : 'none';
+    }
+  }
+
+  public getRandomGridOrder(): string[] {
+    const list = [this.localPeerId, ...Array.from(this.peers.keys())];
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    return list;
+  }
+
+  public shuffleGridOrder(): void {
+    const randomOrder = this.getRandomGridOrder();
+    this.customGridOrder = randomOrder;
+    this.refreshGridStagingUI();
+    void this.sendSignalBrokerMessage('grid_order_update', {
+      gridOrder: randomOrder,
+    });
+  }
+
+  public launchHostRaceWithRandomGrid(): void {
+    this.closeModal();
+    this.closeGridModal();
+    this.lobbyConfig.sessionStage = 'race';
+    const gridOrder = this.getRandomGridOrder();
+    this.customGridOrder = gridOrder;
+    void this.sendSignalBrokerMessage('race_start_launch', {
+      config: this.lobbyConfig,
+      gridOrder,
+    });
+    this.onStartRace?.(this.lobbyConfig, gridOrder);
   }
 
   public launchHostRaceFromGrid(): void {
@@ -819,28 +1236,13 @@ export class WebRTCMultiplayerLobby {
     this.closeGridModal();
     this.lobbyConfig.sessionStage = 'race';
     const gridOrder = this.getSeededGridOrder().map((d) => d.peerId);
-    if (this.signalingWs && this.signalingWs.readyState === WebSocket.OPEN) {
-      this.signalingWs.send(
-        JSON.stringify({
-          type: 'race_start_launch',
-          config: this.lobbyConfig,
-          gridOrder,
-        })
-      );
-    }
+    void this.sendSignalBrokerMessage('race_start_launch', { config: this.lobbyConfig, gridOrder });
     this.onStartRace?.(this.lobbyConfig, gridOrder);
   }
 
   public launchHostRace(): void {
     this.closeModal();
-    if (this.signalingWs && this.signalingWs.readyState === WebSocket.OPEN) {
-      this.signalingWs.send(
-        JSON.stringify({
-          type: 'race_start_launch',
-          config: this.lobbyConfig,
-        })
-      );
-    }
+    void this.sendSignalBrokerMessage('race_start_launch', { config: this.lobbyConfig });
     this.onStartRace?.(this.lobbyConfig);
   }
 
@@ -849,7 +1251,10 @@ export class WebRTCMultiplayerLobby {
     if (existing) return existing;
 
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+      ],
     });
 
     const { meshGroup, wheelGroups } = this.buildRemotePeerCarMesh(remotePeerId);
@@ -866,21 +1271,17 @@ export class WebRTCMultiplayerLobby {
       wheelGroups,
       targetPos: new THREE.Vector3(0, -100, 0),
       targetQuat: new THREE.Quaternion(),
+      vel: [0, 0, 0],
       speedKmh: 0,
       steerAngleRad: 0,
       wheelSpinRad: 0,
       lastUpdateMs: performance.now(),
+      interpolator: new HermiteTrajectoryInterpolator(),
     };
 
     pc.onicecandidate = (ev) => {
-      if (ev.candidate && this.signalingWs && this.signalingWs.readyState === WebSocket.OPEN) {
-        this.signalingWs.send(
-          JSON.stringify({
-            type: 'webrtc_ice',
-            to: remotePeerId,
-            candidate: ev.candidate,
-          })
-        );
+      if (ev.candidate) {
+        void this.sendSignalBrokerMessage('webrtc_ice', { candidate: ev.candidate }, remotePeerId);
       }
     };
 
@@ -925,11 +1326,22 @@ export class WebRTCMultiplayerLobby {
             decoded.quat[2],
             decoded.quat[3]
           );
+          session.vel = decoded.vel;
           session.speedKmh = decoded.speedKmh;
           session.steerAngleRad = decoded.steerAngleRad;
           session.wheelSpinRad = decoded.wheelSpinRad;
           session.lastUpdateMs = performance.now();
           session.meshGroup.visible = true;
+
+          session.interpolator.pushSnapshot(
+            session.lastUpdateMs,
+            decoded.pos,
+            decoded.quat,
+            decoded.vel,
+            decoded.speedKmh,
+            decoded.steerAngleRad,
+            decoded.wheelSpinRad
+          );
         }
       }
     };
@@ -940,15 +1352,11 @@ export class WebRTCMultiplayerLobby {
     const offer = await session.pc.createOffer();
     await session.pc.setLocalDescription(offer);
 
-    if (this.signalingWs && this.signalingWs.readyState === WebSocket.OPEN) {
-      this.signalingWs.send(
-        JSON.stringify({
-          type: 'webrtc_offer',
-          to: remotePeerId,
-          sdp: session.pc.localDescription,
-        })
-      );
-    }
+    void this.sendSignalBrokerMessage(
+      'webrtc_offer',
+      { sdp: session.pc.localDescription },
+      remotePeerId
+    );
   }
 
   private async handleIncomingOffer(
@@ -960,15 +1368,11 @@ export class WebRTCMultiplayerLobby {
     const answer = await session.pc.createAnswer();
     await session.pc.setLocalDescription(answer);
 
-    if (this.signalingWs && this.signalingWs.readyState === WebSocket.OPEN) {
-      this.signalingWs.send(
-        JSON.stringify({
-          type: 'webrtc_answer',
-          to: remotePeerId,
-          sdp: session.pc.localDescription,
-        })
-      );
-    }
+    void this.sendSignalBrokerMessage(
+      'webrtc_answer',
+      { sdp: session.pc.localDescription },
+      remotePeerId
+    );
   }
 
   private async handleIncomingAnswer(
@@ -1122,6 +1526,8 @@ export class WebRTCMultiplayerLobby {
 
   /**
    * Broadcasts local vehicle pose over all open WebRTC DataChannels and updates remote 3D peer cars.
+   * Emergency Phase II-A: Transmits 56-byte packets including velocity vectors [vx, vy, vz],
+   * and evaluates remote peers via Hermite cubic spline trajectory interpolation.
    */
   public update(
     dt: number,
@@ -1129,12 +1535,14 @@ export class WebRTCMultiplayerLobby {
     localQuat: [number, number, number, number],
     speedKmh: number,
     steerAngleRad: number,
-    wheelSpinRad: number
+    wheelSpinRad: number,
+    localVel: [number, number, number] = [0, 0, 0]
   ): void {
     const now = performance.now();
     const packet = encodePeerPoseBinary(
       localPos,
       localQuat,
+      localVel,
       speedKmh,
       steerAngleRad,
       wheelSpinRad,
@@ -1177,6 +1585,7 @@ export class WebRTCMultiplayerLobby {
       const pacePacket = encodePeerPoseBinary(
         pacePos,
         sample.quat,
+        [0, 0, 0],
         sample.speedKmh,
         sample.steerAngleRad,
         sample.wheelSpinRad,
@@ -1189,19 +1598,29 @@ export class WebRTCMultiplayerLobby {
       }
     }
 
-    // 3. Smoothly interpolate remote peer 3D car rigs and update kinematic colliders
-    const alpha = Math.min(1.0, dt * 18.0);
+    // 3. Hermite cubic spline trajectory evaluation & velocity dead reckoning
     for (const session of this.peers.values()) {
       if (!session.meshGroup.visible) continue;
-      if (session.meshGroup.position.y < -50) {
-        session.meshGroup.position.copy(session.targetPos);
-        session.meshGroup.quaternion.copy(session.targetQuat);
+      const evaluated = session.interpolator.evaluate(now);
+      if (evaluated) {
+        session.meshGroup.position.copy(evaluated.pos);
+        session.meshGroup.quaternion.copy(evaluated.quat);
+        session.speedKmh = evaluated.speedKmh;
+        session.steerAngleRad = evaluated.steerAngleRad;
+        session.wheelSpinRad = evaluated.wheelSpinRad;
       } else {
-        session.meshGroup.position.lerp(session.targetPos, alpha);
-        session.meshGroup.quaternion.slerp(session.targetQuat, alpha);
+        const alpha = Math.min(1.0, dt * 18.0);
+        if (session.meshGroup.position.y < -50) {
+          session.meshGroup.position.copy(session.targetPos);
+          session.meshGroup.quaternion.copy(session.targetQuat);
+        } else {
+          session.meshGroup.position.lerp(session.targetPos, alpha);
+          session.meshGroup.quaternion.slerp(session.targetQuat, alpha);
+        }
       }
 
       // Update Kinematic Collider position if active and local car is not ghost invulnerable
+      // (Pure Invariant Ghost Mode leaves kinematicBody null when collisionEnabled is false)
       if (
         session.kinematicBody &&
         this.lobbyConfig.collisionEnabled &&
@@ -1322,6 +1741,25 @@ export class WebRTCMultiplayerLobby {
         openCount > 0
           ? `LIVE P2P ROOM ${this.roomId} (${openCount} CONNECTED)`
           : `READY • ROOM ${this.roomId}`;
+    }
+
+    if (this.startQualiBtnEl) {
+      this.startQualiBtnEl.style.display = this.isHost ? '' : 'none';
+    }
+    if (this.skipQualiBtnEl) {
+      this.skipQualiBtnEl.style.display = this.isHost ? '' : 'none';
+    }
+    if (this.circuitSelectEl) {
+      this.circuitSelectEl.disabled = !this.isHost;
+    }
+    if (this.lapInputEl) {
+      this.lapInputEl.disabled = !this.isHost;
+    }
+    if (this.maxDriversInputEl) {
+      this.maxDriversInputEl.disabled = !this.isHost;
+    }
+    if (this.collisionBtnEl) {
+      this.collisionBtnEl.disabled = !this.isHost;
     }
 
     if (this.peers.size === 0) {

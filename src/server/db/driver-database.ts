@@ -14,9 +14,41 @@ import {
   ClaimGuestPayload,
   AuthResponse,
   CIRCUIT_HOMOLOGATION,
-  InputCategory,
   isDeveloperTag,
 } from '../../common/auth/driver-types';
+import {
+  validateDriverTag,
+  validateDisplayName,
+  DEVELOPER_EMAIL,
+} from '../../common/auth/moderation';
+
+export interface ServerlessSignalMessage {
+  id: string;
+  roomCode: string;
+  from: string;
+  to?: string;
+  type: string;
+  payload: any;
+  timestamp: number;
+}
+
+export interface ServerlessSignalRoom {
+  roomCode: string;
+  circuit: string;
+  sessionStage: string;
+  lapCount: number;
+  maxDrivers: number;
+  collisionEnabled: boolean;
+  peers: Map<string, { peerId: string; driverTag: string; isHost: boolean; lastSeen: number }>;
+  peerInboxes: Map<string, ServerlessSignalMessage[]>;
+  lastActivity: number;
+}
+
+export interface PairSignalMessage {
+  type: string;
+  payload: any;
+  timestamp: number;
+}
 
 export function formatLapTime(ms: number): string {
   if (ms <= 0 || !isFinite(ms)) return '--:--.---';
@@ -50,8 +82,37 @@ export class DriverDatabase {
   // Email verification OTP codes: email -> { code, expiresAt }
   private emailVerificationCodes = new Map<string, { code: string; expiresAt: number }>();
 
+  // Emergency Phase II-A: Serverless WebRTC signaling rooms
+  private signalRooms = new Map<string, ServerlessSignalRoom>();
+
+  // Emergency Phase II-A: Serverless WebRTC Phone-to-Desktop pairing signaling
+  private pairSignals = new Map<string, { hostInbox: PairSignalMessage[]; controllerInbox: PairSignalMessage[]; lastActivity: number }>();
+
+  // Authorized short tags (2 or 3 letters) approved by developer
+  private authorizedShortTags = new Set<string>(['le']);
+
   constructor() {
-    this.seedBenchmarkData();
+    // Zero placeholder entries: clean slate. Leaderboards start blank until verified player hotlaps are recorded.
+  }
+
+  /**
+   * Grants authorization for a 2-character or 3-character driver tag.
+   * Only callable by the developer (hzguo117@gmail.com).
+   */
+  public grantShortTagAccess(tag: string, authorizedByEmail: string): { success: boolean; message: string } {
+    const callerEmail = (authorizedByEmail || '').trim().toLowerCase();
+    if (callerEmail !== DEVELOPER_EMAIL.toLowerCase()) {
+      return {
+        success: false,
+        message: `Unauthorized. Only developer (${DEVELOPER_EMAIL}) can grant 2-letter or 3-letter tags.`,
+      };
+    }
+    const cleanTag = (tag || '').trim().toLowerCase();
+    if (cleanTag.length < 2 || cleanTag.length > 3) {
+      return { success: false, message: 'Tag must be 2 or 3 characters long to grant short tag access.' };
+    }
+    this.authorizedShortTags.add(cleanTag);
+    return { success: true, message: `Short tag "${cleanTag.toUpperCase()}" granted authorization.` };
   }
 
   // ==========================================
@@ -98,8 +159,20 @@ export class DriverDatabase {
 
   public register(payload: RegisterPayload, isGuest = false): AuthResponse {
     const cleanTag = payload.driverTag.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-    if (cleanTag.length < 2) {
-      return { success: false, message: 'Driver tag must be at least 2 alphanumeric characters.' };
+
+    // Full validation: length (min 4 for standard, 2-3 restricted), profanity/hate-speech filter
+    if (!isGuest || cleanTag.length < 4 || !cleanTag.startsWith('GUEST_')) {
+      const tagValidation = validateDriverTag(payload.driverTag, payload.email, this.authorizedShortTags);
+      if (!tagValidation.valid) {
+        return { success: false, message: tagValidation.message || 'Invalid driver tag.' };
+      }
+    }
+
+    if (payload.displayName) {
+      const nameValidation = validateDisplayName(payload.displayName);
+      if (!nameValidation.valid) {
+        return { success: false, message: nameValidation.message || 'Invalid display name.' };
+      }
     }
 
     const tagKey = cleanTag.toLowerCase();
@@ -112,7 +185,7 @@ export class DriverDatabase {
       return { success: false, message: `Email "${payload.email}" is already in use.` };
     }
 
-    const isDev = isDeveloperTag(cleanTag);
+    const isDev = isDeveloperTag(cleanTag, payload.email);
     const isEmailVerified = isDev || (payload.verificationCode ? this.verifyEmail(payload.email, payload.verificationCode) : false);
 
     const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -256,8 +329,17 @@ export class DriverDatabase {
     const guestUserId = this.tagToUserId.get(guestKey);
 
     const cleanNewTag = payload.newDriverTag.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-    if (cleanNewTag.length < 2) {
-      return { success: false, message: 'New driver tag must be at least 2 characters.' };
+
+    const tagValidation = validateDriverTag(payload.newDriverTag, payload.email, this.authorizedShortTags);
+    if (!tagValidation.valid) {
+      return { success: false, message: tagValidation.message || 'Invalid driver tag.' };
+    }
+
+    if (payload.displayName) {
+      const nameValidation = validateDisplayName(payload.displayName);
+      if (!nameValidation.valid) {
+        return { success: false, message: nameValidation.message || 'Invalid display name.' };
+      }
     }
 
     const newTagKey = cleanNewTag.toLowerCase();
@@ -283,7 +365,7 @@ export class DriverDatabase {
       userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     }
 
-    const isDev = isDeveloperTag(cleanNewTag);
+    const isDev = isDeveloperTag(cleanNewTag, payload.email);
     const countryCode = (payload.countryCode || 'GLOBAL').toUpperCase();
     const isEmailVerified = isDev || (payload.verificationCode ? this.verifyEmail(payload.email, payload.verificationCode) : false);
 
@@ -602,10 +684,12 @@ export class DriverDatabase {
     }
     this.personalRecords.set(userId, userRecords);
 
-    // Commit to global leaderboard
+    // Commit to global leaderboard (strictly ONE personal best entry per driver account per circuit)
     let board = this.leaderboards.get(circuitId) || [];
-    const entryId = `${userId}_${circuitId}_${submission.vehicleId}_${submission.weather}`;
-    const existingEntryIdx = board.findIndex((e) => e.id === entryId);
+    const entryId = `${userId}_${circuitId}`;
+    const existingEntryIdx = board.findIndex(
+      (e) => e.driverTag.toLowerCase() === account.driverTag.toLowerCase() || e.id === entryId || e.id.startsWith(`${userId}_${circuitId}`)
+    );
 
     const vehicleName = submission.vehicleId.includes('rsr')
       ? 'Porsche 911 RSR-19 (992)'
@@ -713,7 +797,7 @@ export class DriverDatabase {
 
     const total = board.length;
     const offset = filter.offset || 0;
-    const limit = filter.limit || 50;
+    const limit = Math.min(filter.limit || 25, 25);
     const paged = board.slice(offset, offset + limit);
 
     return { total, entries: paged };
@@ -763,8 +847,8 @@ export class DriverDatabase {
       circuitId: cid,
       vehicleClass,
       weather,
-      lapTimeMs: leader ? leader.lapTimeMs : 403616,
-      driverTag: leader ? leader.driverTag : 'KEVIN_ESTRE_911',
+      lapTimeMs: leader ? leader.lapTimeMs : (frames[frames.length - 1]?.timeMs || 0),
+      driverTag: leader ? leader.driverTag : '',
       keyframes: frames,
     };
   }
@@ -833,247 +917,253 @@ export class DriverDatabase {
   }
 
   // ==========================================
-  // INITIAL BENCHMARK SEED DATA
+  // EMERGENCY PHASE II-A: SERVERLESS WEBRTC SIGNALING
   // ==========================================
 
-  private seedBenchmarkData(): void {
-    // 1. Seed Real-World Nordschleife Benchmark Alien Drivers
-    const alienDrivers = [
-      {
-        tag: 'KEVIN_ESTRE_911',
-        name: 'Kévin Estre',
-        country: 'FR',
-        color: '#ef4444',
-        class: 'GTE',
-        lapTimeMs: 403616, // 6:43.616 (Sub-6:45 Nordschleife Benchmark)
-        splits: [44500, 43100, 46200, 45800, 44900, 43800, 45200, 44600, 45516],
-        topSpeed: 312.4,
-        input: 'wheel' as InputCategory,
-      },
-      {
-        tag: 'TIMO_BERNHARD',
-        name: 'Timo Bernhard',
-        country: 'DE',
-        color: '#f59e0b',
-        class: 'GTE',
-        lapTimeMs: 407250, // 6:47.250
-        splits: [45100, 43600, 46500, 46100, 45200, 44100, 45600, 45100, 45950],
-        topSpeed: 309.8,
-        input: 'wheel' as InputCategory,
-      },
-      {
-        tag: 'MAX_VERSTAPPEN_1',
-        name: 'Max Verstappen',
-        country: 'NL',
-        color: '#3b82f6',
-        class: 'GTE',
-        lapTimeMs: 408800, // 6:48.800
-        splits: [45300, 43800, 46700, 46200, 45400, 44300, 45800, 45300, 46000],
-        topSpeed: 314.1,
-        input: 'wheel' as InputCategory,
-      },
-      {
-        tag: 'MOBILE_APEX_KING',
-        name: 'Alexandre Giro',
-        country: 'IT',
-        color: '#10b981',
-        class: 'GTE',
-        lapTimeMs: 414320, // 6:54.320 (Mobile Gyro Record)
-        splits: [45900, 44400, 47300, 46800, 46000, 44900, 46400, 45900, 46720],
-        topSpeed: 306.2,
-        input: 'gyro' as InputCategory,
-      },
-      {
-        tag: 'KEYBOARD_WARRIOR',
-        name: 'Jonas Schmidt',
-        country: 'DE',
-        color: '#8b5cf6',
-        class: 'GTE',
-        lapTimeMs: 421800, // 7:01.800 (Desktop Keyboard Benchmark)
-        splits: [46700, 45200, 48100, 47600, 46800, 45700, 47200, 46700, 47800],
-        topSpeed: 304.5,
-        input: 'keyboard' as InputCategory,
-      },
-    ];
+  public joinSignalRoom(
+    roomCode: string,
+    peerId: string,
+    driverTag = 'RSR_RACER',
+    isHost = false
+  ): {
+    success: boolean;
+    roomCode: string;
+    peerId: string;
+    isHost: boolean;
+    activePeers: string[];
+    circuit: string;
+    sessionStage: string;
+    lapCount: number;
+    collisionEnabled: boolean;
+  } {
+    const code = (roomCode || '4821').trim().toUpperCase();
+    let room = this.signalRooms.get(code);
+    const now = Date.now();
 
-    const nordschleifeBoard: LeaderboardEntry[] = [];
-    const leaderTime = alienDrivers[0].lapTimeMs;
-
-    alienDrivers.forEach((driver, idx) => {
-      const userId = `usr_alien_${idx}`;
-      const acc: UserAccount = {
-        id: userId,
-        driverTag: driver.tag,
-        email: `${driver.tag.toLowerCase()}@racers.net`,
-        displayName: driver.name,
-        countryCode: driver.country,
-        avatarColor: driver.color,
-        preferredUnits: 'km/h',
-        isGuest: false,
-        createdAt: 1700000000000,
+    if (!room) {
+      room = {
+        roomCode: code,
+        circuit: 'nordschleife',
+        sessionStage: 'lobby',
+        lapCount: 3,
+        maxDrivers: 10,
+        collisionEnabled: false,
+        peers: new Map(),
+        peerInboxes: new Map(),
+        lastActivity: now,
       };
-      this.users.set(userId, acc);
-      this.tagToUserId.set(driver.tag.toLowerCase(), userId);
-      this.emailToUserId.set(acc.email.toLowerCase(), userId);
-
-      this.profiles.set(userId, {
-        userId,
-        driverTag: driver.tag,
-        displayName: driver.name,
-        countryCode: driver.country,
-        avatarColor: driver.color,
-        preferredUnits: 'km/h',
-        joinedDate: 1700000000000,
-      });
-
-      this.stats.set(userId, {
-        userId,
-        driverTag: driver.tag,
-        totalDistanceKm: 1420 + idx * 250,
-        totalLapsCompleted: 68 + idx * 12,
-        cleanLapsCompleted: 65 + idx * 11,
-        cleanLapRatio: 96,
-        favoriteVehicle: 'Porsche 911 RSR-19 (992)',
-        favoriteLivery: 'Rexy Green #80',
-        totalFlightTimeSeconds: 42.5,
-        maxTopSpeedKmh: driver.topSpeed,
-        lastActive: Date.now() - idx * 3600000,
-        vehiclesDriven: { porsche_911_rsr_19_992: 1420 },
-        liveriesUsed: { 'Rexy Green #80': 50 },
-      });
-
-      nordschleifeBoard.push({
-        rank: idx + 1,
-        id: `${userId}_nordschleife_porsche_rsr_clear`,
-        driverTag: driver.tag,
-        displayName: driver.name,
-        countryCode: driver.country,
-        avatarColor: driver.color,
-        circuitId: 'nordschleife',
-        vehicleId: 'porsche_911_rsr_19_992',
-        vehicleName: 'Porsche 911 RSR-19 (992)',
-        vehicleClass: driver.class,
-        weather: 'clear',
-        inputCategory: driver.input,
-        lapTimeMs: driver.lapTimeMs,
-        lapTimeFormatted: formatLapTime(driver.lapTimeMs),
-        deltaToLeaderMs: driver.lapTimeMs - leaderTime,
-        sectorSplitsMs: driver.splits,
-        topSpeedKmh: driver.topSpeed,
-        timestamp: Date.now() - idx * 7200000,
-        hasGhostTrajectory: idx === 0, // #1 has active WR ghost
-      });
-    });
-
-    this.leaderboards.set('nordschleife', nordschleifeBoard);
-
-    // 2. Seed 24h Gesamtkurs, GP-Strecke & Proving Ground Leaderboards
-    this.leaderboards.set('24h', [
-      {
-        rank: 1,
-        id: 'usr_alien_0_24h_rsr',
-        driverTag: 'KEVIN_ESTRE_911',
-        displayName: 'Kévin Estre',
-        countryCode: 'FR',
-        avatarColor: '#ef4444',
-        circuitId: '24h',
-        vehicleId: 'porsche_911_rsr_19_992',
-        vehicleName: 'Porsche 911 RSR-19 (992)',
-        vehicleClass: 'GTE',
-        weather: 'clear',
-        inputCategory: 'wheel',
-        lapTimeMs: 489120, // 8:09.120
-        lapTimeFormatted: formatLapTime(489120),
-        deltaToLeaderMs: 0,
-        sectorSplitsMs: [52000, 54000, 56000, 55000, 53000, 54000, 55000, 55000, 55120],
-        topSpeedKmh: 310.2,
-        timestamp: Date.now() - 100000,
-        hasGhostTrajectory: false,
-      },
-    ]);
-
-    this.leaderboards.set('gp_strecke', [
-      {
-        rank: 1,
-        id: 'usr_alien_0_gp_rsr',
-        driverTag: 'KEVIN_ESTRE_911',
-        displayName: 'Kévin Estre',
-        countryCode: 'FR',
-        avatarColor: '#ef4444',
-        circuitId: 'gp_strecke',
-        vehicleId: 'porsche_911_rsr_19_992',
-        vehicleName: 'Porsche 911 RSR-19 (992)',
-        vehicleClass: 'GTE',
-        weather: 'clear',
-        inputCategory: 'wheel',
-        lapTimeMs: 113400, // 1:53.400
-        lapTimeFormatted: formatLapTime(113400),
-        deltaToLeaderMs: 0,
-        sectorSplitsMs: [38200, 37400, 37800],
-        topSpeedKmh: 278.6,
-        timestamp: Date.now() - 200000,
-        hasGhostTrajectory: false,
-      },
-    ]);
-
-    this.leaderboards.set('proving_ground', [
-      {
-        rank: 1,
-        id: 'usr_alien_0_pg_rsr',
-        driverTag: 'TIMO_BERNHARD',
-        displayName: 'Timo Bernhard',
-        countryCode: 'DE',
-        avatarColor: '#f59e0b',
-        circuitId: 'proving_ground',
-        vehicleId: 'porsche_911_rsr_19_992',
-        vehicleName: 'Porsche 911 RSR-19 (992)',
-        vehicleClass: 'GTE',
-        weather: 'clear',
-        inputCategory: 'wheel',
-        lapTimeMs: 72850, // 1:12.850
-        lapTimeFormatted: formatLapTime(72850),
-        deltaToLeaderMs: 0,
-        sectorSplitsMs: [24200, 24300, 24350],
-        topSpeedKmh: 318.5,
-        timestamp: Date.now() - 300000,
-        hasGhostTrajectory: false,
-      },
-    ]);
-
-    // 3. Seed synthetic 30 Hz keyframes for the #1 Nordschleife World Record Ghost
-    const wrGhostFrames: GhostKeyframePayload[] = [];
-    const totalLapMs = alienDrivers[0].lapTimeMs; // 403616 ms
-    const frameIntervalMs = 1000 / 30; // 33.33 ms
-    const totalFrames = Math.floor(totalLapMs / frameIntervalMs);
-    const totalCircuitLengthM = 20710;
-
-    for (let i = 0; i < totalFrames; i++) {
-      const timeMs = Math.round(i * frameIntervalMs);
-      const progress = i / totalFrames;
-      const distanceM = progress * totalCircuitLengthM;
-      // Synthetic smooth oval curve coordinates for benchmark fallback
-      const angle = progress * Math.PI * 2;
-      const x = Math.sin(angle) * 1200;
-      const y = 350 + Math.sin(angle * 3) * 60;
-      const z = Math.cos(angle) * 2400;
-      const steerRad = Math.sin(angle * 8) * 0.15;
-
-      wrGhostFrames.push({
-        timeMs,
-        distanceM,
-        x,
-        y,
-        z,
-        qx: 0,
-        qy: Math.sin(angle / 2),
-        qz: 0,
-        qw: Math.cos(angle / 2),
-        steerRad,
-      });
+      this.signalRooms.set(code, room);
     }
 
-    this.wrGhosts.set('nordschleife_GTE_clear', wrGhostFrames);
+    room.lastActivity = now;
+
+    // Purge peers inactive for > 60 seconds (except the calling peer)
+    for (const [id, peer] of room.peers.entries()) {
+      if (id !== peerId && now - peer.lastSeen > 60000) {
+        room.peers.delete(id);
+        room.peerInboxes.delete(id);
+      }
+    }
+
+    // Determine host status: if no host exists or caller isHost, establish host
+    const hostExists = Array.from(room.peers.values()).some((p) => p.isHost);
+    const actualHost = isHost || !hostExists;
+
+    room.peers.set(peerId, {
+      peerId,
+      driverTag,
+      isHost: actualHost,
+      lastSeen: now,
+    });
+
+    if (!room.peerInboxes.has(peerId)) {
+      room.peerInboxes.set(peerId, []);
+    }
+
+    // Notify other peers in the room
+    const existingPeers: string[] = [];
+    for (const otherPeerId of room.peers.keys()) {
+      if (otherPeerId !== peerId) {
+        existingPeers.push(otherPeerId);
+        const inbox = room.peerInboxes.get(otherPeerId);
+        if (inbox) {
+          inbox.push({
+            id: `msg_${now}_${Math.random().toString(36).substring(2, 7)}`,
+            roomCode: code,
+            from: peerId,
+            to: otherPeerId,
+            type: 'peer_joined',
+            payload: { peerId, driverTag, isHost: actualHost },
+            timestamp: now,
+          });
+        }
+      }
+    }
+
+    return {
+      success: true,
+      roomCode: code,
+      peerId,
+      isHost: actualHost,
+      activePeers: existingPeers,
+      circuit: room.circuit,
+      sessionStage: room.sessionStage,
+      lapCount: room.lapCount,
+      collisionEnabled: room.collisionEnabled,
+    };
   }
+
+  public sendSignalMessage(
+    roomCode: string,
+    from: string,
+    to: string | undefined,
+    type: string,
+    payload: any
+  ): { success: boolean; deliveredTo: number } {
+    const code = (roomCode || '').trim().toUpperCase();
+    const room = this.signalRooms.get(code);
+    if (!room) return { success: false, deliveredTo: 0 };
+
+    const now = Date.now();
+    room.lastActivity = now;
+
+    // Update room configuration state if config payload
+    if (type === 'lobby_config_update' && payload) {
+      if (payload.circuit) room.circuit = payload.circuit;
+      if (typeof payload.lapCount === 'number') room.lapCount = payload.lapCount;
+      if (typeof payload.collisionEnabled === 'boolean') room.collisionEnabled = payload.collisionEnabled;
+      if (payload.sessionStage) room.sessionStage = payload.sessionStage;
+    } else if (type === 'race_start_qualifying') {
+      room.sessionStage = 'qualifying';
+    } else if (type === 'race_start_launch') {
+      room.sessionStage = 'race';
+    }
+
+    const msg: ServerlessSignalMessage = {
+      id: `msg_${now}_${Math.random().toString(36).substring(2, 8)}`,
+      roomCode: code,
+      from,
+      to,
+      type,
+      payload,
+      timestamp: now,
+    };
+
+    let count = 0;
+    if (to && to !== 'all') {
+      const inbox = room.peerInboxes.get(to);
+      if (inbox) {
+        inbox.push(msg);
+        count++;
+      }
+    } else {
+      // Broadcast to all other peers in room
+      for (const [peerId, inbox] of room.peerInboxes.entries()) {
+        if (peerId !== from) {
+          inbox.push(msg);
+          count++;
+        }
+      }
+    }
+
+    return { success: true, deliveredTo: count };
+  }
+
+  public pollSignalMessages(
+    roomCode: string,
+    peerId: string
+  ): {
+    success: boolean;
+    messages: ServerlessSignalMessage[];
+    activePeers: string[];
+    circuit?: string;
+    sessionStage?: string;
+    lapCount?: number;
+    collisionEnabled?: boolean;
+  } {
+    const code = (roomCode || '').trim().toUpperCase();
+    const room = this.signalRooms.get(code);
+    if (!room) return { success: false, messages: [], activePeers: [] };
+
+    const now = Date.now();
+    room.lastActivity = now;
+
+    const peer = room.peers.get(peerId);
+    if (peer) {
+      peer.lastSeen = now;
+    }
+
+    const inbox = room.peerInboxes.get(peerId);
+    const messages = inbox ? [...inbox] : [];
+    if (inbox) {
+      inbox.length = 0; // Drain messages atomically
+    }
+
+    const activePeers = Array.from(room.peers.keys()).filter((id) => id !== peerId);
+
+    return {
+      success: true,
+      messages,
+      activePeers,
+      circuit: room.circuit,
+      sessionStage: room.sessionStage,
+      lapCount: room.lapCount,
+      collisionEnabled: room.collisionEnabled,
+    };
+  }
+
+  public getSignalRoomInfo(roomCode: string): ServerlessSignalRoom | null {
+    const code = (roomCode || '').trim().toUpperCase();
+    return this.signalRooms.get(code) || null;
+  }
+
+  // ==========================================
+  // DIRECT PHONE-TO-DESKTOP WEBRTC PAIRING SIGNALING
+  // ==========================================
+
+  public sendPairSignal(
+    pairToken: string,
+    from: 'host' | 'controller',
+    type: string,
+    payload: any
+  ): { success: boolean; message?: string } {
+    const token = (pairToken || '').trim();
+    if (!token) return { success: false, message: 'Missing pairing token.' };
+
+    let session = this.pairSignals.get(token);
+    const now = Date.now();
+    if (!session) {
+      session = { hostInbox: [], controllerInbox: [], lastActivity: now };
+      this.pairSignals.set(token, session);
+    }
+    session.lastActivity = now;
+
+    const msg: PairSignalMessage = { type, payload, timestamp: now };
+    if (from === 'host') {
+      session.controllerInbox.push(msg);
+    } else {
+      session.hostInbox.push(msg);
+    }
+
+    return { success: true };
+  }
+
+  public pollPairSignal(
+    pairToken: string,
+    role: 'host' | 'controller'
+  ): { success: boolean; messages: PairSignalMessage[] } {
+    const token = (pairToken || '').trim();
+    const session = this.pairSignals.get(token);
+    if (!session) return { success: true, messages: [] };
+
+    session.lastActivity = Date.now();
+    const inbox = role === 'host' ? session.hostInbox : session.controllerInbox;
+    const messages = [...inbox];
+    inbox.length = 0; // Drain messages
+
+    return { success: true, messages };
+  }
+
 }
 
 // Global singleton instance for the server runtime

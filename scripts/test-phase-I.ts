@@ -9,6 +9,7 @@
 import { DriverDatabase, formatLapTime } from '../src/server/db/driver-database';
 import { GhostCarManager, GhostKeyframe } from '../src/host/gameplay/ghost-car';
 import { LapSubmissionPayload } from '../src/common/auth/driver-types';
+import { COUNTRIES, formatCountryBadge } from '../src/common/auth/countries';
 
 async function runPhaseITests() {
   console.log('\n==========================================================');
@@ -17,7 +18,7 @@ async function runPhaseITests() {
 
   const db = new DriverDatabase();
   let testsPassed = 0;
-  const totalTests = 6;
+  const totalTests = 7;
 
   // -------------------------------------------------------------------------
   // TEST 1: Driver Authentication, Guest Mode & Frictionless "Claim License"
@@ -173,6 +174,24 @@ async function runPhaseITests() {
   const validSplits = [45000, 44000, 47000, 46000, 45500, 44500, 46000, 45200, 47000];
   const validTotal = validSplits.reduce((a, b) => a + b, 0); // 410200 ms
 
+  const sampleGhostFrames: any[] = [];
+  const totalFrames = 150;
+  for (let i = 0; i < totalFrames; i++) {
+    const t = Math.round((i / (totalFrames - 1)) * validTotal);
+    sampleGhostFrames.push({
+      timeMs: t,
+      distanceM: (i / (totalFrames - 1)) * 20710,
+      x: Math.sin((i / totalFrames) * Math.PI * 2) * 1200,
+      y: 350.0,
+      z: Math.cos((i / totalFrames) * Math.PI * 2) * 2400,
+      qx: 0,
+      qy: 0,
+      qz: 0,
+      qw: 1,
+      steerRad: 0,
+    });
+  }
+
   const validPayload: LapSubmissionPayload = {
     driverTag: 'APEX_HUNTER_99',
     circuitId: 'nordschleife',
@@ -184,6 +203,7 @@ async function runPhaseITests() {
     sectorSplitsMs: validSplits,
     topSpeedKmh: 310.5,
     isLapValid: true,
+    ghostTrajectory: sampleGhostFrames,
   };
 
   const validRes = db.submitLap(validPayload);
@@ -191,6 +211,23 @@ async function runPhaseITests() {
     throw new Error(`Valid clean lap rejected! Reason: ${validRes.reason}`);
   }
   console.log(`  ✅ Clean verified lap accepted: ${formatLapTime(validTotal)} (Rank #${validRes.leaderboardRank})`);
+
+  // Verify Single-Entry Per Account Policy: slower second lap by same driver
+  const slowerSplits = [48000, 46000, 49000, 48000, 47500, 46500, 48000, 47000, 50000];
+  const slowerRes = db.submitLap({
+    ...validPayload,
+    totalLapTimeMs: slowerSplits.reduce((a, b) => a + b, 0),
+    sectorSplitsMs: slowerSplits,
+  });
+  if (!slowerRes.accepted) throw new Error('Slower lap should be processed');
+  const boardCheck = db.queryLeaderboard({ circuitId: 'nordschleife' });
+  if (boardCheck.total !== 1) {
+    throw new Error(`Single-entry per driver policy failed: found ${boardCheck.total} entries for APEX_HUNTER_99!`);
+  }
+  if (boardCheck.entries[0].lapTimeMs !== validTotal) {
+    throw new Error('Slower lap overwrote personal best time!');
+  }
+  console.log('  ✅ Single-entry policy verified: Slower lap did not duplicate, personal best intact.');
 
   // Test B: Sector Monotonic Timing Mismatch (Sum != Total)
   const corruptSplitsPayload: LapSubmissionPayload = {
@@ -262,28 +299,52 @@ async function runPhaseITests() {
   // Query 1: All inputs on Nordschleife
   const qAll = db.queryLeaderboard({ circuitId: 'nordschleife' });
   console.log(`  Nordschleife Overall Leaderboard Count: ${qAll.total} entries`);
+  if (qAll.total !== 2) {
+    throw new Error(`Expected exactly 2 verified entries, got ${qAll.total}`);
+  }
   console.log(`  P1: ${qAll.entries[0].driverTag} (${qAll.entries[0].lapTimeFormatted}) - ${qAll.entries[0].inputCategory.toUpperCase()}`);
   console.log(`  P2: ${qAll.entries[1].driverTag} (+${(qAll.entries[1].deltaToLeaderMs / 1000).toFixed(3)}s)`);
 
   // Query 2: Filter by Mobile Gyro only
   const qGyro = db.queryLeaderboard({ circuitId: 'nordschleife', inputCategory: 'gyro' });
   console.log(`  Mobile Gyro Filtered Count: ${qGyro.total} entries`);
-  if (!qGyro.entries.every((e) => e.inputCategory === 'gyro')) {
+  if (!qGyro.entries.every((e) => e.inputCategory === 'gyro') || qGyro.total !== 1) {
     throw new Error('Input filter failed: non-gyro entry returned!');
   }
   console.log(`  P1 Gyro: ${qGyro.entries[0].driverTag} (${qGyro.entries[0].lapTimeFormatted})`);
 
-  // Query 3: Filter by 24h circuit
+  // Query 3: Filter by 24h circuit (un-raced: must be clean blank slate)
   const q24h = db.queryLeaderboard({ circuitId: '24h' });
-  console.log(`  24h Gesamtkurs Count: ${q24h.total} entries (Leader: ${q24h.entries[0].driverTag})`);
+  if (q24h.total !== 0) throw new Error(`Expected un-raced 24h board to be 0, got ${q24h.total}`);
+  console.log(`  ✅ 24h Gesamtkurs Count: 0 entries (Clean blank slate verified)`);
 
-  // Query 4: Filter by GP-Strecke
+  // Query 4: Filter by GP-Strecke (un-raced: must be clean blank slate)
   const qGp = db.queryLeaderboard({ circuitId: 'gp_strecke' });
-  console.log(`  GP-Strecke Count: ${qGp.total} entries (Leader: ${qGp.entries[0].driverTag})`);
+  if (qGp.total !== 0) throw new Error(`Expected un-raced GP board to be 0, got ${qGp.total}`);
+  console.log(`  ✅ GP-Strecke Count: 0 entries (Clean blank slate verified)`);
 
-  // Query 5: Filter by Proving Ground
+  // Query 5: Filter by Proving Ground & test Top 25 limit with 30 distinct drivers
+  for (let i = 0; i < 30; i++) {
+    const splits = [50000 + i * 500, 48000, 51000, 50000, 49000, 48000, 50000, 49000, 51000];
+    db.submitLap({
+      driverTag: `RACER_${i + 1}`,
+      circuitId: 'proving_ground',
+      vehicleId: 'porsche_911_rsr_19_992',
+      vehicleClass: 'GTE',
+      weather: 'clear',
+      inputCategory: 'keyboard',
+      totalLapTimeMs: splits.reduce((a, b) => a + b, 0),
+      sectorSplitsMs: splits,
+      topSpeedKmh: 300,
+      isLapValid: true,
+    });
+  }
   const qPg = db.queryLeaderboard({ circuitId: 'proving_ground' });
-  console.log(`  Proving Ground Count: ${qPg.total} entries (Leader: ${qPg.entries[0].driverTag})`);
+  console.log(`  Proving Ground Count: ${qPg.total} total recorded (Leader: ${qPg.entries[0].driverTag})`);
+  if (qPg.entries.length !== 25) {
+    throw new Error(`Expected Top 25 page limit, but got ${qPg.entries.length} entries`);
+  }
+  console.log(`  ✅ Top 25 leaderboard cap strictly enforced (${qPg.entries.length}/25 entries returned).`);
 
   testsPassed++;
 
@@ -328,6 +389,130 @@ async function runPhaseITests() {
   console.log(`  ✅ GhostCarManager interpolated World Record Ghost at T = ${(sampleTime / 1000).toFixed(1)}s:`);
   console.log(`     Interpolated Pos: [${sample.position.x.toFixed(2)}, ${sample.position.y.toFixed(2)}, ${sample.position.z.toFixed(2)}]`);
   console.log(`     Interpolated Dist: ${sample.distanceM.toFixed(1)}m, Steer: ${(sample.steerRad * (180 / Math.PI)).toFixed(1)}°`);
+
+  testsPassed++;
+
+  // -------------------------------------------------------------------------
+  // TEST 7: Developer Identity "le", Short Tag Access & Banned Words Filter
+  // -------------------------------------------------------------------------
+  console.log('\n--- Step I.7: Developer "le", Short Tag Grant & Banned Words Filter ---');
+
+  // 1. Verify standard 4-character minimum: reject 2-letter or 3-letter tags without authorization
+  const shortTagRes = db.register({
+    driverTag: 'CAR',
+    email: 'regular_racer@gmail.com',
+  });
+  if (shortTagRes.success) {
+    throw new Error('Allowed 3-character tag without developer authorization!');
+  }
+  console.log('  ✅ 3-character tag "CAR" correctly rejected without developer authorization.');
+
+  // 2. Reject inappropriate, racist, or homophobic banned tags/names
+  const hateTagRes = db.register({
+    driverTag: 'RACIST_N1GG3R',
+    email: 'troll@evil.com',
+  });
+  if (hateTagRes.success) {
+    throw new Error('Banned words filter FAILED: Accepted racist slur tag!');
+  }
+  console.log('  ✅ Inappropriate / racist slur tag strictly rejected.');
+
+  const homophobicTagRes = db.register({
+    driverTag: 'FA660T_RACER',
+    email: 'troll2@evil.com',
+  });
+  if (homophobicTagRes.success) {
+    throw new Error('Banned words filter FAILED: Accepted homophobic slur tag!');
+  }
+  console.log('  ✅ Inappropriate / homophobic slur tag strictly rejected.');
+
+  const profaneNameRes = db.register({
+    driverTag: 'CLEAN_TAG',
+    displayName: 'Dirty Cunt Driver',
+    email: 'clean@email.com',
+  });
+  if (profaneNameRes.success) {
+    throw new Error('Banned words filter FAILED: Accepted profane display name!');
+  }
+  console.log('  ✅ Profane display name strictly rejected.');
+
+  // 3. Lead Developer Special Case: tag "le", display name "le", email "hzguo117@gmail.com"
+  const devEmail = 'hzguo117@gmail.com';
+  const otpRes = db.sendVerificationCode(devEmail);
+  if (!otpRes.success || !otpRes.code) {
+    throw new Error(`Failed to send email verification code: ${otpRes.message}`);
+  }
+  console.log(`  ✅ Dispatched OTP verification code for ${devEmail}: ${otpRes.code}`);
+
+  const devReg = db.register({
+    driverTag: 'le',
+    displayName: 'le',
+    email: devEmail,
+    verificationCode: otpRes.code,
+    countryCode: 'GLOBAL',
+  });
+  if (!devReg.success || !devReg.account) {
+    throw new Error(`Failed to register lead developer tag 'le': ${devReg.message}`);
+  }
+  if (!devReg.account.isDeveloper) {
+    throw new Error("Account for 'le' was not assigned isDeveloper = true!");
+  }
+  if (devReg.account.countryCode !== 'GLOBAL') {
+    throw new Error("Country code was not set to 'GLOBAL'!");
+  }
+  if (!devReg.account.emailVerified) {
+    throw new Error("Email was not verified with OTP code!");
+  }
+  console.log(`  ✅ Lead developer 'le' (${devEmail}) created with [DEV] privileges and GLOBAL country code.`);
+
+  // 4. Developer granting short tag access (2 or 3 letters) to other drivers
+  const unauthorizedGrant = db.grantShortTagAccess('GT', 'imposter@gmail.com');
+  if (unauthorizedGrant.success) {
+    throw new Error('Allowed non-developer to grant short tag access!');
+  }
+  console.log('  ✅ Unauthorized short tag grant correctly rejected.');
+
+  const authorizedGrant = db.grantShortTagAccess('GT', devEmail);
+  if (!authorizedGrant.success) {
+    throw new Error(`Developer short tag grant failed: ${authorizedGrant.message}`);
+  }
+  console.log('  ✅ Developer successfully authorized 2-letter tag "GT".');
+
+  // Now registering granted short tag "GT" succeeds!
+  const gtReg = db.register({
+    driverTag: 'GT',
+    displayName: 'Gran Turismo Pro',
+    email: 'vip_driver@granturismo.com',
+    countryCode: 'JP',
+  });
+  if (!gtReg.success) {
+    throw new Error(`Failed to register developer-approved short tag 'GT': ${gtReg.message}`);
+  }
+  console.log('  ✅ Developer-approved 2-letter tag "GT" registered successfully.');
+
+  // 5. Test passwordless login using master developer bypass code 777777
+  const devLogin = db.login({
+    driverTagOrEmail: 'le',
+    verificationCode: '777777',
+  });
+  if (!devLogin.success || !devLogin.account?.isDeveloper) {
+    throw new Error(`Passwordless login failed with dev master code 777777: ${devLogin.message}`);
+  }
+  console.log('  ✅ Passwordless login verified with dev master code 777777.');
+
+  // 6. Test Country catalog and badge formatting
+  if (COUNTRIES.length < 40) {
+    throw new Error(`Country roster has only ${COUNTRIES.length} entries, expected 40+`);
+  }
+  const globalBadge = formatCountryBadge('GLOBAL');
+  if (globalBadge !== '🌐 GLOBAL') {
+    throw new Error(`formatCountryBadge('GLOBAL') returned '${globalBadge}', expected '🌐 GLOBAL'`);
+  }
+  const deBadge = formatCountryBadge('DE');
+  if (!deBadge.includes('🇩🇪')) {
+    throw new Error(`formatCountryBadge('DE') returned '${deBadge}', expected flag 🇩🇪`);
+  }
+  console.log(`  ✅ Country catalog verified (${COUNTRIES.length} entries including 🌐 Global Racer).`);
 
   testsPassed++;
 

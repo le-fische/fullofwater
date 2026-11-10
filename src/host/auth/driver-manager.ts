@@ -39,6 +39,7 @@ export class DriverManager {
   // Event callbacks
   public onAuthChange?: (account: UserAccount | null, stats: DriverStats | null) => void;
   public onPairingStatusChange?: (isPaired: boolean, pairToken: string) => void;
+  public onPairTokenCreated?: (pairToken: string) => void;
 
   constructor() {
     this.initSession();
@@ -314,6 +315,7 @@ export class DriverManager {
           this.activePairToken = data.pairing.pairToken;
           this.isPhonePairingVerified = false;
           this.startPairingPoll();
+          if (this.onPairTokenCreated && this.activePairToken) this.onPairTokenCreated(this.activePairToken);
           return this.activePairToken;
         }
       }
@@ -323,6 +325,7 @@ export class DriverManager {
 
     this.activePairToken = Math.floor(100000 + Math.random() * 900000).toString();
     this.startPairingPoll();
+    if (this.onPairTokenCreated && this.activePairToken) this.onPairTokenCreated(this.activePairToken);
     return this.activePairToken;
   }
 

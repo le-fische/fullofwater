@@ -10,6 +10,12 @@ export const PHONE_PACKET_SIZE = 8;
 // Host -> Phone: 6 bytes
 export const HOST_PACKET_SIZE = 6;
 
+// Emergency Phase II-A: Peer-to-Peer WebRTC Pose Packet Sizes & Magic
+export const PEER_POSE_MAGIC_V1 = 0x50325031; // 'P2P1' (Legacy 44-byte frame)
+export const PEER_POSE_MAGIC_V2 = 0x50325032; // 'P2P2' (Phase II-A 56-byte frame with velocity)
+export const PEER_POSE_V1_SIZE = 44;
+export const PEER_POSE_V2_SIZE = 56;
+
 export enum ControllerButtons {
   NONE = 0,
   RESET = 1 << 0,

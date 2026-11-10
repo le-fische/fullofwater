@@ -20,8 +20,8 @@ Full of Water decouples the user interface across two physical devices:
 - **Phase 7 (Multi-Class Motorsport Ecosystem & Dynamic Series):** Scheduled roadmap (formerly Phase 5). Multi-class vehicle homologation, international circuits, and dynamic series championship menu hub.
 
 ### Roman Numeral Track (Online Cloud Infrastructure & Community Competition)
-- **Phase I (Driver Identity, Cloud Persistence & Global Hotlap Leaderboards):** Complete and validated. Introduces Driver Accounts, automated pairing between Desktop Host and Phone Controller via 6-digit session tokens, serverless player stats database (lifetime km driven, favorite car, clean lap ratio, top speeds, airborne flight time), and multi-dimensional hotlap leaderboards (by circuit, car category, weather, input device) with monotonic sector validation and World Record 30 Hz ghost retrieval.
-- **Phase II-A (Emergency 3-Player Serverless WebRTC Multiplayer & Jitter-Free Interpolation):** Ready for execution. Implements serverless signaling on Vercel (`/api/signal/*`), direct phone-to-desktop WebRTC DataChannel pairing, 56-byte telemetry with linear velocity vectors `[vx, vy, vz]`, 100ms snapshot buffer with Hermite cubic spline trajectory interpolation and velocity dead reckoning, pure invariant Ghost Mode (zero contact impulses), and single-circuit session synchronization.
+- **Phase I (Driver Identity, Cloud Persistence & Global Hotlap Leaderboards):** Complete and validated. Introduces Driver Accounts (standard 4-character minimum tag length; lead developer tag/name `"le"` tied to `hzguo117@gmail.com` with authority to whitelist 2-letter or 3-letter tags; aggressive leetspeak-aware hate-speech/profanity moderation filter; optional passwords with 6-digit email OTP passwordless login), 40+ country roster with dedicated `GLOBAL` (`🌐 Global Racer (No Country)`) option, automated pairing between Desktop Host and Phone Controller via 6-digit session tokens, serverless player stats database (lifetime km driven, favorite car, clean lap ratio, top speeds, airborne flight time), and clean Top 25 multi-dimensional hotlap leaderboards (by circuit, car category, weather, input device) with zero placeholder seed data, strictly one personal best entry per account, locked Sunny Noon & Dry Time Trial benchmark conditions, monotonic sector validation, and World Record 30 Hz ghost retrieval.
+- **Phase II-A (Emergency 3-Player Serverless WebRTC Multiplayer & Jitter-Free Interpolation):** Complete and validated. Implements serverless signaling on Vercel (`/api/signal/*`), direct phone-to-desktop WebRTC DataChannel pairing via 6-digit session tokens (`/api/pair/signal/*`), 56-byte telemetry with linear velocity vectors `[vx, vy, vz]`, 100ms snapshot buffer with Hermite cubic spline trajectory interpolation and velocity dead reckoning, pure invariant Ghost Mode (zero contact impulses), and single-circuit session synchronization. All 6 milestone validation tests passed (100%).
 - **Phase II-B (Cloud-Relayed WebRTC Multiplayer):** Serverless WebRTC signaling broker (PartyKit / Cloudflare Durable Objects), public paddock lobby browser, and private room sharing.
 - **Phase III (Driver Rating & Safety Rating - Elo/SR):** Skill-based matchmaking (DR: Bronze to Alien) and incident tracking (SR: clean overtakes vs incident points).
 - **Phase IV (Cloud Telemetry & MoTeC-Style Analysis):** Cloud storage of complete lap telemetry with in-browser multi-channel trace overlay.
@@ -778,9 +778,13 @@ Phase 6 delivers private peer-to-peer multiplayer racing, format-specific race s
     startFormat: 'standing_f1_5lights';
   }
   ```
-- **Roster Synchronization:**
+- **Roster Synchronization & Host Session Controls:**
   - Connected peers exchange driver names, car livery indices, competition car numbers (#0–#999), and ready-state flags.
-  - Host initiates the race launch sequence once all joined drivers toggle "READY".
+  - **Host Launch Options (Qualifying vs. Skip to Random Grid):**
+    1. `START QUALIFYING [HOST]`: Host initiates Stage 1 hotlap qualifying session to seed grid positions P1–PN based on fastest lap times.
+    2. `SKIP QUALI & RACE (RANDOM GRID) [HOST]`: Host bypasses qualifying entirely and starts the race immediately, automatically computing a randomized starting grid order (Fisher-Yates shuffle across all connected peers) and broadcasting it over WebRTC signaling.
+    3. `🎲 SHUFFLE RANDOM GRID [HOST]`: In the Stage 2 grid staging dialog, the host can re-randomize starting positions on the fly before launching the race.
+  - **Universal Standing Lights Only:** All dropdown options and start sequences strictly use the F1 5-red-light standing start; rolling starts are retired across all UI and logic.
 
 ---
 
@@ -955,17 +959,17 @@ Phase 7: Multi-Class Motorsport Ecosystem & Dynamic Series (Roadmap Outlined)
 
 Roman Numeral Track: Online Cloud Infrastructure & Community Competition
 ├── Phase I: Driver Identity, Cloud Persistence & Global Hotlap Leaderboard (Completed & Validated)
-│   ├── MI.1: Driver accounts, passkey/auth, and session pairing [DONE]
+│   ├── MI.1: Driver accounts, standard 4-char min tag, lead developer "le" (hzguo117@gmail.com), short tag whitelist grant, banned words filter, optional passwords & email OTP, and session pairing [DONE]
 │   ├── MI.2: Player activity & lifetime stats database (km, top speed, favorite car) [DONE]
-│   ├── MI.3: Multi-dimensional global hotlap leaderboard (track/category/weather/device) [DONE]
+│   ├── MI.3: Multi-dimensional global hotlap leaderboard (track/category/weather/device) with 40+ countries & Global Racer [DONE]
 │   └── MI.4: Serverless anti-cheat monotonic sector validation & WR ghost downloads [DONE]
-├── Phase II-A: Emergency 3-Player Serverless WebRTC Multiplayer & Jitter-Free Interpolation (Ready)
-│   ├── MII-A.1: Serverless WebRTC signaling broker on Vercel (/api/signal/join, /api/signal/send, /api/signal/poll)
-│   ├── MII-A.2: Direct phone-to-desktop WebRTC DataChannel pairing via 6-digit session token
-│   ├── MII-A.3: 56-byte binary telemetry packet (pos, quat, vel [vx, vy, vz], speed, steer, wheelSpin)
-│   ├── MII-A.4: 100ms snapshot ring buffer with Hermite cubic spline trajectory interpolation & velocity dead reckoning
-│   ├── MII-A.5: Pure invariant Ghost Mode (zero Rapier rigid body contact, zero phantom collision desync)
-│   └── MII-A.6: Host single-circuit synchronization & synchronized FIA 5-red-light standing start
+├── Phase II-A: Emergency 3-Player Serverless WebRTC Multiplayer & Jitter-Free Interpolation (Completed & Validated)
+│   ├── MII-A.1: Serverless WebRTC signaling broker on Vercel (/api/signal/join, /api/signal/send, /api/signal/poll) [DONE]
+│   ├── MII-A.2: Direct phone-to-desktop WebRTC DataChannel pairing via 6-digit session token [DONE]
+│   ├── MII-A.3: 56-byte binary telemetry packet (pos, quat, vel [vx, vy, vz], speed, steer, wheelSpin) [DONE]
+│   ├── MII-A.4: 100ms snapshot ring buffer with Hermite cubic spline trajectory interpolation & velocity dead reckoning [DONE]
+│   ├── MII-A.5: Pure invariant Ghost Mode (zero Rapier rigid body contact, zero phantom collision desync) [DONE]
+│   └── MII-A.6: Host single-circuit synchronization & synchronized FIA 5-red-light standing start [DONE]
 ├── Phase II-B: Cloud-Relayed WebRTC Multiplayer (PartyKit / Durable Objects)
 ├── Phase III: Driver Rating & Safety Rating (Elo / SR matchmaking)
 ├── Phase IV: Cloud Telemetry & MoTeC-Style Analysis (in-browser trace overlays)

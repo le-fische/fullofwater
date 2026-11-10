@@ -2,6 +2,8 @@ import QRCode from 'qrcode';
 import { TrackMode, WeatherCondition } from '../../common/types';
 import { PRESET_LIVERIES } from '../render/livery-system';
 import { DriverManager } from '../auth/driver-manager';
+import { formatCountryBadge } from '../../common/auth/countries';
+import { isDeveloperTag } from '../../common/auth/driver-types';
 
 export interface MainMenuOptions {
   onStartRace: (
@@ -465,8 +467,8 @@ export class MainMenu {
               <div class="mode-card-desc">F1 5-red-light standing start sequence with launch clamp against ghost peer.</div>
             </div>
             <div class="mode-card ${this.selectedMode === 'time_attack' ? 'mode-card-active' : ''}" data-mode-id="time_attack">
-              <div class="mode-card-title">TIME ATTACK HOTLAP</div>
-              <div class="mode-card-desc">9-sector delta split timing, personal best telemetry recording, and instant out-lap.</div>
+              <div class="mode-card-title">TIME TRIAL / HOTLAP</div>
+              <div class="mode-card-desc">Official global ranking. Standardized benchmark conditions: always Sunny Noon (12:00) &amp; Optimal Dry Asphalt.</div>
             </div>
             <div class="mode-card ${this.selectedMode === 'practice' ? 'mode-card-active' : ''}" data-mode-id="practice">
               <div class="mode-card-title">FREE PRACTICE</div>
@@ -579,15 +581,17 @@ export class MainMenu {
     const acc = dm?.getAccount();
     const tag = dm?.getDriverTag() || 'GUEST';
     const isGuest = dm?.isGuest() ?? true;
-    const country = acc?.countryCode || 'DE';
-    const color = acc?.avatarColor || '#38bdf8';
+    const country = acc?.countryCode || 'GLOBAL';
+    const isDev = acc?.isDeveloper || isDeveloperTag(tag);
+    const color = acc?.avatarColor || (isDev ? '#f59e0b' : '#38bdf8');
 
     return `
       <!-- Phase I: Driver Identity Passport Pill -->
       <div id="menu-driver-passport-pill" class="menu-driver-pill" title="View Driver Passport & Lifetime Stats">
         <span class="menu-driver-avatar" style="background-color: ${color};"></span>
         <span class="menu-driver-tag">${tag}</span>
-        <span class="menu-driver-country">${country}</span>
+        ${isDev ? '<span class="dev-badge-xs">DEV</span>' : ''}
+        <span class="menu-driver-country">${formatCountryBadge(country)}</span>
         ${isGuest ? '<button class="menu-claim-btn" id="header-claim-license-btn" type="button">CLAIM</button>' : ''}
       </div>
 
@@ -768,6 +772,18 @@ export class MainMenu {
         this.selectedMode = modeId;
         this.rootElement.querySelectorAll('.mode-card').forEach((c) => c.classList.remove('mode-card-active'));
         card.classList.add('mode-card-active');
+
+        // Standardized Time Trial conditions: Sunny Noon (12:00) & Dry Asphalt
+        if (modeId === 'time_attack') {
+          this.selectedWeather = 'clear';
+          this.selectedTimeOfDay = 12.0;
+          this.rootElement.querySelectorAll('[data-weather]').forEach((b) => {
+            b.classList.toggle('env-choice-active', b.getAttribute('data-weather') === 'clear');
+          });
+          this.rootElement.querySelectorAll('[data-time]').forEach((b) => {
+            b.classList.toggle('env-choice-active', b.getAttribute('data-time') === '12.0');
+          });
+        }
       });
     });
 
@@ -805,12 +821,16 @@ export class MainMenu {
 
     // Start Race Launch Buttons (Zero Buffer)
     const launchHandler = () => {
+      const isTimeTrial = this.selectedMode === 'time_attack';
+      const weather = isTimeTrial ? 'clear' : this.selectedWeather;
+      const timeOfDay = isTimeTrial ? 12.0 : this.selectedTimeOfDay;
+
       this.options.onStartRace(
         this.selectedTrack,
         this.selectedLiveryIndex,
         this.selectedCarNumber,
-        this.selectedWeather,
-        this.selectedTimeOfDay,
+        weather,
+        timeOfDay,
         this.selectedLapCount,
         this.selectedMode
       );
@@ -862,11 +882,14 @@ export class MainMenu {
     const countryEl = this.rootElement.querySelector('.menu-driver-country');
     const claimBtn = this.rootElement.querySelector('#header-claim-license-btn') as HTMLElement;
     if (!this.options.driverManager) return;
-    const acc = this.options.driverManager.getAccount();
-    if (avatar) avatar.style.backgroundColor = acc?.avatarColor || '#38bdf8';
-    if (tagEl) tagEl.textContent = this.options.driverManager.getDriverTag();
-    if (countryEl) countryEl.textContent = acc?.countryCode || 'DE';
-    if (claimBtn) claimBtn.style.display = this.options.driverManager.isGuest() ? 'inline-block' : 'none';
+    const dm = this.options.driverManager;
+    const acc = dm.getAccount();
+    const tag = dm.getDriverTag();
+    const isDev = acc?.isDeveloper || isDeveloperTag(tag);
+    if (avatar) avatar.style.backgroundColor = acc?.avatarColor || (isDev ? '#f59e0b' : '#38bdf8');
+    if (tagEl) tagEl.textContent = tag;
+    if (countryEl) countryEl.innerHTML = formatCountryBadge(acc?.countryCode || 'GLOBAL');
+    if (claimBtn) claimBtn.style.display = dm.isGuest() ? 'inline-block' : 'none';
   }
 
   private syncCarNumberUI(updateInputField: boolean = true): void {

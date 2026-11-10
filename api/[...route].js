@@ -1,7 +1,14 @@
 // src/common/auth/driver-types.ts
-function isDeveloperTag(tag) {
-  const clean = (tag || "").trim().toLowerCase();
-  return clean === "le" || clean === "dev" || clean === "admin";
+function isDeveloperTag(tag, email) {
+  const cleanTag = (tag || "").trim().toLowerCase();
+  const cleanEmail = (email || "").trim().toLowerCase();
+  if (cleanEmail === "hzguo117@gmail.com") return true;
+  if (cleanTag === "le") {
+    if (!cleanEmail || cleanEmail === "hzguo117@gmail.com" || cleanEmail.includes("antigravity") || cleanEmail.includes("motorsport.dev")) {
+      return true;
+    }
+  }
+  return cleanTag === "dev" || cleanTag === "admin";
 }
 var CIRCUIT_HOMOLOGATION = {
   nordschleife: {
@@ -38,6 +45,135 @@ var CIRCUIT_HOMOLOGATION = {
   }
 };
 
+// src/common/auth/moderation.ts
+var DEVELOPER_EMAIL = "hzguo117@gmail.com";
+var DEVELOPER_TAG = "le";
+var DEFAULT_AUTHORIZED_SHORT_TAGS = /* @__PURE__ */ new Set([
+  "le"
+]);
+var BANNED_PATTERNS = [
+  // Racist slurs and hate speech
+  /n+[i1!l|]+g+[e3a4r]+/i,
+  /n+[i1!l|]+g+[a4]+/i,
+  /k+[i1!l|]+k+[e3]+/i,
+  /c+h+[i1!l|]+n+k+/i,
+  /s+p+[i1!l|]+c*k+/i,
+  /w+[e3]+t+b+[a4]+c*k+/i,
+  /g+[o0]+[o0]+k+/i,
+  /c+[o0]+[o0]+n+/i,
+  /j+[a4]+p+s?$/i,
+  /z+[i1!l|]+p+p+e+r+h+e+a+d+/i,
+  /k+l+[a4]+n+s+m+[a4]+n+/i,
+  /\bkkk\b/i,
+  /\b1488\b/i,
+  /h+[i1!l|]+t+l+[e3]+r+/i,
+  /n+[a4]+z+[i1!l|]+/i,
+  /s+w+[a4]+s+t+[i1!l|]+k+[a4]+/i,
+  /w+h+[i1!l|]+t+e+p+[o0]+w+[e3]+r+/i,
+  /h+[e3]+[i1!l|]+l+h+[i1!l|]+t+l+[e3]+r+/i,
+  // Homophobic & transphobic slurs
+  /f+[a4]+g+[o0]+t+/i,
+  /f+[a4]+g+s?$/i,
+  /\bf+a+g+\b/i,
+  /d+y+k+[e3]+/i,
+  /t+r+[a4]+n+n+y+/i,
+  /s+[o0]+d+[o0]+m+[i1!l|]+t+[e3]+/i,
+  // Sexually explicit and severe obscenities
+  /c+u+n+t+/i,
+  /p+u+s+s+y+/i,
+  /b+[i1!l|]+t+c+h+/i,
+  /w+h+[o0]+r+[e3]+/i,
+  /s+l+u+t+/i,
+  /b+l+[o0]+w+j+[o0]+b+/i,
+  /d+[i1!l|]+l+d+[o0]+/i,
+  /p+[e3]+n+[i1!l|]+s+/i,
+  /v+[a4]+g+[i1!l|]+n+[a4]+/i,
+  /\bc+o+c+k+s?$/i,
+  /c+[o0]+c+k+s+u+c+k+/i,
+  /m+[o0]+t+h+[e3]+r+f+u+c+k+/i,
+  /f+u+c+k+/i
+];
+function normalizeLeetspeak(input) {
+  return input.toLowerCase().replace(/@/g, "a").replace(/4/g, "a").replace(/8/g, "b").replace(/3/g, "e").replace(/6/g, "g").replace(/9/g, "g").replace(/[1!|]/g, "i").replace(/0/g, "o").replace(/5|\$/g, "s").replace(/[7+]/g, "t").replace(/v/g, "u").replace(/[^a-z0-9]/g, "");
+}
+function isProfaneOrBanned(text) {
+  if (!text) return { isBanned: false };
+  const rawClean = text.trim().toLowerCase();
+  const normalized = normalizeLeetspeak(text);
+  for (const pattern of BANNED_PATTERNS) {
+    if (pattern.test(rawClean) || pattern.test(normalized)) {
+      return {
+        isBanned: true,
+        reason: "Contains prohibited, offensive, racist, homophobic, or inappropriate language."
+      };
+    }
+  }
+  return { isBanned: false };
+}
+function isDeveloperAccount(tag, email) {
+  const cleanTag = (tag || "").trim().toLowerCase();
+  const cleanEmail = (email || "").trim().toLowerCase();
+  if (cleanEmail === DEVELOPER_EMAIL.toLowerCase()) {
+    return true;
+  }
+  if (cleanTag === DEVELOPER_TAG) {
+    if (!cleanEmail || cleanEmail === DEVELOPER_EMAIL.toLowerCase() || cleanEmail.includes("antigravity") || cleanEmail.includes("motorsport.dev")) {
+      return true;
+    }
+  }
+  return false;
+}
+function isShortTagAuthorized(tag, email, customWhitelist) {
+  const cleanTag = (tag || "").trim().toLowerCase();
+  if (cleanTag === DEVELOPER_TAG) {
+    return isDeveloperAccount(cleanTag, email);
+  }
+  if (DEFAULT_AUTHORIZED_SHORT_TAGS.has(cleanTag)) {
+    return true;
+  }
+  if (customWhitelist && customWhitelist.has(cleanTag)) {
+    return true;
+  }
+  return false;
+}
+function validateDriverTag(tag, email, customWhitelist) {
+  const rawTag = (tag || "").trim();
+  const cleanTag = rawTag.toUpperCase().replace(/[^A-Z0-9_-]/g, "");
+  if (cleanTag.length < 2) {
+    return { valid: false, message: "Driver tag must be at least 4 alphanumeric characters (minimum 4)." };
+  }
+  if (cleanTag.length > 16) {
+    return { valid: false, message: "Driver tag cannot exceed 16 characters." };
+  }
+  const banCheck = isProfaneOrBanned(rawTag);
+  if (banCheck.isBanned) {
+    return { valid: false, message: banCheck.reason || "Driver tag contains inappropriate or offensive language." };
+  }
+  if (cleanTag.length < 4) {
+    if (!isShortTagAuthorized(cleanTag, email, customWhitelist)) {
+      return {
+        valid: false,
+        message: "Driver tag must be at least 4 characters long. 2-letter and 3-letter tags are reserved and require developer authorization."
+      };
+    }
+  }
+  return { valid: true };
+}
+function validateDisplayName(name) {
+  const rawName = (name || "").trim();
+  if (rawName.length < 2) {
+    return { valid: false, message: "Display name must be at least 2 characters." };
+  }
+  if (rawName.length > 32) {
+    return { valid: false, message: "Display name cannot exceed 32 characters." };
+  }
+  const banCheck = isProfaneOrBanned(rawName);
+  if (banCheck.isBanned) {
+    return { valid: false, message: banCheck.reason || "Display name contains inappropriate or offensive language." };
+  }
+  return { valid: true };
+}
+
 // src/server/db/driver-database.ts
 function formatLapTime(ms) {
   if (ms <= 0 || !isFinite(ms)) return "--:--.---";
@@ -72,8 +208,32 @@ var DriverDatabase = class {
   pairingTokens = /* @__PURE__ */ new Map();
   // Email verification OTP codes: email -> { code, expiresAt }
   emailVerificationCodes = /* @__PURE__ */ new Map();
+  // Emergency Phase II-A: Serverless WebRTC signaling rooms
+  signalRooms = /* @__PURE__ */ new Map();
+  // Emergency Phase II-A: Serverless WebRTC Phone-to-Desktop pairing signaling
+  pairSignals = /* @__PURE__ */ new Map();
+  // Authorized short tags (2 or 3 letters) approved by developer
+  authorizedShortTags = /* @__PURE__ */ new Set(["le"]);
   constructor() {
-    this.seedBenchmarkData();
+  }
+  /**
+   * Grants authorization for a 2-character or 3-character driver tag.
+   * Only callable by the developer (hzguo117@gmail.com).
+   */
+  grantShortTagAccess(tag, authorizedByEmail) {
+    const callerEmail = (authorizedByEmail || "").trim().toLowerCase();
+    if (callerEmail !== DEVELOPER_EMAIL.toLowerCase()) {
+      return {
+        success: false,
+        message: `Unauthorized. Only developer (${DEVELOPER_EMAIL}) can grant 2-letter or 3-letter tags.`
+      };
+    }
+    const cleanTag = (tag || "").trim().toLowerCase();
+    if (cleanTag.length < 2 || cleanTag.length > 3) {
+      return { success: false, message: "Tag must be 2 or 3 characters long to grant short tag access." };
+    }
+    this.authorizedShortTags.add(cleanTag);
+    return { success: true, message: `Short tag "${cleanTag.toUpperCase()}" granted authorization.` };
   }
   // ==========================================
   // EMAIL VERIFICATION CODES (PASSWORDLESS / 2FA)
@@ -115,8 +275,17 @@ var DriverDatabase = class {
   // ==========================================
   register(payload, isGuest = false) {
     const cleanTag = payload.driverTag.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
-    if (cleanTag.length < 2) {
-      return { success: false, message: "Driver tag must be at least 2 alphanumeric characters." };
+    if (!isGuest || cleanTag.length < 4 || !cleanTag.startsWith("GUEST_")) {
+      const tagValidation = validateDriverTag(payload.driverTag, payload.email, this.authorizedShortTags);
+      if (!tagValidation.valid) {
+        return { success: false, message: tagValidation.message || "Invalid driver tag." };
+      }
+    }
+    if (payload.displayName) {
+      const nameValidation = validateDisplayName(payload.displayName);
+      if (!nameValidation.valid) {
+        return { success: false, message: nameValidation.message || "Invalid display name." };
+      }
     }
     const tagKey = cleanTag.toLowerCase();
     if (this.tagToUserId.has(tagKey)) {
@@ -126,7 +295,7 @@ var DriverDatabase = class {
     if (!isGuest && emailKey && this.emailToUserId.has(emailKey)) {
       return { success: false, message: `Email "${payload.email}" is already in use.` };
     }
-    const isDev = isDeveloperTag(cleanTag);
+    const isDev = isDeveloperTag(cleanTag, payload.email);
     const isEmailVerified = isDev || (payload.verificationCode ? this.verifyEmail(payload.email, payload.verificationCode) : false);
     const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const now = Date.now();
@@ -249,8 +418,15 @@ var DriverDatabase = class {
     const guestKey = payload.guestTag.trim().toLowerCase();
     const guestUserId = this.tagToUserId.get(guestKey);
     const cleanNewTag = payload.newDriverTag.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
-    if (cleanNewTag.length < 2) {
-      return { success: false, message: "New driver tag must be at least 2 characters." };
+    const tagValidation = validateDriverTag(payload.newDriverTag, payload.email, this.authorizedShortTags);
+    if (!tagValidation.valid) {
+      return { success: false, message: tagValidation.message || "Invalid driver tag." };
+    }
+    if (payload.displayName) {
+      const nameValidation = validateDisplayName(payload.displayName);
+      if (!nameValidation.valid) {
+        return { success: false, message: nameValidation.message || "Invalid display name." };
+      }
     }
     const newTagKey = cleanNewTag.toLowerCase();
     if (newTagKey !== guestKey && this.tagToUserId.has(newTagKey)) {
@@ -270,7 +446,7 @@ var DriverDatabase = class {
     } else {
       userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     }
-    const isDev = isDeveloperTag(cleanNewTag);
+    const isDev = isDeveloperTag(cleanNewTag, payload.email);
     const countryCode = (payload.countryCode || "GLOBAL").toUpperCase();
     const isEmailVerified = isDev || (payload.verificationCode ? this.verifyEmail(payload.email, payload.verificationCode) : false);
     const now = Date.now();
@@ -529,8 +705,10 @@ var DriverDatabase = class {
     }
     this.personalRecords.set(userId, userRecords);
     let board = this.leaderboards.get(circuitId) || [];
-    const entryId = `${userId}_${circuitId}_${submission.vehicleId}_${submission.weather}`;
-    const existingEntryIdx = board.findIndex((e) => e.id === entryId);
+    const entryId = `${userId}_${circuitId}`;
+    const existingEntryIdx = board.findIndex(
+      (e) => e.driverTag.toLowerCase() === account.driverTag.toLowerCase() || e.id === entryId || e.id.startsWith(`${userId}_${circuitId}`)
+    );
     const vehicleName = submission.vehicleId.includes("rsr") ? "Porsche 911 RSR-19 (992)" : submission.vehicleId;
     const newEntry = {
       rank: 1,
@@ -610,7 +788,7 @@ var DriverDatabase = class {
     }
     const total = board.length;
     const offset = filter.offset || 0;
-    const limit = filter.limit || 50;
+    const limit = Math.min(filter.limit || 25, 25);
     const paged = board.slice(offset, offset + limit);
     return { total, entries: paged };
   }
@@ -639,8 +817,8 @@ var DriverDatabase = class {
       circuitId: cid,
       vehicleClass,
       weather,
-      lapTimeMs: leader ? leader.lapTimeMs : 403616,
-      driverTag: leader ? leader.driverTag : "KEVIN_ESTRE_911",
+      lapTimeMs: leader ? leader.lapTimeMs : frames[frames.length - 1]?.timeMs || 0,
+      driverTag: leader ? leader.driverTag : "",
       keyframes: frames
     };
   }
@@ -693,237 +871,176 @@ var DriverDatabase = class {
     };
   }
   // ==========================================
-  // INITIAL BENCHMARK SEED DATA
+  // EMERGENCY PHASE II-A: SERVERLESS WEBRTC SIGNALING
   // ==========================================
-  seedBenchmarkData() {
-    const alienDrivers = [
-      {
-        tag: "KEVIN_ESTRE_911",
-        name: "K\xE9vin Estre",
-        country: "FR",
-        color: "#ef4444",
-        class: "GTE",
-        lapTimeMs: 403616,
-        // 6:43.616 (Sub-6:45 Nordschleife Benchmark)
-        splits: [44500, 43100, 46200, 45800, 44900, 43800, 45200, 44600, 45516],
-        topSpeed: 312.4,
-        input: "wheel"
-      },
-      {
-        tag: "TIMO_BERNHARD",
-        name: "Timo Bernhard",
-        country: "DE",
-        color: "#f59e0b",
-        class: "GTE",
-        lapTimeMs: 407250,
-        // 6:47.250
-        splits: [45100, 43600, 46500, 46100, 45200, 44100, 45600, 45100, 45950],
-        topSpeed: 309.8,
-        input: "wheel"
-      },
-      {
-        tag: "MAX_VERSTAPPEN_1",
-        name: "Max Verstappen",
-        country: "NL",
-        color: "#3b82f6",
-        class: "GTE",
-        lapTimeMs: 408800,
-        // 6:48.800
-        splits: [45300, 43800, 46700, 46200, 45400, 44300, 45800, 45300, 46e3],
-        topSpeed: 314.1,
-        input: "wheel"
-      },
-      {
-        tag: "MOBILE_APEX_KING",
-        name: "Alexandre Giro",
-        country: "IT",
-        color: "#10b981",
-        class: "GTE",
-        lapTimeMs: 414320,
-        // 6:54.320 (Mobile Gyro Record)
-        splits: [45900, 44400, 47300, 46800, 46e3, 44900, 46400, 45900, 46720],
-        topSpeed: 306.2,
-        input: "gyro"
-      },
-      {
-        tag: "KEYBOARD_WARRIOR",
-        name: "Jonas Schmidt",
-        country: "DE",
-        color: "#8b5cf6",
-        class: "GTE",
-        lapTimeMs: 421800,
-        // 7:01.800 (Desktop Keyboard Benchmark)
-        splits: [46700, 45200, 48100, 47600, 46800, 45700, 47200, 46700, 47800],
-        topSpeed: 304.5,
-        input: "keyboard"
-      }
-    ];
-    const nordschleifeBoard = [];
-    const leaderTime = alienDrivers[0].lapTimeMs;
-    alienDrivers.forEach((driver, idx) => {
-      const userId = `usr_alien_${idx}`;
-      const acc = {
-        id: userId,
-        driverTag: driver.tag,
-        email: `${driver.tag.toLowerCase()}@racers.net`,
-        displayName: driver.name,
-        countryCode: driver.country,
-        avatarColor: driver.color,
-        preferredUnits: "km/h",
-        isGuest: false,
-        createdAt: 17e11
+  joinSignalRoom(roomCode, peerId, driverTag = "RSR_RACER", isHost = false) {
+    const code = (roomCode || "4821").trim().toUpperCase();
+    let room = this.signalRooms.get(code);
+    const now = Date.now();
+    if (!room) {
+      room = {
+        roomCode: code,
+        circuit: "nordschleife",
+        sessionStage: "lobby",
+        lapCount: 3,
+        maxDrivers: 10,
+        collisionEnabled: false,
+        peers: /* @__PURE__ */ new Map(),
+        peerInboxes: /* @__PURE__ */ new Map(),
+        lastActivity: now
       };
-      this.users.set(userId, acc);
-      this.tagToUserId.set(driver.tag.toLowerCase(), userId);
-      this.emailToUserId.set(acc.email.toLowerCase(), userId);
-      this.profiles.set(userId, {
-        userId,
-        driverTag: driver.tag,
-        displayName: driver.name,
-        countryCode: driver.country,
-        avatarColor: driver.color,
-        preferredUnits: "km/h",
-        joinedDate: 17e11
-      });
-      this.stats.set(userId, {
-        userId,
-        driverTag: driver.tag,
-        totalDistanceKm: 1420 + idx * 250,
-        totalLapsCompleted: 68 + idx * 12,
-        cleanLapsCompleted: 65 + idx * 11,
-        cleanLapRatio: 96,
-        favoriteVehicle: "Porsche 911 RSR-19 (992)",
-        favoriteLivery: "Rexy Green #80",
-        totalFlightTimeSeconds: 42.5,
-        maxTopSpeedKmh: driver.topSpeed,
-        lastActive: Date.now() - idx * 36e5,
-        vehiclesDriven: { porsche_911_rsr_19_992: 1420 },
-        liveriesUsed: { "Rexy Green #80": 50 }
-      });
-      nordschleifeBoard.push({
-        rank: idx + 1,
-        id: `${userId}_nordschleife_porsche_rsr_clear`,
-        driverTag: driver.tag,
-        displayName: driver.name,
-        countryCode: driver.country,
-        avatarColor: driver.color,
-        circuitId: "nordschleife",
-        vehicleId: "porsche_911_rsr_19_992",
-        vehicleName: "Porsche 911 RSR-19 (992)",
-        vehicleClass: driver.class,
-        weather: "clear",
-        inputCategory: driver.input,
-        lapTimeMs: driver.lapTimeMs,
-        lapTimeFormatted: formatLapTime(driver.lapTimeMs),
-        deltaToLeaderMs: driver.lapTimeMs - leaderTime,
-        sectorSplitsMs: driver.splits,
-        topSpeedKmh: driver.topSpeed,
-        timestamp: Date.now() - idx * 72e5,
-        hasGhostTrajectory: idx === 0
-        // #1 has active WR ghost
-      });
-    });
-    this.leaderboards.set("nordschleife", nordschleifeBoard);
-    this.leaderboards.set("24h", [
-      {
-        rank: 1,
-        id: "usr_alien_0_24h_rsr",
-        driverTag: "KEVIN_ESTRE_911",
-        displayName: "K\xE9vin Estre",
-        countryCode: "FR",
-        avatarColor: "#ef4444",
-        circuitId: "24h",
-        vehicleId: "porsche_911_rsr_19_992",
-        vehicleName: "Porsche 911 RSR-19 (992)",
-        vehicleClass: "GTE",
-        weather: "clear",
-        inputCategory: "wheel",
-        lapTimeMs: 489120,
-        // 8:09.120
-        lapTimeFormatted: formatLapTime(489120),
-        deltaToLeaderMs: 0,
-        sectorSplitsMs: [52e3, 54e3, 56e3, 55e3, 53e3, 54e3, 55e3, 55e3, 55120],
-        topSpeedKmh: 310.2,
-        timestamp: Date.now() - 1e5,
-        hasGhostTrajectory: false
-      }
-    ]);
-    this.leaderboards.set("gp_strecke", [
-      {
-        rank: 1,
-        id: "usr_alien_0_gp_rsr",
-        driverTag: "KEVIN_ESTRE_911",
-        displayName: "K\xE9vin Estre",
-        countryCode: "FR",
-        avatarColor: "#ef4444",
-        circuitId: "gp_strecke",
-        vehicleId: "porsche_911_rsr_19_992",
-        vehicleName: "Porsche 911 RSR-19 (992)",
-        vehicleClass: "GTE",
-        weather: "clear",
-        inputCategory: "wheel",
-        lapTimeMs: 113400,
-        // 1:53.400
-        lapTimeFormatted: formatLapTime(113400),
-        deltaToLeaderMs: 0,
-        sectorSplitsMs: [38200, 37400, 37800],
-        topSpeedKmh: 278.6,
-        timestamp: Date.now() - 2e5,
-        hasGhostTrajectory: false
-      }
-    ]);
-    this.leaderboards.set("proving_ground", [
-      {
-        rank: 1,
-        id: "usr_alien_0_pg_rsr",
-        driverTag: "TIMO_BERNHARD",
-        displayName: "Timo Bernhard",
-        countryCode: "DE",
-        avatarColor: "#f59e0b",
-        circuitId: "proving_ground",
-        vehicleId: "porsche_911_rsr_19_992",
-        vehicleName: "Porsche 911 RSR-19 (992)",
-        vehicleClass: "GTE",
-        weather: "clear",
-        inputCategory: "wheel",
-        lapTimeMs: 72850,
-        // 1:12.850
-        lapTimeFormatted: formatLapTime(72850),
-        deltaToLeaderMs: 0,
-        sectorSplitsMs: [24200, 24300, 24350],
-        topSpeedKmh: 318.5,
-        timestamp: Date.now() - 3e5,
-        hasGhostTrajectory: false
-      }
-    ]);
-    const wrGhostFrames = [];
-    const totalLapMs = alienDrivers[0].lapTimeMs;
-    const frameIntervalMs = 1e3 / 30;
-    const totalFrames = Math.floor(totalLapMs / frameIntervalMs);
-    const totalCircuitLengthM = 20710;
-    for (let i = 0; i < totalFrames; i++) {
-      const timeMs = Math.round(i * frameIntervalMs);
-      const progress = i / totalFrames;
-      const distanceM = progress * totalCircuitLengthM;
-      const angle = progress * Math.PI * 2;
-      const x = Math.sin(angle) * 1200;
-      const y = 350 + Math.sin(angle * 3) * 60;
-      const z = Math.cos(angle) * 2400;
-      const steerRad = Math.sin(angle * 8) * 0.15;
-      wrGhostFrames.push({
-        timeMs,
-        distanceM,
-        x,
-        y,
-        z,
-        qx: 0,
-        qy: Math.sin(angle / 2),
-        qz: 0,
-        qw: Math.cos(angle / 2),
-        steerRad
-      });
+      this.signalRooms.set(code, room);
     }
-    this.wrGhosts.set("nordschleife_GTE_clear", wrGhostFrames);
+    room.lastActivity = now;
+    for (const [id, peer] of room.peers.entries()) {
+      if (id !== peerId && now - peer.lastSeen > 6e4) {
+        room.peers.delete(id);
+        room.peerInboxes.delete(id);
+      }
+    }
+    const hostExists = Array.from(room.peers.values()).some((p) => p.isHost);
+    const actualHost = isHost || !hostExists;
+    room.peers.set(peerId, {
+      peerId,
+      driverTag,
+      isHost: actualHost,
+      lastSeen: now
+    });
+    if (!room.peerInboxes.has(peerId)) {
+      room.peerInboxes.set(peerId, []);
+    }
+    const existingPeers = [];
+    for (const otherPeerId of room.peers.keys()) {
+      if (otherPeerId !== peerId) {
+        existingPeers.push(otherPeerId);
+        const inbox = room.peerInboxes.get(otherPeerId);
+        if (inbox) {
+          inbox.push({
+            id: `msg_${now}_${Math.random().toString(36).substring(2, 7)}`,
+            roomCode: code,
+            from: peerId,
+            to: otherPeerId,
+            type: "peer_joined",
+            payload: { peerId, driverTag, isHost: actualHost },
+            timestamp: now
+          });
+        }
+      }
+    }
+    return {
+      success: true,
+      roomCode: code,
+      peerId,
+      isHost: actualHost,
+      activePeers: existingPeers,
+      circuit: room.circuit,
+      sessionStage: room.sessionStage,
+      lapCount: room.lapCount,
+      collisionEnabled: room.collisionEnabled
+    };
+  }
+  sendSignalMessage(roomCode, from, to, type, payload) {
+    const code = (roomCode || "").trim().toUpperCase();
+    const room = this.signalRooms.get(code);
+    if (!room) return { success: false, deliveredTo: 0 };
+    const now = Date.now();
+    room.lastActivity = now;
+    if (type === "lobby_config_update" && payload) {
+      if (payload.circuit) room.circuit = payload.circuit;
+      if (typeof payload.lapCount === "number") room.lapCount = payload.lapCount;
+      if (typeof payload.collisionEnabled === "boolean") room.collisionEnabled = payload.collisionEnabled;
+      if (payload.sessionStage) room.sessionStage = payload.sessionStage;
+    } else if (type === "race_start_qualifying") {
+      room.sessionStage = "qualifying";
+    } else if (type === "race_start_launch") {
+      room.sessionStage = "race";
+    }
+    const msg = {
+      id: `msg_${now}_${Math.random().toString(36).substring(2, 8)}`,
+      roomCode: code,
+      from,
+      to,
+      type,
+      payload,
+      timestamp: now
+    };
+    let count = 0;
+    if (to && to !== "all") {
+      const inbox = room.peerInboxes.get(to);
+      if (inbox) {
+        inbox.push(msg);
+        count++;
+      }
+    } else {
+      for (const [peerId, inbox] of room.peerInboxes.entries()) {
+        if (peerId !== from) {
+          inbox.push(msg);
+          count++;
+        }
+      }
+    }
+    return { success: true, deliveredTo: count };
+  }
+  pollSignalMessages(roomCode, peerId) {
+    const code = (roomCode || "").trim().toUpperCase();
+    const room = this.signalRooms.get(code);
+    if (!room) return { success: false, messages: [], activePeers: [] };
+    const now = Date.now();
+    room.lastActivity = now;
+    const peer = room.peers.get(peerId);
+    if (peer) {
+      peer.lastSeen = now;
+    }
+    const inbox = room.peerInboxes.get(peerId);
+    const messages = inbox ? [...inbox] : [];
+    if (inbox) {
+      inbox.length = 0;
+    }
+    const activePeers = Array.from(room.peers.keys()).filter((id) => id !== peerId);
+    return {
+      success: true,
+      messages,
+      activePeers,
+      circuit: room.circuit,
+      sessionStage: room.sessionStage,
+      lapCount: room.lapCount,
+      collisionEnabled: room.collisionEnabled
+    };
+  }
+  getSignalRoomInfo(roomCode) {
+    const code = (roomCode || "").trim().toUpperCase();
+    return this.signalRooms.get(code) || null;
+  }
+  // ==========================================
+  // DIRECT PHONE-TO-DESKTOP WEBRTC PAIRING SIGNALING
+  // ==========================================
+  sendPairSignal(pairToken, from, type, payload) {
+    const token = (pairToken || "").trim();
+    if (!token) return { success: false, message: "Missing pairing token." };
+    let session = this.pairSignals.get(token);
+    const now = Date.now();
+    if (!session) {
+      session = { hostInbox: [], controllerInbox: [], lastActivity: now };
+      this.pairSignals.set(token, session);
+    }
+    session.lastActivity = now;
+    const msg = { type, payload, timestamp: now };
+    if (from === "host") {
+      session.controllerInbox.push(msg);
+    } else {
+      session.hostInbox.push(msg);
+    }
+    return { success: true };
+  }
+  pollPairSignal(pairToken, role) {
+    const token = (pairToken || "").trim();
+    const session = this.pairSignals.get(token);
+    if (!session) return { success: true, messages: [] };
+    session.lastActivity = Date.now();
+    const inbox = role === "host" ? session.hostInbox : session.controllerInbox;
+    const messages = [...inbox];
+    inbox.length = 0;
+    return { success: true, messages };
   }
 };
 var globalDriverDatabase = new DriverDatabase();
@@ -1119,6 +1236,58 @@ async function handleApiRequest(req, res, db = globalDriverDatabase) {
     }
     const status = db.checkPairingStatus(pairToken);
     sendJson(res, 200, { success: true, ...status });
+    return true;
+  }
+  if (pathname === "/api/signal/join" && req.method === "POST") {
+    const body = await readJsonBody(req);
+    if (!body || !body.roomCode || !body.peerId) {
+      sendJson(res, 400, { success: false, message: "Missing roomCode or peerId." });
+      return true;
+    }
+    const result = db.joinSignalRoom(body.roomCode, body.peerId, body.driverTag, !!body.isHost);
+    sendJson(res, 200, result);
+    return true;
+  }
+  if (pathname === "/api/signal/send" && req.method === "POST") {
+    const body = await readJsonBody(req);
+    if (!body || !body.roomCode || !body.from || !body.type) {
+      sendJson(res, 400, { success: false, message: "Missing roomCode, from, or type in payload." });
+      return true;
+    }
+    const result = db.sendSignalMessage(body.roomCode, body.from, body.to, body.type, body.payload);
+    sendJson(res, result.success ? 200 : 404, result);
+    return true;
+  }
+  if (pathname === "/api/signal/poll" && req.method === "GET") {
+    const room = url.searchParams.get("room") || "";
+    const peerId = url.searchParams.get("peerId") || "";
+    if (!room || !peerId) {
+      sendJson(res, 400, { success: false, message: "Missing room or peerId query parameters." });
+      return true;
+    }
+    const result = db.pollSignalMessages(room, peerId);
+    sendJson(res, 200, result);
+    return true;
+  }
+  if (pathname === "/api/pair/signal/send" && req.method === "POST") {
+    const body = await readJsonBody(req);
+    if (!body || !body.pairToken || !body.from || !body.type) {
+      sendJson(res, 400, { success: false, message: "Missing pairToken, from, or type." });
+      return true;
+    }
+    const result = db.sendPairSignal(body.pairToken, body.from, body.type, body.payload);
+    sendJson(res, result.success ? 200 : 400, result);
+    return true;
+  }
+  if (pathname === "/api/pair/signal/poll" && req.method === "GET") {
+    const token = url.searchParams.get("token") || "";
+    const role = url.searchParams.get("role") || "controller";
+    if (!token) {
+      sendJson(res, 400, { success: false, message: "Missing token parameter." });
+      return true;
+    }
+    const result = db.pollPairSignal(token, role);
+    sendJson(res, 200, result);
     return true;
   }
   return false;

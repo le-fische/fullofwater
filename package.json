@@ -11,6 +11,7 @@
     "test:phase4": "tsx scripts/test-phase4.ts",
     "test:phase5": "tsx scripts/test-phase5.ts",
     "test:phase-I": "tsx scripts/test-phase-I.ts",
+    "test:phase-II-A": "tsx scripts/test-phase-II-A.ts",
     "generate:track": "tsx scripts/track-pipeline/generate-track.ts",
     "build": "tsc && vite build && esbuild api/handler.ts --bundle --platform=node --format=esm --outfile=api/[...route].js",
     "preview": "vite preview --host"

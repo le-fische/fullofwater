@@ -15,6 +15,9 @@ class MobileControllerApp {
   private decoder = new TelemetryPacketDecoder();
 
   private ws: WebSocket | null = null;
+  private rtcPc: RTCPeerConnection | null = null;
+  private rtcDc: RTCDataChannel | null = null;
+  private rtcPollTimer: number | null = null;
   private seq = 0;
   private isConnected = false;
   private sendInterval: number | null = null;
@@ -176,52 +179,162 @@ class MobileControllerApp {
     if (driverTag) wsUrl += `&driverTag=${encodeURIComponent(driverTag)}`;
 
     console.log(`Connecting to ${wsUrl}...`);
-    this.ws = new WebSocket(wsUrl);
-    this.ws.binaryType = 'arraybuffer';
+    try {
+      this.ws = new WebSocket(wsUrl);
+      this.ws.binaryType = 'arraybuffer';
 
-    this.ws.onopen = () => {
-      console.log('Controller WebSocket connected');
-      this.isConnected = true;
+      this.ws.onopen = () => {
+        console.log('Controller WebSocket connected');
+        this.isConnected = true;
 
-      // Also verify pairing session with serverless API
-      if (pairToken) {
-        fetch('/api/pair/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pairToken, driverTag: driverTag || undefined }),
-        }).catch(() => {});
-      }
-    };
-
-    this.ws.onclose = () => {
-      console.warn('Controller WebSocket closed. Reconnecting in 1s...');
-      this.isConnected = false;
-      this.ws = null;
-      setTimeout(() => this.connectWebSocket(), 1000);
-    };
-
-    this.ws.onerror = (err) => {
-      console.error('Controller WebSocket error:', err);
-    };
-
-    this.ws.onmessage = (event) => {
-      if (event.data instanceof ArrayBuffer) {
-        const tel = this.decoder.decode(event.data);
-        this.currentRpmRatio = tel.rpmRatio;
-        this.currentGear = tel.gear;
-        this.currentSpeedKmh = tel.speedKmh;
-        this.currentShiftLight = tel.shiftLight;
-        this.currentAbs = tel.abs;
-        this.currentTc = tel.tc;
-
-        // Calculate RTT from pingSeq
-        const sentTime = this.pingTimes.get(tel.pingSeq);
-        if (sentTime !== undefined) {
-          this.currentRttMs = performance.now() - sentTime;
-          this.pingTimes.delete(tel.pingSeq);
+        // Also verify pairing session with serverless API
+        if (pairToken) {
+          fetch('/api/pair/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pairToken, driverTag: driverTag || undefined }),
+          }).catch(() => {});
         }
-      }
-    };
+      };
+
+      this.ws.onclose = () => {
+        console.warn('Controller WebSocket closed. Reconnecting in 1s...');
+        if (!this.rtcDc || this.rtcDc.readyState !== 'open') {
+          this.isConnected = false;
+        }
+        this.ws = null;
+        setTimeout(() => this.connectWebSocket(), 1000);
+      };
+
+      this.ws.onerror = (_err) => {
+        // WebSocket error (e.g. on serverless Vercel). WebRTC DataChannel will provide connection.
+      };
+
+      this.ws.onmessage = (event) => {
+        if (event.data instanceof ArrayBuffer) {
+          this.handleIncomingTelemetry(event.data);
+        }
+      };
+    } catch (_e) {
+      // Ignore WebSocket instantiation error
+    }
+
+    // Emergency Phase II-A: Direct Phone-to-Desktop WebRTC Pairing over DataChannel
+    if (pairToken) {
+      void this.initWebRTCPairing(pairToken);
+    }
+  }
+
+  private handleIncomingTelemetry(buffer: ArrayBuffer): void {
+    const tel = this.decoder.decode(buffer);
+    this.currentRpmRatio = tel.rpmRatio;
+    this.currentGear = tel.gear;
+    this.currentSpeedKmh = tel.speedKmh;
+    this.currentShiftLight = tel.shiftLight;
+    this.currentAbs = tel.abs;
+    this.currentTc = tel.tc;
+
+    // Calculate RTT from pingSeq
+    const sentTime = this.pingTimes.get(tel.pingSeq);
+    if (sentTime !== undefined) {
+      this.currentRttMs = performance.now() - sentTime;
+      this.pingTimes.delete(tel.pingSeq);
+    }
+  }
+
+  private async initWebRTCPairing(pairToken: string): Promise<void> {
+    if (!pairToken || typeof RTCPeerConnection === 'undefined') return;
+
+    if (this.rtcPollTimer) {
+      clearInterval(this.rtcPollTimer);
+      this.rtcPollTimer = null;
+    }
+
+    if (this.rtcPc) {
+      try { this.rtcPc.close(); } catch (_err) {}
+      this.rtcPc = null;
+      this.rtcDc = null;
+    }
+
+    try {
+      this.rtcPc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ],
+      });
+
+      const dc = this.rtcPc.createDataChannel('controller-input', {
+        ordered: false,
+        maxRetransmits: 0,
+      });
+      this.rtcDc = dc;
+      dc.binaryType = 'arraybuffer';
+
+      dc.onopen = () => {
+        console.log('[Controller] Direct Phone-to-Desktop WebRTC DataChannel open!');
+        this.isConnected = true;
+      };
+
+      dc.onclose = () => {
+        console.warn('[Controller] WebRTC DataChannel closed');
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+          this.isConnected = false;
+        }
+      };
+
+      dc.onmessage = (event) => {
+        if (event.data instanceof ArrayBuffer) {
+          this.handleIncomingTelemetry(event.data);
+        }
+      };
+
+      this.rtcPc.onicecandidate = (ev) => {
+        if (ev.candidate) {
+          void this.sendPairSignal(pairToken, 'ice', ev.candidate);
+        }
+      };
+
+      const offer = await this.rtcPc.createOffer();
+      await this.rtcPc.setLocalDescription(offer);
+      await this.sendPairSignal(pairToken, 'offer', this.rtcPc.localDescription);
+
+      // Poll serverless pair signal endpoint every 500ms for host answer & ICE
+      this.rtcPollTimer = window.setInterval(async () => {
+        try {
+          const res = await fetch(`/api/pair/signal/poll?token=${encodeURIComponent(pairToken)}&role=controller`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!data || !data.success || !Array.isArray(data.messages)) return;
+
+          for (const msg of data.messages) {
+            if (msg.type === 'answer' && msg.payload && this.rtcPc) {
+              await this.rtcPc.setRemoteDescription(new RTCSessionDescription(msg.payload));
+            } else if (msg.type === 'ice' && msg.payload && this.rtcPc) {
+              await this.rtcPc.addIceCandidate(new RTCIceCandidate(msg.payload));
+            }
+          }
+        } catch (_err) {}
+      }, 500);
+    } catch (err) {
+      console.warn('[Controller WebRTC] Init error:', err);
+    }
+  }
+
+  private async sendPairSignal(pairToken: string, type: string, payload: any): Promise<void> {
+    if (typeof fetch === 'undefined') return;
+    try {
+      await fetch('/api/pair/signal/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pairToken,
+          from: 'controller',
+          type,
+          payload,
+        }),
+      });
+    } catch (_err) {}
   }
 
   private startTransmissionLoop(): void {
@@ -257,15 +370,22 @@ class MobileControllerApp {
       if (oldestKey !== undefined) this.pingTimes.delete(oldestKey);
     }
 
+    const packet = this.encoder.encode(
+      currentSeq,
+      steer,
+      touch.throttle,
+      touch.brake,
+      buttonsBitfield
+    );
+
+    // Direct WebRTC DataChannel transmission (<5ms UDP stream)
+    if (this.rtcDc && this.rtcDc.readyState === 'open') {
+      try { this.rtcDc.send(packet); } catch (_err) {}
+    }
+
+    // WebSocket fallback transmission
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      const packet = this.encoder.encode(
-        currentSeq,
-        steer,
-        touch.throttle,
-        touch.brake,
-        buttonsBitfield
-      );
-      this.ws.send(packet);
+      try { this.ws.send(packet); } catch (_err) {}
     }
 
     // Update Controller AMOLED Display
@@ -279,7 +399,7 @@ class MobileControllerApp {
       tc: this.currentTc,
       rttMs: this.currentRttMs,
       steerAngleDeg: orientationData.angleDeg,
-      connected: this.isConnected,
+      connected: this.isConnected || (this.rtcDc?.readyState === 'open') || (this.ws?.readyState === WebSocket.OPEN),
     });
   }
 }

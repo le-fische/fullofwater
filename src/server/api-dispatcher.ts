@@ -255,6 +255,94 @@ export async function handleApiRequest(
     return true;
   }
 
+  // 12. POST /api/signal/join (Emergency Phase II-A: Serverless WebRTC Signaling)
+  if (pathname === '/api/signal/join' && req.method === 'POST') {
+    const body = await readJsonBody<{
+      roomCode: string;
+      peerId: string;
+      driverTag?: string;
+      isHost?: boolean;
+    }>(req);
+
+    if (!body || !body.roomCode || !body.peerId) {
+      sendJson(res, 400, { success: false, message: 'Missing roomCode or peerId.' });
+      return true;
+    }
+
+    const result = db.joinSignalRoom(body.roomCode, body.peerId, body.driverTag, !!body.isHost);
+    sendJson(res, 200, result);
+    return true;
+  }
+
+  // 13. POST /api/signal/send (Emergency Phase II-A: Send SDP/ICE/Config)
+  if (pathname === '/api/signal/send' && req.method === 'POST') {
+    const body = await readJsonBody<{
+      roomCode: string;
+      from: string;
+      to?: string;
+      type: string;
+      payload: any;
+    }>(req);
+
+    if (!body || !body.roomCode || !body.from || !body.type) {
+      sendJson(res, 400, { success: false, message: 'Missing roomCode, from, or type in payload.' });
+      return true;
+    }
+
+    const result = db.sendSignalMessage(body.roomCode, body.from, body.to, body.type, body.payload);
+    sendJson(res, result.success ? 200 : 404, result);
+    return true;
+  }
+
+  // 14. GET /api/signal/poll (Emergency Phase II-A: Poll Pending WebRTC Signals)
+  if (pathname === '/api/signal/poll' && req.method === 'GET') {
+    const room = url.searchParams.get('room') || '';
+    const peerId = url.searchParams.get('peerId') || '';
+
+    if (!room || !peerId) {
+      sendJson(res, 400, { success: false, message: 'Missing room or peerId query parameters.' });
+      return true;
+    }
+
+    const result = db.pollSignalMessages(room, peerId);
+    sendJson(res, 200, result);
+    return true;
+  }
+
+  // 15. POST /api/pair/signal/send (Direct Phone-to-Desktop WebRTC Handshake)
+  if (pathname === '/api/pair/signal/send' && req.method === 'POST') {
+    const body = await readJsonBody<{
+      pairToken: string;
+      from: 'host' | 'controller';
+      type: string;
+      payload: any;
+    }>(req);
+
+    if (!body || !body.pairToken || !body.from || !body.type) {
+      sendJson(res, 400, { success: false, message: 'Missing pairToken, from, or type.' });
+      return true;
+    }
+
+    const result = db.sendPairSignal(body.pairToken, body.from, body.type, body.payload);
+    sendJson(res, result.success ? 200 : 400, result);
+    return true;
+  }
+
+  // 16. GET /api/pair/signal/poll (Poll Phone-to-Desktop WebRTC Signals)
+  if (pathname === '/api/pair/signal/poll' && req.method === 'GET') {
+    const token = url.searchParams.get('token') || '';
+    const role = (url.searchParams.get('role') || 'controller') as 'host' | 'controller';
+
+    if (!token) {
+      sendJson(res, 400, { success: false, message: 'Missing token parameter.' });
+      return true;
+    }
+
+    const result = db.pollPairSignal(token, role);
+    sendJson(res, 200, result);
+    return true;
+  }
+
   // Not an API request handled by this dispatcher
   return false;
 }

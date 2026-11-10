@@ -101,6 +101,56 @@ export class EngineAudioSynth {
     this.isStarted = true;
   }
 
+  public isRunning(): boolean {
+    return this.isIgnited || this.isStartingSequence;
+  }
+
+  /**
+   * Immediately silences and mutes all engine combustion, straight-cut gearbox whine,
+   * tire noise, wind, and master output bus. Guarantees complete silence in menus.
+   */
+  public stopEngine(): void {
+    this.isIgnited = false;
+    this.isStartingSequence = false;
+    this.lastGear = 0;
+
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    if (this.engineGain) {
+      this.engineGain.gain.cancelScheduledValues(now);
+      this.engineGain.gain.setValueAtTime(0.0, now);
+    }
+    if (this.subBassGain) {
+      this.subBassGain.gain.cancelScheduledValues(now);
+      this.subBassGain.gain.setValueAtTime(0.0, now);
+    }
+    if (this.gearMeshGain) {
+      this.gearMeshGain.gain.cancelScheduledValues(now);
+      this.gearMeshGain.gain.setValueAtTime(0.0, now);
+    }
+    if (this.diffWhineGain) {
+      this.diffWhineGain.gain.cancelScheduledValues(now);
+      this.diffWhineGain.gain.setValueAtTime(0.0, now);
+    }
+    if (this.overrunTremoloGain) {
+      this.overrunTremoloGain.gain.cancelScheduledValues(now);
+      this.overrunTremoloGain.gain.setValueAtTime(0.0, now);
+    }
+    if (this.tireGain) {
+      this.tireGain.gain.cancelScheduledValues(now);
+      this.tireGain.gain.setValueAtTime(0.0, now);
+    }
+    if (this.windGain) {
+      this.windGain.gain.cancelScheduledValues(now);
+      this.windGain.gain.setValueAtTime(0.0, now);
+    }
+    if (this.masterGain) {
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.setValueAtTime(0.0, now);
+    }
+  }
+
   /**
    * Triggers an authentic motorsport starter motor & ignition turnover sequence:
    * 1. High-torque starter motor whine + 4 rhythmic compression thuds (0.0s - 0.52s)
@@ -116,6 +166,10 @@ export class EngineAudioSynth {
     this.isStartingSequence = true;
     const now = this.ctx.currentTime;
     const t0 = now + 0.02;
+
+    // Restore master volume if previously muted in menus
+    this.masterGain.gain.cancelScheduledValues(now);
+    this.masterGain.gain.setValueAtTime(0.75, now);
 
     // --- 1. Starter Motor Whine ---
     const starterOsc = this.ctx.createOscillator();
@@ -545,6 +599,12 @@ export class EngineAudioSynth {
     }
 
     if (!this.isIgnited && !this.isStartingSequence) {
+      if (this.engineGain) this.engineGain.gain.setValueAtTime(0.0, now);
+      if (this.subBassGain) this.subBassGain.gain.setValueAtTime(0.0, now);
+      if (this.gearMeshGain) this.gearMeshGain.gain.setValueAtTime(0.0, now);
+      if (this.diffWhineGain) this.diffWhineGain.gain.setValueAtTime(0.0, now);
+      if (this.tireGain) this.tireGain.gain.setValueAtTime(0.0, now);
+      if (this.windGain) this.windGain.gain.setValueAtTime(0.0, now);
       return;
     }
 

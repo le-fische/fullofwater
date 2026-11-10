@@ -1,5 +1,6 @@
-import { LeaderboardEntry, LeaderboardFilter, InputCategory } from '../../common/auth/driver-types';
+import { LeaderboardEntry, LeaderboardFilter, InputCategory, isDeveloperTag } from '../../common/auth/driver-types';
 import { DriverManager } from '../auth/driver-manager';
+import { formatCountryBadge } from '../../common/auth/countries';
 
 export interface LeaderboardModalOptions {
   driverManager: DriverManager;
@@ -57,7 +58,7 @@ export class LeaderboardModal {
       <div class="leaderboard-modal-window">
         <header class="leaderboard-modal-header">
           <div class="leaderboard-header-title-wrap">
-            <span class="leaderboard-title-badge">GLOBAL VERIFIED MATRIX</span>
+            <span class="leaderboard-title-badge">GLOBAL VERIFIED MATRIX &bull; TOP 25</span>
             <h2 class="leaderboard-title">HOTLAP LEADERBOARDS</h2>
           </div>
           <button class="leaderboard-modal-close" id="lb-close-btn" type="button" aria-label="Close">
@@ -187,14 +188,14 @@ export class LeaderboardModal {
       vehicleClass: this.currentClass !== 'all' ? this.currentClass : undefined,
       weather: this.currentWeather !== 'all' ? this.currentWeather : undefined,
       inputCategory: this.currentInput !== 'all' ? (this.currentInput as InputCategory) : undefined,
-      limit: 50,
+      limit: 25,
     };
 
     const res = await this.driverManager.fetchLeaderboard(filter);
     if (!this.isOpen) return;
 
     if (!res || res.entries.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" class="lb-empty">No verified hotlaps matching filter criteria.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="lb-empty">No verified hotlaps recorded yet. Complete a clean lap to claim P1!</td></tr>`;
       return;
     }
 
@@ -229,13 +230,16 @@ export class LeaderboardModal {
           ? `<button class="lb-race-ghost-btn" data-circuit="${entry.circuitId}" data-class="${entry.vehicleClass}" data-weather="${entry.weather}" type="button">⚡ RACE WR GHOST</button>`
           : `<span class="no-ghost-label">—</span>`;
 
+      const isDev = (entry as any).isDeveloper || isDeveloperTag(entry.driverTag);
+
       tr.innerHTML = `
         <td class="lb-rank-col">${rankBadge}</td>
         <td class="lb-driver-col">
           <div class="lb-driver-wrap">
-            <span class="lb-avatar-dot" style="background-color: ${entry.avatarColor || '#38bdf8'};"></span>
+            <span class="lb-avatar-dot" style="background-color: ${entry.avatarColor || (isDev ? '#f59e0b' : '#38bdf8')};"></span>
             <span class="lb-driver-tag">${entry.driverTag}</span>
-            <span class="lb-country-badge">${entry.countryCode}</span>
+            ${isDev ? '<span class="dev-badge-sm">DEV</span>' : ''}
+            <span class="lb-country-badge">${formatCountryBadge(entry.countryCode)}</span>
           </div>
         </td>
         <td class="lb-car-col">${entry.vehicleName}</td>

@@ -193,8 +193,13 @@ class HostApplication {
       this.mainMenu.updateDriverUI();
     };
 
+    this.driverManager.onPairTokenCreated = (pairToken) => {
+      this.netBridge.listenForPairingWebRTC(pairToken);
+    };
+
     this.driverManager.onPairingStatusChange = (_isPaired, pairToken) => {
       console.log(`[Host] Phone paired via session token ${pairToken}`);
+      this.netBridge.listenForPairingWebRTC(pairToken);
       this.hud.showNotification(`PHONE CONTROLLER LINKED VIA SESSION TOKEN`);
     };
 
@@ -340,11 +345,16 @@ class HostApplication {
     this.hud.show();
 
     // Apply pre-configured conditions from wizard
-    if (weather) {
-      this.environmentManager.setWeather(weather);
+    // For Time Trial / Hotlap mode, strictly enforce official homologated conditions: Sunny Noon (12:00) & Optimal Dry Asphalt
+    const isTimeTrial = mode === 'time_attack' || mode === 'time_trial';
+    const effectiveWeather = isTimeTrial ? 'clear' : weather;
+    const effectiveTimeOfDay = isTimeTrial ? 12.0 : timeOfDayHours;
+
+    if (effectiveWeather) {
+      this.environmentManager.setWeather(effectiveWeather);
     }
-    if (timeOfDayHours !== undefined) {
-      this.environmentManager.setTimeOfDay(timeOfDayHours);
+    if (effectiveTimeOfDay !== undefined) {
+      this.environmentManager.setTimeOfDay(effectiveTimeOfDay);
     }
     if (lapCount !== undefined) {
       this.sessionLapCount = lapCount;
@@ -473,8 +483,8 @@ class HostApplication {
     if (this.appState !== AppState.RACING) return;
     console.log('Returning from race to Showroom Main Menu...');
 
-    // 1. Mute and stop audio synthesis
-    this.audio.update(0, 0, 0, 0, 0, false, false, false);
+    // 1. Mute and stop audio synthesis completely in menus
+    this.audio.stopEngine();
 
     // 2. Dispose track streamer and colliders
     this.streamer?.dispose();
@@ -680,9 +690,9 @@ class HostApplication {
     const trigger = () => {
       if (this.appState === AppState.RACING) {
         this.audio.startIgnition();
+        window.removeEventListener('click', trigger);
+        window.removeEventListener('touchstart', trigger);
       }
-      window.removeEventListener('click', trigger);
-      window.removeEventListener('touchstart', trigger);
     };
     window.addEventListener('click', trigger);
     window.addEventListener('touchstart', trigger);
@@ -793,6 +803,9 @@ class HostApplication {
 
     // 1. STATE: SHOWROOM TURNTABLE STAGE
     if (this.appState === AppState.SHOWROOM) {
+      if (this.audio.isRunning()) {
+        this.audio.stopEngine();
+      }
       this.showroomStage.updateAndRender(this.stage.renderer, frameDelta);
       return;
     }
@@ -1030,14 +1043,15 @@ class HostApplication {
     );
     this.carMesh.setHeadlightsEnabled(envState.headlightsOn);
 
-    // Step Phase 3.4C WebRTC DataChannel P2P Multiplayer
+    // Step Phase 3.4C & Phase II-A WebRTC DataChannel P2P Multiplayer (56-Byte with velocity)
     this.webrtcLobby.update(
       frameDelta,
       [chassisPos.x, chassisPos.y, chassisPos.z],
       [chassisRot.x, chassisRot.y, chassisRot.z, chassisRot.w],
       speed,
       this.vehicle.wheels[0].steerAngleRad,
-      this.vehicle.wheels[0].angularVelocity * (now * 0.001)
+      this.vehicle.wheels[0].angularVelocity * (now * 0.001),
+      [linVel.x, linVel.y, linVel.z]
     );
 
     // Step Phase 4 Race Start Sequence & 3D World Gantry

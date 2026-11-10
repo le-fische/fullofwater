@@ -1310,7 +1310,7 @@ Answers to project design questions.
 
 ## 11. Changelog
 
-- **2026-11-09** - Phase I (Roman Numeral) Driver Identity, Cloud Persistence & Global Hotlap Leaderboards (Completed & Validated):
+- **2026-11-09** [Commit: `842ffff`] - Phase I (Roman Numeral) Driver Identity, Cloud Persistence & Global Hotlap Leaderboards (Completed & Validated):
   - **Driver Accounts & Frictionless Onboarding (MI.1):** Built permanent driver registration (`UserAccount`, `DriverProfile`) with unique alphanumeric driver tags, country codes, display names, avatar colors, preferred units (`km/h` vs `mph`), and password/token authentication. Built zero-barrier Guest Mode with one-click "Claim Driver License" modal converting guest driving records into permanent accounts with 100% data retention.
   - **Automated Phone Device Pairing (MI.1):** Implemented session-based device pairing tokens (6-digit numeric PINs) matching desktop host and mobile phone controller via URL parameters (`?pairToken=...&driverTag=...`) and WebSocket handshake, eliminating manual IP and port configuration on Vercel.
   - **Player Activity & Lifetime Stats Database (MI.2):** Implemented relational activity database schema (`users`, `driver_profiles`, `driver_stats`, `personal_records`) tracking lifetime distance driven ($km$), total completed laps, clean lap ratio ($\%$), maximum top speed recorded ($km/h$), airborne flight time ($s$), favorite vehicle model, and favorite livery.

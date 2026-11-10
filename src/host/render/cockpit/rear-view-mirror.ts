@@ -6,6 +6,7 @@ export class RearViewMirrorRenderer {
   private screenMaterial: THREE.MeshBasicMaterial | null = null;
   private targetMesh: THREE.Mesh | null = null;
   private isEnabled = true;
+  private frameCount = 0;
 
   constructor() {
     // 512x256 2:1 widescreen aspect ratio for crisp digital mirror
@@ -16,8 +17,8 @@ export class RearViewMirrorRenderer {
       generateMipmaps: false,
     });
 
-    // Rear camera facing backward out the rear window
-    this.rearCamera = new THREE.PerspectiveCamera(65, 512 / 256, 0.2, 5000);
+    // Rear camera facing backward out the rear window (tight 200m frustum skips distant terrain & trees)
+    this.rearCamera = new THREE.PerspectiveCamera(65, 512 / 256, 0.2, 200);
   }
 
   /**
@@ -48,6 +49,10 @@ export class RearViewMirrorRenderer {
     carRootGroup?: THREE.Group
   ): void {
     if (!this.isEnabled || !this.targetMesh) return;
+
+    // Alternate frame updates: 30-60 Hz mirror update rate saves 50% GPU/CPU geometry passes
+    this.frameCount++;
+    if (this.frameCount % 2 !== 0) return;
 
     // Position rear camera at the rear exterior of the car (above rear bumper / spoiler base at Z = -2.25m, Y = 1.05m)
     // Mounted outside the vehicle looking backward -Z, completely clear of interior cabin, seats, and roll cage

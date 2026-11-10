@@ -801,7 +801,9 @@ class HostApplication {
     if (!this.vehicle || !this.carMesh || !this.cameraCtrl) return;
 
     // Fixed timestep accumulator for 240 Hz Rapier physics
-    this.physicsAccumulator += frameDelta;
+    // Clamp frameDelta to max 50ms (prevents large delta spikes from queuing infinite physics steps)
+    const clampedDelta = Math.min(frameDelta, 0.05);
+    this.physicsAccumulator += clampedDelta;
     const rawInputs = this.getCompositeInputs(frameDelta);
     const speedNow = Math.abs(this.vehicle.getTelemetry().speedKmh);
     const governed = this.raceDirector
@@ -821,10 +823,19 @@ class HostApplication {
     // Step 2D dynamic drying line moisture & evaporation
     this.dryingLine.step(frameDelta);
 
-    while (this.physicsAccumulator >= this.fixedDt) {
+    // Substep limiter: run at most 6 substeps (25ms physics) per animation frame
+    // Prevents the "Spiral of Death" where frames take longer due to physics backlog
+    const maxSubSteps = 6;
+    let subSteps = 0;
+    while (this.physicsAccumulator >= this.fixedDt && subSteps < maxSubSteps) {
       this.vehicle.step(this.fixedDt, inputs.steer, inputs.throttle, inputs.brake);
       this.physicsWorld.step();
       this.physicsAccumulator -= this.fixedDt;
+      subSteps++;
+    }
+    // Discard any residual accumulator backlog if saturated
+    if (this.physicsAccumulator >= this.fixedDt) {
+      this.physicsAccumulator = 0;
     }
 
     // Telemetry & Physical Metrics

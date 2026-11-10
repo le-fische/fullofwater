@@ -8,6 +8,10 @@
     {
       "source": "/controller",
       "destination": "/controller.html"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/[...route].js"
     }
   ]
 }

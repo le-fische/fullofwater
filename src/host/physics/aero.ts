@@ -54,7 +54,7 @@ export class Aerodynamics {
     const totalDrag = dynamicPressure * cdA;
 
     // Steeper rear wing shifts aero balance slightly rearward
-    const frontFrac = Math.max(0.34, Math.min(0.48, this.profile.aero.aeroBalanceFront - wingDelta * 0.003));
+    const frontFrac = Math.max(0.35, Math.min(0.52, this.profile.aero.aeroBalanceFront - wingDelta * 0.003));
     const rearFrac = 1.0 - frontFrac;
 
     return {

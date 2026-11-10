@@ -69,14 +69,14 @@ Tires,Blueprint,Rear Pacejka Long Peak D,tires.rear.pacejkaLong.D,ratio,Homologa
 Tires,Setup,Cold Tire Pressure Front,setup.tirePressureBarFront,bar,Tunable,1.70,1.40,2.20,Pacejka.calcTireForces(),Front cold tire inflation pressure
 Tires,Setup,Cold Tire Pressure Rear,setup.tirePressureBarRear,bar,Tunable,1.70,1.40,2.20,Pacejka.calcTireForces(),Rear cold tire inflation pressure
 Brakes,Blueprint,Maximum Caliper Torque,brakes.maxTorqueNm,N*m,Tunable,6800,5000,7500,BrakeSystem.calcClampingForce(),Total mechanical caliper clamping torque clamp
-Brakes,Blueprint,Brake Balance Bias Front,brakes.frontBias,fraction,Tunable,0.57,0.50,0.64,BrakeSystem.calcClampingForce(),Hydraulic brake bias percentage to front axle
+Brakes,Blueprint,Brake Balance Bias Front,brakes.frontBias,fraction,Tunable,0.52,0.48,0.60,BrakeSystem.calcClampingForce(),Hydraulic brake bias percentage to front axle
 Brakes,Blueprint,Brake Pad Friction Coeff,brakes.padFrictionCoeff,ratio,Homologated,0.48,-,-,BrakeSystem.calcClampingForce(),Friction coefficient between pad and carbon/iron rotor
 Brakes,Blueprint,Front Rotor Heat Capacity,brakes.rotorThermalMassJPerK[0],J/K,Homologated,4100,-,-,BrakeSystem.stepThermals(),Front brake disc thermal capacity
 Brakes,Blueprint,Rear Rotor Heat Capacity,brakes.rotorThermalMassJPerK[1],J/K,Homologated,3200,-,-,BrakeSystem.stepThermals(),Rear brake disc thermal capacity
 Brakes,Blueprint,Brake Forced Air Cooling,brakes.coolingFactor,ratio,Homologated,1.00,-,-,BrakeSystem.stepThermals(),Duct convective air cooling multiplier (1 + v/22)
 Aero,Blueprint,Aerodynamic Drag Area,aero.dragCdA,m^2,Homologated,0.88,-,-,RaycastVehicle.stepAeroDynamics(),Total vehicle frontal area drag product Cd * A
-Aero,Blueprint,Aerodynamic Downforce Area,aero.downforceClA,m^2,Homologated,2.85,-,-,RaycastVehicle.stepAeroDynamics(),Total vehicle ground downforce product Cl * A
-Aero,Blueprint,Aero Center of Pressure Front,aero.aeroBalanceFront,fraction,Homologated,0.42,-,-,RaycastVehicle.stepAeroDynamics(),Front aerodynamic downforce balance (42% front / 58% rear)
+Aero,Blueprint,Aerodynamic Downforce Area,aero.downforceClA,m^2,Homologated,3.42,-,-,RaycastVehicle.stepAeroDynamics(),Total vehicle ground downforce product Cl * A (+20% planted trim)
+Aero,Blueprint,Aero Center of Pressure Front,aero.aeroBalanceFront,fraction,Homologated,0.45,-,-,RaycastVehicle.stepAeroDynamics(),Front aerodynamic downforce balance (45% front / 55% rear)
 Aero,Blueprint,DRS Drag Reduction Fraction,aero.drs.dragReduction,fraction,Homologated,0.28,-,-,RaycastVehicle.stepAeroDynamics(),Drag area percentage reduction when DRS flap opens (28%)
 Aero,Blueprint,DRS Downforce Reduction Fraction,aero.drs.downforceReduction,fraction,Homologated,0.35,-,-,RaycastVehicle.stepAeroDynamics(),Downforce percentage reduction when DRS flap opens (35%)
 Aero,Setup,Rear Wing Angle,setup.rearWingAngleDeg,deg,Tunable,10.0,5.0,18.0,RaycastVehicle.stepAeroDynamics(),Rear wing angle of attack trading top speed for downforce

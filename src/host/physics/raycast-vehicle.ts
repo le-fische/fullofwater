@@ -694,8 +694,13 @@ export class RaycastVehicle {
         const isDrivingThrottle = inReverse ? (brake > 0.01) : (throttle > 0.01);
 
         const rawBrakeTorque = this.brakes.computeWheelBrakeTorque(i, effectiveBrakePedal);
-        // Apply ABS assist
-        const effectiveBrakeTorque = this.assists.processAbs(w.slipRatio, rawBrakeTorque);
+        // Apply ABS assist with steer-aware trail-braking pressure modulation
+        const effectiveBrakeTorque = this.assists.processAbs(
+          w.slipRatio,
+          rawBrakeTorque,
+          w.isSteered,
+          Math.abs(w.steerAngleRad)
+        );
         wheelBrakeTorques[i] = effectiveBrakeTorque;
 
         // Longitudinal wheel spin coupling:

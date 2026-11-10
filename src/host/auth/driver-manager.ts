@@ -256,6 +256,32 @@ export class DriverManager {
     }
   }
 
+  public async sendVerificationCode(email: string): Promise<{ success: boolean; message: string; code?: string }> {
+    try {
+      const res = await fetch('/api/auth/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      return await res.json();
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to send verification code.' };
+    }
+  }
+
+  public async verifyEmailCode(email: string, code: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      });
+      return await res.json();
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to verify code.' };
+    }
+  }
+
   public logout(): void {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY_TOKEN);

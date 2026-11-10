@@ -221,18 +221,31 @@ export class DrivingAssists {
 
   /**
    * Anti-lock Braking System: modulates brake torque when wheel slip ratio drops below threshold.
+   * Includes motorsport trail-braking steer-assist (Bosch Motorsport ABS M5 profile):
+   * When steering into a turn under braking, ABS relieves front pressure deeper to preserve
+   * lateral cornering grip and eliminate corner-entry understeer.
    */
-  processAbs(slipRatio: number, rawBrakeTorque: number): number {
+  processAbs(
+    slipRatio: number,
+    rawBrakeTorque: number,
+    isSteeredWheel = false,
+    steerAngleAbsRad = 0
+  ): number {
     if (!this.absEnabled) {
       this.isAbsActive = false;
       return rawBrakeTorque;
     }
-    const absThreshold = -0.16; // Optimal braking slip (~14-16% longitudinal slip)
+    // Steered front wheels under corner entry steer target a tighter slip window (-0.12)
+    // to preserve lateral cornering force fy on the friction circle
+    const isTrailBraking = isSteeredWheel && steerAngleAbsRad > 0.04;
+    const absThreshold = isTrailBraking ? -0.12 : -0.16;
 
     if (slipRatio < absThreshold) {
       this.isAbsActive = true;
-      // Motorsport ABS pressure modulation: relieves pressure smoothly to maintain peak tire grip without dumping torque
-      const factor = clamp(1.0 - (absThreshold - slipRatio) * 1.2, 0.72, 1.0);
+      // Motorsport ABS pressure modulation: relieves pressure smoothly to maintain peak tire grip
+      // In straight line: floor at 0.45. In trail-braking: floor at 0.35 to allow front tires to steer
+      const minFactor = isTrailBraking ? 0.35 : 0.45;
+      const factor = clamp(1.0 - (absThreshold - slipRatio) * 1.8, minFactor, 1.0);
       return rawBrakeTorque * factor;
     }
 

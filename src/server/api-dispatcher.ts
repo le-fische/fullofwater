@@ -77,6 +77,33 @@ export async function handleApiRequest(
     return true;
   }
 
+  // 2b. POST /api/auth/send-code
+  if (pathname === '/api/auth/send-code' && req.method === 'POST') {
+    const body = await readJsonBody<{ email: string }>(req);
+    if (!body || !body.email) {
+      sendJson(res, 400, { success: false, message: 'Missing email.' });
+      return true;
+    }
+    const result = db.sendVerificationCode(body.email);
+    sendJson(res, result.success ? 200 : 400, result);
+    return true;
+  }
+
+  // 2c. POST /api/auth/verify-code
+  if (pathname === '/api/auth/verify-code' && req.method === 'POST') {
+    const body = await readJsonBody<{ email: string; code: string }>(req);
+    if (!body || !body.email || !body.code) {
+      sendJson(res, 400, { success: false, message: 'Missing email or code.' });
+      return true;
+    }
+    const ok = db.verifyEmail(body.email, body.code);
+    sendJson(res, ok ? 200 : 400, {
+      success: ok,
+      message: ok ? 'Email successfully verified!' : 'Invalid or expired verification code.',
+    });
+    return true;
+  }
+
   // 3. GET /api/auth/profile
   if (pathname === '/api/auth/profile' && req.method === 'GET') {
     const token = (req.headers.authorization || '').replace(/^Bearer\s+/, '') || url.searchParams.get('token') || '';

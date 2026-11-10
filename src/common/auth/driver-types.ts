@@ -4,11 +4,13 @@ export interface UserAccount {
   id: string;
   driverTag: string;
   email: string;
+  emailVerified?: boolean;
   displayName: string;
   countryCode: string;
   avatarColor: string;
   preferredUnits: 'km/h' | 'mph';
   isGuest: boolean;
+  isDeveloper?: boolean;
   createdAt: number;
 }
 
@@ -19,6 +21,7 @@ export interface DriverProfile {
   countryCode: string;
   avatarColor: string;
   preferredUnits: 'km/h' | 'mph';
+  isDeveloper?: boolean;
   joinedDate: number;
 }
 
@@ -136,11 +139,13 @@ export interface RegisterPayload {
   countryCode?: string;
   avatarColor?: string;
   preferredUnits?: 'km/h' | 'mph';
+  verificationCode?: string;
 }
 
 export interface LoginPayload {
   driverTagOrEmail: string;
   password?: string;
+  verificationCode?: string;
 }
 
 export interface ClaimGuestPayload {
@@ -152,6 +157,12 @@ export interface ClaimGuestPayload {
   countryCode?: string;
   avatarColor?: string;
   preferredUnits?: 'km/h' | 'mph';
+  verificationCode?: string;
+}
+
+export function isDeveloperTag(tag: string): boolean {
+  const clean = (tag || '').trim().toLowerCase();
+  return clean === 'le' || clean === 'dev' || clean === 'admin';
 }
 
 export interface AuthResponse {

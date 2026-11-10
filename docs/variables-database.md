@@ -112,8 +112,8 @@ The simulation supports multiple distinct vehicle categories and split tiers (St
 | Variable Name | Code Property Path | Unit | Baseline (911 RSR) | Mapped Module | Physical Meaning |
 |---|---|---|---|---|---|
 | Drag Area $C_d A$ | `aero.dragCdA` | $\text{m}^2$ | $0.88$ | `RaycastVehicle.stepAeroDynamics()` | Effective aerodynamic frontal drag area product ($F_d = \frac{1}{2} \rho v^2 C_d A$). |
-| Downforce Area $C_l A$ | `aero.downforceClA` | $\text{m}^2$ | $2.85$ | `RaycastVehicle.stepAeroDynamics()` | Effective aerodynamic downforce area product ($F_l = \frac{1}{2} \rho v^2 C_l A$). |
-| Aero Balance Center | `aero.aeroBalanceFront` | ratio | $0.42$ | `RaycastVehicle.stepAeroDynamics()` | $42\%$ front axle downforce / $58\%$ rear axle downforce. |
+| Downforce Area $C_l A$ | `aero.downforceClA` | $\text{m}^2$ | $3.42$ | `RaycastVehicle.stepAeroDynamics()` | Effective aerodynamic downforce area product ($F_l = \frac{1}{2} \rho v^2 C_l A$, +20% high-grip trim). |
+| Aero Balance Center | `aero.aeroBalanceFront` | ratio | $0.45$ | `RaycastVehicle.stepAeroDynamics()` | $45\%$ front axle downforce / $55\%$ rear axle downforce. |
 | DRS Drag Reduction | `aero.drs.dragReduction` | fraction | $0.28$ | `RaycastVehicle.stepAeroDynamics()` | $28\%$ drag reduction when rear wing DRS flap opens. |
 | DRS Downforce Drop | `aero.drs.downforceReduction` | fraction | $0.35$ | `RaycastVehicle.stepAeroDynamics()` | $35\%$ downforce reduction when rear wing DRS flap opens. |
 | Baseline Top Speed | `specs.topSpeedKmh` | $\text{km/h}$ | $298$ | `CarProfile.specs` | Equilibrium top speed with standard rear wing. |

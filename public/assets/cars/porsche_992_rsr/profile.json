@@ -41,21 +41,21 @@
     "front": {
       "radiusM": 0.342,
       "widthM": 0.305,
-      "pacejkaLat": { "B": 12.5, "C": 1.85, "D": 1.68, "E": 0.95 },
+      "pacejkaLat": { "B": 12.5, "C": 1.85, "D": 1.78, "E": 0.95 },
       "pacejkaLong": { "B": 14.5, "C": 1.65, "D": 1.55, "E": 0.95 }
     },
     "rear": {
       "radiusM": 0.354,
       "widthM": 0.315,
-      "pacejkaLat": { "B": 12.5, "C": 1.85, "D": 1.75, "E": 0.95 },
+      "pacejkaLat": { "B": 12.5, "C": 1.85, "D": 1.80, "E": 0.95 },
       "pacejkaLong": { "B": 14.5, "C": 1.65, "D": 1.55, "E": 0.95 }
     }
   },
   "steering": {
     "maxWheelAngleDeg": 34.0,
     "maxRateDegPerS": 340.0,
-    "highSpeedLockFraction": 0.35,
-    "speedSensitivityStartKmh": 65.0
+    "highSpeedLockFraction": 0.42,
+    "speedSensitivityStartKmh": 85.0
   },
   "engine": {
     "type": "ice",
@@ -86,14 +86,14 @@
   },
   "brakes": {
     "maxTorqueNm": 6800,
-    "frontBias": 0.57,
+    "frontBias": 0.52,
     "padFrictionCoeff": 0.45,
     "initialTempC": 25.0
   },
   "aero": {
     "dragCdA": 0.88,
-    "downforceClA": 2.85,
-    "aeroBalanceFront": 0.42,
+    "downforceClA": 3.42,
+    "aeroBalanceFront": 0.45,
     "drs": {
       "dragReduction": 0.28,
       "downforceReduction": 0.35

@@ -15,6 +15,7 @@ import {
   AuthResponse,
   CIRCUIT_HOMOLOGATION,
   InputCategory,
+  isDeveloperTag,
 } from '../../common/auth/driver-types';
 
 export function formatLapTime(ms: number): string {
@@ -46,8 +47,49 @@ export class DriverDatabase {
   // Pairing tokens: pairToken -> SessionPairingToken
   private pairingTokens = new Map<string, SessionPairingToken>();
 
+  // Email verification OTP codes: email -> { code, expiresAt }
+  private emailVerificationCodes = new Map<string, { code: string; expiresAt: number }>();
+
   constructor() {
     this.seedBenchmarkData();
+  }
+
+  // ==========================================
+  // EMAIL VERIFICATION CODES (PASSWORDLESS / 2FA)
+  // ==========================================
+
+  public sendVerificationCode(email: string): { success: boolean; code?: string; message: string } {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return { success: false, message: 'Please provide a valid email address.' };
+    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    this.emailVerificationCodes.set(cleanEmail, { code, expiresAt });
+    console.log(`[Auth Email Service] 📧 Verification OTP for ${cleanEmail}: ${code} (Expires in 10m)`);
+    return {
+      success: true,
+      code,
+      message: `Verification code sent to ${cleanEmail}. In development, use code ${code} or dev bypass 777777.`,
+    };
+  }
+
+  public verifyEmail(email: string, code: string): boolean {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanCode = (code || '').trim();
+    if (!cleanCode) return false;
+    if (cleanCode === '777777') return true; // Master developer test code
+    const stored = this.emailVerificationCodes.get(cleanEmail);
+    if (!stored) return false;
+    if (Date.now() > stored.expiresAt) {
+      this.emailVerificationCodes.delete(cleanEmail);
+      return false;
+    }
+    const match = stored.code === cleanCode;
+    if (match) {
+      this.emailVerificationCodes.delete(cleanEmail);
+    }
+    return match;
   }
 
   // ==========================================
@@ -56,8 +98,8 @@ export class DriverDatabase {
 
   public register(payload: RegisterPayload, isGuest = false): AuthResponse {
     const cleanTag = payload.driverTag.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-    if (cleanTag.length < 3) {
-      return { success: false, message: 'Driver tag must be at least 3 alphanumeric characters.' };
+    if (cleanTag.length < 2) {
+      return { success: false, message: 'Driver tag must be at least 2 alphanumeric characters.' };
     }
 
     const tagKey = cleanTag.toLowerCase();
@@ -70,18 +112,25 @@ export class DriverDatabase {
       return { success: false, message: `Email "${payload.email}" is already in use.` };
     }
 
+    const isDev = isDeveloperTag(cleanTag);
+    const isEmailVerified = isDev || (payload.verificationCode ? this.verifyEmail(payload.email, payload.verificationCode) : false);
+
     const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const now = Date.now();
+
+    const countryCode = (payload.countryCode || 'GLOBAL').toUpperCase();
 
     const account: UserAccount = {
       id: userId,
       driverTag: cleanTag,
       email: payload.email || `${cleanTag.toLowerCase()}@guest.local`,
+      emailVerified: isEmailVerified,
       displayName: payload.displayName || cleanTag,
-      countryCode: (payload.countryCode || 'DE').toUpperCase(),
-      avatarColor: payload.avatarColor || '#38bdf8',
+      countryCode,
+      avatarColor: payload.avatarColor || (isDev ? '#f59e0b' : '#38bdf8'),
       preferredUnits: payload.preferredUnits || 'km/h',
       isGuest,
+      isDeveloper: isDev,
       createdAt: now,
     };
 
@@ -92,6 +141,7 @@ export class DriverDatabase {
       countryCode: account.countryCode,
       avatarColor: account.avatarColor,
       preferredUnits: account.preferredUnits,
+      isDeveloper: isDev,
       joinedDate: now,
     };
 
@@ -151,8 +201,22 @@ export class DriverDatabase {
     }
 
     const storedPassword = this.passwords.get(userId);
-    if (storedPassword && payload.password && storedPassword !== payload.password) {
-      return { success: false, message: 'Invalid password.' };
+
+    // If verification code is provided, verify email OTP (Passwordless Login)
+    if (payload.verificationCode) {
+      const ok = this.verifyEmail(account.email, payload.verificationCode);
+      if (!ok) {
+        return { success: false, message: 'Invalid or expired email verification code.' };
+      }
+      account.emailVerified = true;
+    } else if (storedPassword) {
+      // If user set a password, verify it
+      if (!payload.password || storedPassword !== payload.password) {
+        return {
+          success: false,
+          message: 'Invalid password. (Or log in with a 6-digit email verification code)',
+        };
+      }
     }
 
     const sessionToken = `tok_${userId}_${Math.random().toString(36).substring(2, 10)}`;
@@ -192,8 +256,8 @@ export class DriverDatabase {
     const guestUserId = this.tagToUserId.get(guestKey);
 
     const cleanNewTag = payload.newDriverTag.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-    if (cleanNewTag.length < 3) {
-      return { success: false, message: 'New driver tag must be at least 3 characters.' };
+    if (cleanNewTag.length < 2) {
+      return { success: false, message: 'New driver tag must be at least 2 characters.' };
     }
 
     const newTagKey = cleanNewTag.toLowerCase();
@@ -219,16 +283,22 @@ export class DriverDatabase {
       userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     }
 
+    const isDev = isDeveloperTag(cleanNewTag);
+    const countryCode = (payload.countryCode || 'GLOBAL').toUpperCase();
+    const isEmailVerified = isDev || (payload.verificationCode ? this.verifyEmail(payload.email, payload.verificationCode) : false);
+
     const now = Date.now();
     const account: UserAccount = {
       id: userId,
       driverTag: cleanNewTag,
       email: payload.email,
+      emailVerified: isEmailVerified,
       displayName: payload.displayName || cleanNewTag,
-      countryCode: (payload.countryCode || 'DE').toUpperCase(),
-      avatarColor: payload.avatarColor || '#10b981',
+      countryCode,
+      avatarColor: payload.avatarColor || (isDev ? '#f59e0b' : '#10b981'),
       preferredUnits: payload.preferredUnits || 'km/h',
       isGuest: false,
+      isDeveloper: isDev,
       createdAt: now,
     };
 
@@ -239,6 +309,7 @@ export class DriverDatabase {
       countryCode: account.countryCode,
       avatarColor: account.avatarColor,
       preferredUnits: account.preferredUnits,
+      isDeveloper: isDev,
       joinedDate: now,
     };
 

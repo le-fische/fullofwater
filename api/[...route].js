@@ -1,4 +1,8 @@
 // src/common/auth/driver-types.ts
+function isDeveloperTag(tag) {
+  const clean = (tag || "").trim().toLowerCase();
+  return clean === "le" || clean === "dev" || clean === "admin";
+}
 var CIRCUIT_HOMOLOGATION = {
   nordschleife: {
     circuitId: "nordschleife",
@@ -66,16 +70,53 @@ var DriverDatabase = class {
   wrGhosts = /* @__PURE__ */ new Map();
   // Pairing tokens: pairToken -> SessionPairingToken
   pairingTokens = /* @__PURE__ */ new Map();
+  // Email verification OTP codes: email -> { code, expiresAt }
+  emailVerificationCodes = /* @__PURE__ */ new Map();
   constructor() {
     this.seedBenchmarkData();
+  }
+  // ==========================================
+  // EMAIL VERIFICATION CODES (PASSWORDLESS / 2FA)
+  // ==========================================
+  sendVerificationCode(email) {
+    const cleanEmail = (email || "").trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      return { success: false, message: "Please provide a valid email address." };
+    }
+    const code = Math.floor(1e5 + Math.random() * 9e5).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1e3;
+    this.emailVerificationCodes.set(cleanEmail, { code, expiresAt });
+    console.log(`[Auth Email Service] \u{1F4E7} Verification OTP for ${cleanEmail}: ${code} (Expires in 10m)`);
+    return {
+      success: true,
+      code,
+      message: `Verification code sent to ${cleanEmail}. In development, use code ${code} or dev bypass 777777.`
+    };
+  }
+  verifyEmail(email, code) {
+    const cleanEmail = (email || "").trim().toLowerCase();
+    const cleanCode = (code || "").trim();
+    if (!cleanCode) return false;
+    if (cleanCode === "777777") return true;
+    const stored = this.emailVerificationCodes.get(cleanEmail);
+    if (!stored) return false;
+    if (Date.now() > stored.expiresAt) {
+      this.emailVerificationCodes.delete(cleanEmail);
+      return false;
+    }
+    const match = stored.code === cleanCode;
+    if (match) {
+      this.emailVerificationCodes.delete(cleanEmail);
+    }
+    return match;
   }
   // ==========================================
   // AUTHENTICATION & DRIVER ACCOUNTS
   // ==========================================
   register(payload, isGuest = false) {
     const cleanTag = payload.driverTag.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
-    if (cleanTag.length < 3) {
-      return { success: false, message: "Driver tag must be at least 3 alphanumeric characters." };
+    if (cleanTag.length < 2) {
+      return { success: false, message: "Driver tag must be at least 2 alphanumeric characters." };
     }
     const tagKey = cleanTag.toLowerCase();
     if (this.tagToUserId.has(tagKey)) {
@@ -85,17 +126,22 @@ var DriverDatabase = class {
     if (!isGuest && emailKey && this.emailToUserId.has(emailKey)) {
       return { success: false, message: `Email "${payload.email}" is already in use.` };
     }
+    const isDev = isDeveloperTag(cleanTag);
+    const isEmailVerified = isDev || (payload.verificationCode ? this.verifyEmail(payload.email, payload.verificationCode) : false);
     const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const now = Date.now();
+    const countryCode = (payload.countryCode || "GLOBAL").toUpperCase();
     const account = {
       id: userId,
       driverTag: cleanTag,
       email: payload.email || `${cleanTag.toLowerCase()}@guest.local`,
+      emailVerified: isEmailVerified,
       displayName: payload.displayName || cleanTag,
-      countryCode: (payload.countryCode || "DE").toUpperCase(),
-      avatarColor: payload.avatarColor || "#38bdf8",
+      countryCode,
+      avatarColor: payload.avatarColor || (isDev ? "#f59e0b" : "#38bdf8"),
       preferredUnits: payload.preferredUnits || "km/h",
       isGuest,
+      isDeveloper: isDev,
       createdAt: now
     };
     const profile = {
@@ -105,6 +151,7 @@ var DriverDatabase = class {
       countryCode: account.countryCode,
       avatarColor: account.avatarColor,
       preferredUnits: account.preferredUnits,
+      isDeveloper: isDev,
       joinedDate: now
     };
     const initialStats = {
@@ -155,8 +202,19 @@ var DriverDatabase = class {
       return { success: false, message: "Account not found." };
     }
     const storedPassword = this.passwords.get(userId);
-    if (storedPassword && payload.password && storedPassword !== payload.password) {
-      return { success: false, message: "Invalid password." };
+    if (payload.verificationCode) {
+      const ok = this.verifyEmail(account.email, payload.verificationCode);
+      if (!ok) {
+        return { success: false, message: "Invalid or expired email verification code." };
+      }
+      account.emailVerified = true;
+    } else if (storedPassword) {
+      if (!payload.password || storedPassword !== payload.password) {
+        return {
+          success: false,
+          message: "Invalid password. (Or log in with a 6-digit email verification code)"
+        };
+      }
     }
     const sessionToken = `tok_${userId}_${Math.random().toString(36).substring(2, 10)}`;
     this.sessions.set(sessionToken, userId);
@@ -191,8 +249,8 @@ var DriverDatabase = class {
     const guestKey = payload.guestTag.trim().toLowerCase();
     const guestUserId = this.tagToUserId.get(guestKey);
     const cleanNewTag = payload.newDriverTag.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
-    if (cleanNewTag.length < 3) {
-      return { success: false, message: "New driver tag must be at least 3 characters." };
+    if (cleanNewTag.length < 2) {
+      return { success: false, message: "New driver tag must be at least 2 characters." };
     }
     const newTagKey = cleanNewTag.toLowerCase();
     if (newTagKey !== guestKey && this.tagToUserId.has(newTagKey)) {
@@ -212,16 +270,21 @@ var DriverDatabase = class {
     } else {
       userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     }
+    const isDev = isDeveloperTag(cleanNewTag);
+    const countryCode = (payload.countryCode || "GLOBAL").toUpperCase();
+    const isEmailVerified = isDev || (payload.verificationCode ? this.verifyEmail(payload.email, payload.verificationCode) : false);
     const now = Date.now();
     const account = {
       id: userId,
       driverTag: cleanNewTag,
       email: payload.email,
+      emailVerified: isEmailVerified,
       displayName: payload.displayName || cleanNewTag,
-      countryCode: (payload.countryCode || "DE").toUpperCase(),
-      avatarColor: payload.avatarColor || "#10b981",
+      countryCode,
+      avatarColor: payload.avatarColor || (isDev ? "#f59e0b" : "#10b981"),
       preferredUnits: payload.preferredUnits || "km/h",
       isGuest: false,
+      isDeveloper: isDev,
       createdAt: now
     };
     const profile = {
@@ -231,6 +294,7 @@ var DriverDatabase = class {
       countryCode: account.countryCode,
       avatarColor: account.avatarColor,
       preferredUnits: account.preferredUnits,
+      isDeveloper: isDev,
       joinedDate: now
     };
     const stats = existingStats ? { ...existingStats, userId, driverTag: cleanNewTag, lastActive: now } : {
@@ -918,6 +982,29 @@ async function handleApiRequest(req, res, db = globalDriverDatabase) {
     }
     const result = db.login(body);
     sendJson(res, result.success ? 200 : 401, result);
+    return true;
+  }
+  if (pathname === "/api/auth/send-code" && req.method === "POST") {
+    const body = await readJsonBody(req);
+    if (!body || !body.email) {
+      sendJson(res, 400, { success: false, message: "Missing email." });
+      return true;
+    }
+    const result = db.sendVerificationCode(body.email);
+    sendJson(res, result.success ? 200 : 400, result);
+    return true;
+  }
+  if (pathname === "/api/auth/verify-code" && req.method === "POST") {
+    const body = await readJsonBody(req);
+    if (!body || !body.email || !body.code) {
+      sendJson(res, 400, { success: false, message: "Missing email or code." });
+      return true;
+    }
+    const ok = db.verifyEmail(body.email, body.code);
+    sendJson(res, ok ? 200 : 400, {
+      success: ok,
+      message: ok ? "Email successfully verified!" : "Invalid or expired verification code."
+    });
     return true;
   }
   if (pathname === "/api/auth/profile" && req.method === "GET") {

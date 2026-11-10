@@ -21,7 +21,8 @@ Full of Water decouples the user interface across two physical devices:
 
 ### Roman Numeral Track (Online Cloud Infrastructure & Community Competition)
 - **Phase I (Driver Identity, Cloud Persistence & Global Hotlap Leaderboards):** Complete and validated. Introduces Driver Accounts, automated pairing between Desktop Host and Phone Controller via 6-digit session tokens, serverless player stats database (lifetime km driven, favorite car, clean lap ratio, top speeds, airborne flight time), and multi-dimensional hotlap leaderboards (by circuit, car category, weather, input device) with monotonic sector validation and World Record 30 Hz ghost retrieval.
-- **Phase II (Cloud-Relayed WebRTC Multiplayer):** Serverless WebRTC signaling broker (PartyKit / Cloudflare Durable Objects), public paddock lobby browser, and private room sharing.
+- **Phase II-A (Emergency 3-Player Serverless WebRTC Multiplayer & Jitter-Free Interpolation):** Ready for execution. Implements serverless signaling on Vercel (`/api/signal/*`), direct phone-to-desktop WebRTC DataChannel pairing, 56-byte telemetry with linear velocity vectors `[vx, vy, vz]`, 100ms snapshot buffer with Hermite cubic spline trajectory interpolation and velocity dead reckoning, pure invariant Ghost Mode (zero contact impulses), and single-circuit session synchronization.
+- **Phase II-B (Cloud-Relayed WebRTC Multiplayer):** Serverless WebRTC signaling broker (PartyKit / Cloudflare Durable Objects), public paddock lobby browser, and private room sharing.
 - **Phase III (Driver Rating & Safety Rating - Elo/SR):** Skill-based matchmaking (DR: Bronze to Alien) and incident tracking (SR: clean overtakes vs incident points).
 - **Phase IV (Cloud Telemetry & MoTeC-Style Analysis):** Cloud storage of complete lap telemetry with in-browser multi-channel trace overlay.
 - **Phase V (Cloud Livery Workshop & Social Showcase):** Community custom livery workshop using `StandardWrapMapper` with global publishing and upvoting.
@@ -958,7 +959,14 @@ Roman Numeral Track: Online Cloud Infrastructure & Community Competition
 │   ├── MI.2: Player activity & lifetime stats database (km, top speed, favorite car) [DONE]
 │   ├── MI.3: Multi-dimensional global hotlap leaderboard (track/category/weather/device) [DONE]
 │   └── MI.4: Serverless anti-cheat monotonic sector validation & WR ghost downloads [DONE]
-├── Phase II: Cloud-Relayed WebRTC Multiplayer (PartyKit / Durable Objects)
+├── Phase II-A: Emergency 3-Player Serverless WebRTC Multiplayer & Jitter-Free Interpolation (Ready)
+│   ├── MII-A.1: Serverless WebRTC signaling broker on Vercel (/api/signal/join, /api/signal/send, /api/signal/poll)
+│   ├── MII-A.2: Direct phone-to-desktop WebRTC DataChannel pairing via 6-digit session token
+│   ├── MII-A.3: 56-byte binary telemetry packet (pos, quat, vel [vx, vy, vz], speed, steer, wheelSpin)
+│   ├── MII-A.4: 100ms snapshot ring buffer with Hermite cubic spline trajectory interpolation & velocity dead reckoning
+│   ├── MII-A.5: Pure invariant Ghost Mode (zero Rapier rigid body contact, zero phantom collision desync)
+│   └── MII-A.6: Host single-circuit synchronization & synchronized FIA 5-red-light standing start
+├── Phase II-B: Cloud-Relayed WebRTC Multiplayer (PartyKit / Durable Objects)
 ├── Phase III: Driver Rating & Safety Rating (Elo / SR matchmaking)
 ├── Phase IV: Cloud Telemetry & MoTeC-Style Analysis (in-browser trace overlays)
 └── Phase V: Cloud Livery Workshop & Social Showcase (gallery & community upvotes)

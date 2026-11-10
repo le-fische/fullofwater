@@ -5,7 +5,7 @@
 > Implementation roadmap and agent prompts are in [implementation.md](implementation.md).
 
 **Status:** Phase 1 Complete; Phase 2 Authentic Surveyed Nürburgring Nordschleife & 24h Layout Live; Phase 3 Paused (physics merged into Phase 5); Phase 4 Paused (moved to Phase 6); Phase 5 Nürburgring & Car Ultra-Realism (Assetto Corsa Competizione Level) Complete & Validated; Phase 6 Private Multiplayer Planned; Phase 7 Multi-Class & Global Tracks Roadmap. **Roman Numeral Track:** Phase I (Driver Accounts, Player Database & Global Hotlap Leaderboards) Complete & Validated; Phase II (Cloud-Relayed WebRTC Multiplayer) Planned.
-**Last updated:** 2026-11-09 (High-Speed Stuttering & Micro-Hitch Elimination: Chunk Cache System, Physics Substep Clamp & 30 Hz Digital Mirror Optimization)
+**Last updated:** 2026-11-09 (Vercel Production Deployment: Multi-Segment Serverless Catch-All API, Controller Pairing & Camera Shake Eradication)
 
 ---
 
@@ -1309,6 +1309,19 @@ Answers to project design questions.
 ---
 
 ## 11. Changelog
+
+- **2026-11-09** [Commit: `fb68357`] - Vercel Multi-Segment Serverless Catch-All Rewrites:
+  - Added catch-all rewrite rule (`{"source": "/api/(.*)", "destination": "/api/[...route].js"}`) in `vercel.json` routing all multi-segment serverless endpoints (`/api/pair/create`, `/api/pair/verify`, `/api/auth/register`, `/api/laps/submit`) seamlessly to the bundled API dispatcher on live Vercel production.
+  - Verified live pairing session lease generation and driver registration over HTTP 200 on `https://fullofwater-chi.vercel.app`.
+
+- **2026-11-09** [Commit: `c53c948`] - Standalone Vercel Serverless Function Bundle (`api/[...route].js`):
+  - Bundled serverless API dispatcher into a standalone 37.1 kb ESM bundle via `esbuild api/handler.ts --bundle --platform=node --format=esm --outfile=api/[...route].js`.
+  - Resolved Node native ESM relative import resolution errors (`ERR_MODULE_NOT_FOUND`) on Vercel Functions.
+  - Integrated bundle generation directly into `package.json` production build script.
+
+- **2026-11-09** [Commit: `4c22dac`] - Physics Sub-step Clamp & 30 Hz Digital Mirror Optimization:
+  - Clamped physics sub-step accumulator to 50ms and maximum 6 substeps per frame in `main.ts`, eliminating the spiral-of-death framerate drop on CPU hitches.
+  - Alternated cockpit rear-view mirror rendering to 30 Hz with a tight 200m frustum in `rear-view-mirror.ts`, reducing GPU draw calls by 50%.
 
 - **2026-11-09** [Commit: `842ffff`] - Phase I (Roman Numeral) Driver Identity, Cloud Persistence & Global Hotlap Leaderboards (Completed & Validated):
   - **Driver Accounts & Frictionless Onboarding (MI.1):** Built permanent driver registration (`UserAccount`, `DriverProfile`) with unique alphanumeric driver tags, country codes, display names, avatar colors, preferred units (`km/h` vs `mph`), and password/token authentication. Built zero-barrier Guest Mode with one-click "Claim Driver License" modal converting guest driving records into permanent accounts with 100% data retention.

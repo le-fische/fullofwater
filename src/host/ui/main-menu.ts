@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import { TrackMode, WeatherCondition } from '../../common/types';
 import { PRESET_LIVERIES } from '../render/livery-system';
+import { DriverManager } from '../auth/driver-manager';
 
 export interface MainMenuOptions {
   onStartRace: (
@@ -15,6 +16,9 @@ export interface MainMenuOptions {
   onLiveryChanged: (liveryIndex: number, carNumber: string) => void;
   onCarNumberChanged: (carNumber: string) => void;
   onOpenMultiplayer: () => void;
+  onOpenLeaderboard?: () => void;
+  onOpenDriverProfile?: () => void;
+  driverManager?: DriverManager;
 }
 
 interface TrackCardSpec {
@@ -230,19 +234,7 @@ export class MainMenu {
         </div>
 
         <div class="menu-header-actions">
-          <div id="menu-controller-status" class="menu-pill ${this.isPhoneConnected ? 'menu-pill-green' : 'menu-pill-standby'}">
-            <span class="status-dot"></span>
-            <span class="status-text">${this.isPhoneConnected ? 'WHEEL LINKED' : 'KEYBOARD / WHEEL'}</span>
-          </div>
-          <button id="menu-qr-toggle-btn" class="menu-btn-secondary" type="button">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-              <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 19h2M19 14v2"></path>
-            </svg>
-            <span>PAIR PHONE</span>
-          </button>
+          ${this.renderHeaderActionsMarkup()}
         </div>
       </header>
 
@@ -298,6 +290,28 @@ export class MainMenu {
               <span class="cta-arrow">&rarr;</span>
             </div>
           </div>
+
+          <!-- Card 3: Leaderboard -->
+          <div class="landing-card landing-card-lb" id="landing-btn-lb" style="border-color: rgba(245, 158, 11, 0.35);">
+            <div class="landing-card-top">
+              <span class="landing-card-tag tag-lb" style="background: rgba(245, 158, 11, 0.15); border-color: #f59e0b; color: #f59e0b;">GLOBAL HOTLAP MATRIX</span>
+              <span class="landing-arrow-tag" style="color: #f59e0b;">VERIFIED RECORDS &rarr;</span>
+            </div>
+            <h2 class="landing-card-title">GLOBAL LEADERBOARDS</h2>
+            <p class="landing-card-desc">
+              Inspect verified alien hotlap telemetry across all surveyed circuits, car classes, and input categories. Download the #1 World Record ghost directly into your session to study apex lines.
+            </p>
+            <div class="landing-feature-chips">
+              <span>Verified Sector Times</span>
+              <span>Anti-Cheat Validated</span>
+              <span>Race WR Ghosts</span>
+              <span>Driver Lifetime Stats</span>
+            </div>
+            <div class="landing-card-cta cta-lb" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+              <span>VIEW GLOBAL LEADERBOARDS</span>
+              <span class="cta-arrow">&rarr;</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -341,19 +355,7 @@ export class MainMenu {
         </nav>
 
         <div class="menu-header-actions">
-          <div id="menu-controller-status" class="menu-pill ${this.isPhoneConnected ? 'menu-pill-green' : 'menu-pill-standby'}">
-            <span class="status-dot"></span>
-            <span class="status-text">${this.isPhoneConnected ? 'WHEEL LINKED' : 'KEYBOARD / WHEEL'}</span>
-          </div>
-          <button id="menu-qr-toggle-btn" class="menu-btn-secondary" type="button">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-              <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 19h2M19 14v2"></path>
-            </svg>
-            <span>PAIR PHONE</span>
-          </button>
+          ${this.renderHeaderActionsMarkup()}
         </div>
       </header>
 
@@ -572,17 +574,71 @@ export class MainMenu {
     `;
   }
 
+  private renderHeaderActionsMarkup(): string {
+    const dm = this.options.driverManager;
+    const acc = dm?.getAccount();
+    const tag = dm?.getDriverTag() || 'GUEST';
+    const isGuest = dm?.isGuest() ?? true;
+    const country = acc?.countryCode || 'DE';
+    const color = acc?.avatarColor || '#38bdf8';
+
+    return `
+      <!-- Phase I: Driver Identity Passport Pill -->
+      <div id="menu-driver-passport-pill" class="menu-driver-pill" title="View Driver Passport & Lifetime Stats">
+        <span class="menu-driver-avatar" style="background-color: ${color};"></span>
+        <span class="menu-driver-tag">${tag}</span>
+        <span class="menu-driver-country">${country}</span>
+        ${isGuest ? '<button class="menu-claim-btn" id="header-claim-license-btn" type="button">CLAIM</button>' : ''}
+      </div>
+
+      <!-- Phase I: Global Hotlap Leaderboard Button -->
+      <button id="menu-leaderboard-btn" class="menu-btn-secondary" type="button" title="View Global Hotlap Leaderboards">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+          <path d="M4 22h16"></path>
+          <path d="M10 14.66V17c0 .55-.45 1-1 1H7"></path>
+          <path d="M14 14.66V17c0 .55.45 1 1 1h2"></path>
+          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+        </svg>
+        <span>LEADERBOARDS</span>
+      </button>
+
+      <div id="menu-controller-status" class="menu-pill ${this.isPhoneConnected ? 'menu-pill-green' : 'menu-pill-standby'}">
+        <span class="status-dot"></span>
+        <span class="status-text">${this.isPhoneConnected ? 'WHEEL LINKED' : 'KEYBOARD / WHEEL'}</span>
+      </div>
+
+      <button id="menu-qr-toggle-btn" class="menu-btn-secondary" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 19h2M19 14v2"></path>
+        </svg>
+        <span>PAIR PHONE</span>
+      </button>
+    `;
+  }
+
   private renderQrModalMarkup(): string {
+    const dm = this.options.driverManager;
+    const tag = dm?.getDriverTag() || 'GUEST';
+    const pairToken = dm?.getActivePairToken() || '------';
+
     return `
       <div id="menu-qr-modal" class="menu-modal-backdrop" style="display: ${this.isQrModalOpen ? 'flex' : 'none'};">
         <div class="menu-modal-card">
           <div class="modal-header">
-            <h3>MOBILE TELEMETRY WHEEL</h3>
+            <h3>AUTOMATED PHONE CONTROLLER PAIRING</h3>
             <button id="menu-qr-close-btn" class="modal-close-btn" aria-label="Close" type="button">✕</button>
           </div>
-          <p class="modal-desc">Scan with your phone camera to pair a 60 Hz gyro steering wheel and telemetry display.</p>
+          <p class="modal-desc">Scan with your phone camera or connect with Driver Tag: <strong>${tag}</strong>.</p>
           <div class="qr-box">
             <canvas id="menu-qr-canvas"></canvas>
+          </div>
+          <div id="menu-qr-pin-wrap" style="text-align: center; margin: 10px 0 4px 0; font-size: 11px; color: #94a3b8;">
+            AUTOMATED SESSION PIN: <strong id="menu-qr-pin-code" style="color: #38bdf8; font-family: monospace; font-size: 16px; letter-spacing: 2px;">${pairToken}</strong>
           </div>
           <div id="menu-qr-url" class="modal-tip"></div>
         </div>
@@ -604,6 +660,11 @@ export class MainMenu {
       const mpBtn = this.rootElement.querySelector('#landing-btn-mp');
       mpBtn?.addEventListener('click', () => {
         this.options.onOpenMultiplayer();
+      });
+
+      const lbCardBtn = this.rootElement.querySelector('#landing-btn-lb');
+      lbCardBtn?.addEventListener('click', () => {
+        this.options.onOpenLeaderboard?.();
       });
     }
 
@@ -761,6 +822,23 @@ export class MainMenu {
     const wizardLaunchBtn = this.rootElement.querySelector('#wizard-launch-step-btn');
     wizardLaunchBtn?.addEventListener('click', launchHandler);
 
+    // Phase I: Driver Passport & Leaderboards modal bindings
+    const passportPill = this.rootElement.querySelector('#menu-driver-passport-pill');
+    passportPill?.addEventListener('click', () => {
+      this.options.onOpenDriverProfile?.();
+    });
+
+    const headerClaimBtn = this.rootElement.querySelector('#header-claim-license-btn');
+    headerClaimBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.options.onOpenDriverProfile?.();
+    });
+
+    const lbBtn = this.rootElement.querySelector('#menu-leaderboard-btn');
+    lbBtn?.addEventListener('click', () => {
+      this.options.onOpenLeaderboard?.();
+    });
+
     // QR Modal
     const qrToggleBtn = this.rootElement.querySelector('#menu-qr-toggle-btn');
     qrToggleBtn?.addEventListener('click', () => {
@@ -778,6 +856,19 @@ export class MainMenu {
     });
   }
 
+  public updateDriverUI(): void {
+    const avatar = this.rootElement.querySelector('.menu-driver-avatar') as HTMLElement;
+    const tagEl = this.rootElement.querySelector('.menu-driver-tag');
+    const countryEl = this.rootElement.querySelector('.menu-driver-country');
+    const claimBtn = this.rootElement.querySelector('#header-claim-license-btn') as HTMLElement;
+    if (!this.options.driverManager) return;
+    const acc = this.options.driverManager.getAccount();
+    if (avatar) avatar.style.backgroundColor = acc?.avatarColor || '#38bdf8';
+    if (tagEl) tagEl.textContent = this.options.driverManager.getDriverTag();
+    if (countryEl) countryEl.textContent = acc?.countryCode || 'DE';
+    if (claimBtn) claimBtn.style.display = this.options.driverManager.isGuest() ? 'inline-block' : 'none';
+  }
+
   private syncCarNumberUI(updateInputField: boolean = true): void {
     if (updateInputField) {
       const input = this.rootElement.querySelector('#custom-car-number-input') as HTMLInputElement;
@@ -793,9 +884,11 @@ export class MainMenu {
   private async generateQrCode(): Promise<void> {
     const canvas = this.rootElement.querySelector('#menu-qr-canvas') as HTMLCanvasElement;
     const urlEl = this.rootElement.querySelector('#menu-qr-url');
+    const pinEl = this.rootElement.querySelector('#menu-qr-pin-code');
     if (!canvas || typeof window === 'undefined') return;
 
     let controllerUrl = `${window.location.origin}/controller.html`;
+    let hostIp = window.location.hostname;
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       try {
         const resp = await fetch('/api/network-info');
@@ -804,9 +897,23 @@ export class MainMenu {
           if (info.controllerUrl) {
             controllerUrl = info.controllerUrl;
           }
+          if (info.ip) {
+            hostIp = info.ip;
+          }
         }
       } catch (e) {
         console.warn('Failed to fetch network info for QR code', e);
+      }
+    }
+
+    if (this.options.driverManager) {
+      const pairToken = await this.options.driverManager.startPairingSession(hostIp);
+      if (pairToken) {
+        if (pinEl) pinEl.textContent = pairToken;
+        const separator = controllerUrl.includes('?') ? '&' : '?';
+        controllerUrl += `${separator}pairToken=${pairToken}&driverTag=${encodeURIComponent(
+          this.options.driverManager.getDriverTag()
+        )}`;
       }
     }
 

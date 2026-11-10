@@ -67,10 +67,7 @@ export class PorscheRsrSteeringWheel {
     // 4. Top arched 15-LED shift rev counter
     this.buildShiftRevLights();
 
-    // 5. "PORSCHE" laser-etched wordmark
-    this.buildPorscheWordmark();
-
-    // 6. Anodized CNC aluminum rotary thumb encoders
+    // 5. Anodized CNC aluminum rotary thumb encoders
     this.buildThumbEncoders();
 
     // 7. 10 Motorsport tactile pushbuttons
@@ -276,8 +273,9 @@ export class PorscheRsrSteeringWheel {
   }
 
   /**
-   * Top arched 15-LED shift rev counter (Cosworth/MoTeC powerband).
-   * 5 Green -> 5 Red -> 5 Blue, all flash at >= 8800 RPM.
+   * Top arched 15-LED shift rev counter (Porsche Motorsport outside-in convergence).
+   * 4 Green (outer flanks) -> 4 Yellow (mid) -> 7 Red (converging to center, max red).
+   * All 15 LEDs strobe flash electric blue at optimal shift point (>= 8800 RPM or isShiftLightActive).
    */
   private buildShiftRevLights(): void {
     const ledBezelMat = new THREE.MeshStandardMaterial({
@@ -316,38 +314,6 @@ export class PorscheRsrSteeringWheel {
   }
 
   /**
-   * "PORSCHE" laser-etched wordmark across the top faceplate above the display.
-   */
-  private buildPorscheWordmark(): void {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 96;
-    const ctx = canvas.getContext('2d')!;
-
-    ctx.clearRect(0, 0, 512, 96);
-    ctx.fillStyle = '#f1f5f9';
-    ctx.font = '900 48px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.letterSpacing = '14px';
-    ctx.fillText('P O R S C H E', 256, 48);
-
-    const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.MeshBasicMaterial({
-      map: tex,
-      transparent: true,
-      depthWrite: false,
-    });
-    this.materials.push(mat);
-
-    const geo = new THREE.PlaneGeometry(0.088, 0.016);
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(0, 0.058, -0.0102);
-    mesh.rotation.y = Math.PI;
-    this.rotatingMesh.add(mesh);
-  }
-
-  /**
    * Anodized CNC aluminum rotary thumb encoders:
    * - Red TCI on upper-left shoulder
    * - Purple TCO on upper-right shoulder
@@ -370,45 +336,17 @@ export class PorscheRsrSteeringWheel {
       return new THREE.Mesh(geo, mat);
     };
 
-    // Label maker helper
-    const buildLabel = (text: string) => {
-      const c = document.createElement('canvas');
-      c.width = 128;
-      c.height = 64;
-      const ctx = c.getContext('2d')!;
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 36px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(text, 64, 32);
-
-      const tex = new THREE.CanvasTexture(c);
-      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
-      this.materials.push(mat);
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.016, 0.008), mat);
-      m.rotation.y = Math.PI;
-      return m;
-    };
-
     // 1. TCI (Top Left Shoulder - RED)
     const tciDial = buildDial(0xdc2626, 'TCI_Red');
     tciDial.position.set(0.104, 0.068, -0.007);
     tciDial.rotation.z = -Math.PI / 4;
     this.rotatingMesh.add(tciDial);
 
-    const tciLabel = buildLabel('TCI');
-    tciLabel.position.set(0.088, 0.076, -0.0102);
-    this.rotatingMesh.add(tciLabel);
-
     // 2. TCO (Top Right Shoulder - PURPLE)
     const tcoDial = buildDial(0x9333ea, 'TCO_Purple');
     tcoDial.position.set(-0.104, 0.068, -0.007);
     tcoDial.rotation.z = Math.PI / 4;
     this.rotatingMesh.add(tcoDial);
-
-    const tcoLabel = buildLabel('TCO');
-    tcoLabel.position.set(-0.088, 0.076, -0.0102);
-    this.rotatingMesh.add(tcoLabel);
 
     // 3. Inner Left Grip Dial (GOLD)
     const goldDial = buildDial(0xeab308, 'Inner_Gold');
@@ -519,42 +457,17 @@ export class PorscheRsrSteeringWheel {
       this.rotatingMesh.add(g);
     };
 
-    // Label maker helper
-    const buildLabel = (text: string, x: number, y: number) => {
-      const c = document.createElement('canvas');
-      c.width = 160;
-      c.height = 48;
-      const ctx = c.getContext('2d')!;
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(text, 80, 24);
-
-      const tex = new THREE.CanvasTexture(c);
-      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
-      this.materials.push(mat);
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.022, 0.007), mat);
-      m.position.set(x, y, -0.0102);
-      m.rotation.y = Math.PI;
-      this.rotatingMesh.add(m);
-    };
-
     // 1. Upper Left: TC/CON
     buildKnob(0.038, -0.040, -Math.PI / 6);
-    buildLabel('TC/CON', 0.038, -0.026);
 
     // 2. Upper Right: TC/R
     buildKnob(-0.038, -0.040, Math.PI / 6);
-    buildLabel('TC/R', -0.038, -0.026);
 
     // 3. Lower Left: MAP
     buildKnob(0.022, -0.068, 0);
-    buildLabel('MAP', 0.022, -0.079);
 
     // 4. Lower Right: WIPER
     buildKnob(-0.022, -0.068, 0);
-    buildLabel('WIPER', -0.022, -0.079);
   }
 
   /**
@@ -659,7 +572,7 @@ export class PorscheRsrSteeringWheel {
 
     // Shift alarm border flash if at redline limiter
     if (isShiftLight) {
-      ctx.strokeStyle = '#ef4444';
+      ctx.strokeStyle = '#38bdf8'; // Electric blue shift border flash
       ctx.lineWidth = 14;
       ctx.strokeRect(7, 7, w - 14, h - 14);
     }
@@ -1006,35 +919,44 @@ export class PorscheRsrSteeringWheel {
     const steerRad = steerAngleDeg * (Math.PI / 180);
     this.rotatingMesh.rotation.z = -steerRad * 3.4;
 
-    // 2. Update 15 Shift LEDs
-    // 5 Green (6600-7400), 5 Red (7400-8200), 5 Blue (8200-8800), Flash >= 8800
+    // 2. Update 15 Shift LEDs (Porsche Motorsport Outside-In Convergence)
+    // Symmetrical convergence from both flanks towards center:
+    // - Outer pairs (pairDist 0, 1): Green (0x22c55e)
+    // - Mid pairs (pairDist 2, 3): Yellow/Amber (0xeab308)
+    // - Center pairs & apex (pairDist 4, 5, 6, 7): Red (0xef4444)
+    // - Max red meeting in the middle right before shift (8525-8799 RPM)
+    // - Optimal shift point (>= 8800 RPM or isShiftLightActive): ALL 15 LEDs FLASH ELECTRIC BLUE (0x38bdf8)
     const rpm = telemetry.rpm;
-    const isFlash = rpm >= 8800 && Math.floor(performance.now() / 60) % 2 === 0;
+    const isShiftPoint = (telemetry.isShiftLightActive ?? false) || rpm >= 8800;
+    // Fast strobe: ~10 Hz (50ms ON / 50ms OFF)
+    const isFlashOn = isShiftPoint && Math.floor(performance.now() / 50) % 2 === 0;
+
+    let activeStages = 0;
+    if (rpm >= 6600) {
+      activeStages = Math.min(8, Math.floor((rpm - 6600) / 275) + 1);
+    }
+
+    const COLOR_GREEN = 0x22c55e;
+    const COLOR_YELLOW = 0xeab308;
+    const COLOR_RED = 0xef4444;
+    const COLOR_BLUE_FLASH = 0x38bdf8;
+    const COLOR_OFF = 0x18181b;
 
     for (let i = 0; i < 15; i++) {
-      let active = false;
-      let col = 0x18181b;
+      const pairDist = i <= 7 ? i : 14 - i;
 
-      if (i < 5) {
-        const threshold = 6600 + i * ((7400 - 6600) / 5);
-        active = rpm >= threshold;
-        col = 0x22c55e;
-      } else if (i < 10) {
-        const threshold = 7400 + (i - 5) * ((8200 - 7400) / 5);
-        active = rpm >= threshold;
-        col = 0xef4444;
-      } else {
-        const threshold = 8200 + (i - 10) * ((8800 - 8200) / 5);
-        active = rpm >= threshold;
-        col = 0x3b82f6;
-      }
-
-      if (isFlash) {
-        this.ledMaterials[i].color.setHex(col);
-      } else if (active) {
+      if (isShiftPoint) {
+        this.ledMaterials[i].color.setHex(isFlashOn ? COLOR_BLUE_FLASH : COLOR_OFF);
+      } else if (pairDist < activeStages) {
+        let col = COLOR_RED;
+        if (pairDist < 2) {
+          col = COLOR_GREEN;
+        } else if (pairDist < 4) {
+          col = COLOR_YELLOW;
+        }
         this.ledMaterials[i].color.setHex(col);
       } else {
-        this.ledMaterials[i].color.setHex(0x18181b);
+        this.ledMaterials[i].color.setHex(COLOR_OFF);
       }
     }
 

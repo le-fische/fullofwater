@@ -345,7 +345,66 @@ Expand vehicle options and track roster into formal motorsport classes with a dy
 
 ---
 
-## 8. System Prompts & Specsheets for Autonomous Subagents
+## 8. Roman Numeral Track — Phase I: Driver Identity, Cloud Persistence & Global Hotlap Leaderboards (Completed & Validated)
+
+### Objective
+Establish the foundational online cloud infrastructure, permanent driver accounts, automated phone controller pairing, player activity & telemetry persistence, multi-dimensional matrix hotlap leaderboards, and serverless monotonic anti-cheat validation.
+
+### Architecture & Deliverables
+
+#### Milestone MI.1: Driver Accounts, Guest Mode & Automated Session Pairing
+- **Driver Identity System (`src/common/auth/driver-types.ts`):**
+  - Unique permanent Driver Tag (e.g. `SPEED_VALKYRIE`, `APEX_HUNTER_99`), display name, avatar color, country code badge (`DE`, `US`, `FR`, etc.), and preferred telemetry units (`km/h` vs `mph`).
+  - Passkey and password credential authentication with secure session tokens (`tok_usr_...`).
+  - Zero-barrier Guest Mode: Instant guest generation (`GUEST_XXXX`) on first launch; zero signup friction before driving.
+  - "Claim Driver License": Seamless one-click modal converting guest accounts into permanent accounts, preserving 100% of accumulated distance ($km$), personal records, and leaderboard submissions.
+- **Automated Multi-Device Phone Controller Pairing:**
+  - Solves the identical URL problem on serverless hosting (Vercel) without manual IP typing.
+  - Generates 6-digit pairing session tokens via `POST /api/pair/create` with a 15-minute expiration window.
+  - QR Code and manual PIN encoding (`?pairToken=XXXXXX&driverTag=YYYY`) instantly binds mobile Safari controller to the host desktop session over WebSocket and API verification.
+
+#### Milestone MI.2: Player Activity & Lifetime Stats Database
+- **Schema & Cloud Persistence (`src/server/db/driver-database.ts`):**
+  - In-memory / serverless relational database schema with full JSON and persistent storage adapters:
+    - `users`: ID, driverTag, email, password, preferredUnits, isGuest, createdAt.
+    - `driver_profiles`: userId, driverTag, displayName, countryCode, avatarColor, preferredUnits, joinedDate.
+    - `driver_stats`: totalDistanceKm, totalLapsCompleted, cleanLapsCompleted, cleanLapRatio (%), favoriteVehicle, favoriteLivery, totalFlightTimeSeconds, maxTopSpeedKmh, lastActive.
+    - `personal_records`: indexed personal best hotlap time per circuit, car class, and weather.
+  - 15-second background flushing and session-exit telemetry sync (`POST /api/stats/telemetry`).
+
+#### Milestone MI.3: Multi-Dimensional Global Hotlap Leaderboard Matrix
+- **Matrix Ranking & Filter Pipeline:**
+  - Multi-dimensional query engine (`/api/leaderboard`) filterable by:
+    - **Circuit Layout:** Nürburgring Nordschleife ($20.7\text{ km}$), 24h Gesamtkurs ($24.3\text{ km}$), GP-Strecke ($5.1\text{ km}$), High-Speed Proving Ground ($6.0\text{ km}$).
+    - **Vehicle Class:** GT3 / GTE, Prototype / Hypercar, Cup / One-Make, Formula.
+    - **Track Condition:** Optimal Dry Asphalt (`clear`) vs Damp / Wet Groove (`drizzle`, `heavy_rain`).
+    - **Input Category:** Mobile Safari Gyro (`gyro`) vs Desktop Keyboard (`keyboard`) vs Hardware Force-Feedback Wheel (`wheel`).
+  - Dynamic client modal (`src/host/ui/leaderboard-modal.ts`) with rank badges (P1 Gold, P2 Silver, P3 Bronze), split deltas, top speeds, and quick circuit pills.
+
+#### Milestone MI.4: Serverless Anti-Cheat Monotonic Sector Validation & WR Ghost Ingestion
+- **Cryptographic & Physical Anti-Cheat Protocol (`POST /api/laps/submit`):**
+  - **Clean Lap Integrity:** `isLapValid` must be strictly true (rejects wall clipping, track cuts, recovery respawns).
+  - **Monotonic Sector Timing:** Total lap time must equal the exact sum of intermediate sector checkpoint splits ($\left|\sum \text{sectors} - \text{total}\right| \le 50\text{ ms}$).
+  - **Homologation Envelope:** Minimum plausible lap time checks and maximum average speed limits per circuit (e.g. Nordschleife $\ge 5:30\text{ min}$, $v_{\text{avg}} \le 275\text{ km/h}$).
+  - **Physical Top Speed:** Clamped to homologated envelope ($\le 350\text{ km/h}$ for GTE class).
+  - **Trajectory Monotonicity:** 30 Hz compressed ghost keyframe arrays must exhibit strictly increasing timestamps.
+- **World Record 30 Hz Ghost Retrieval (`GET /api/ghost/wr`):**
+  - Active #1 World Record ghost trajectory keyframes stored and retrieved on demand.
+  - One-click "⚡ RACE WR GHOST" button in the Leaderboard modal downloads the world record lap directly into `GhostCarManager` with distinctive golden holographic shader materials.
+
+#### Verification & Test Gate
+- Dedicated test suite: `scripts/test-phase-I.ts` (`npm run test:phase-I`).
+- All 6 validation tests pass with 100% success:
+  1. Permanent driver accounts, duplicate tag guard, password login, and zero-loss guest conversion.
+  2. Automated 6-digit phone controller session pairing and expiration validation.
+  3. Player activity and telemetry stats computation ($km$, clean ratio, top speed, flight time).
+  4. Monotonic sector anti-cheat verification, invalid lap rejection, and homologation boundaries.
+  5. Multi-dimensional leaderboard filtering across tracks, classes, weather, and inputs.
+  6. World Record 30 Hz ghost trajectory generation, retrieval, and `GhostCarManager` interpolation.
+
+---
+
+## 9. System Prompts & Specsheets for Autonomous Subagents
 
 The following prompts are ready to be assigned directly to subagents.
 

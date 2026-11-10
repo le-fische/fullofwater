@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { SplinePoint } from './centerline';
+import demData from '../../../tracks/nordschleife/dem.json';
 
 export interface ChunkGeometryData {
   visualGeometry: THREE.BufferGeometry;
@@ -7,6 +8,31 @@ export interface ChunkGeometryData {
   collisionIndices: Uint32Array;
   startDistanceM: number;
   endDistanceM: number;
+}
+
+/**
+ * Samples the 3D SRTM DEM terrain elevation at any (x, z) world coordinate.
+ * Used to weld track embankments directly to the landscape surface with zero gaps.
+ */
+function getTerrainElevation(x: number, z: number): number {
+  const gx = (x - demData.x0) / demData.step;
+  const gz = (z - demData.z0) / demData.step;
+  if (gx < 0 || gx >= demData.nx - 1 || gz < 0 || gz >= demData.nz - 1) {
+    return 600.0;
+  }
+  const ix = Math.floor(gx);
+  const iz = Math.floor(gz);
+  const fx = gx - ix;
+  const fz = gz - iz;
+  const i00 = iz * demData.nx + ix;
+  const i10 = i00 + 1;
+  const i01 = i00 + demData.nx;
+  const i11 = i01 + 1;
+  const h00 = demData.h[i00];
+  const h10 = demData.h[i10];
+  const h01 = demData.h[i01];
+  const h11 = demData.h[i11];
+  return (h00 * (1 - fx) + h10 * fx) * (1 - fz) + (h01 * (1 - fx) + h11 * fx) * fz;
 }
 
 /**
@@ -365,21 +391,26 @@ export class TrackMeshGenerator {
         const pGrassNearRight = pRoadRight.clone().addScaledVector(b, kerbW + 0.05);
         const pGrassFarRight = pRoadRight.clone().addScaledVector(b, kerbW + vergeWidthR);
 
+        // Continuous basic Armco steel safety guardrails lining both flanks of the track
+        const hasBarrierL = true;
+        const hasBarrierR = true;
+
         // 3-Tier Galvanized Armco Steel Safety Barriers
         // Lower rail: +0.25m, Mid rail: +0.65m, Top rail: +1.15m
-        const pBarrierLowerLeft = pGrassFarLeft.clone().addScaledVector(n, 0.25);
-        const pBarrierMidLeft = pGrassFarLeft.clone().addScaledVector(n, 0.65).addScaledVector(b, -0.06);
-        const pBarrierTopLeft = pGrassFarLeft.clone().addScaledVector(n, barrierH);
-        const pBarrierOuterBaseLeft = pGrassFarLeft.clone().addScaledVector(b, -0.22);
+        const barrierHL = hasBarrierL ? barrierH : 0.0;
+        const pBarrierLowerLeft = pGrassFarLeft.clone().addScaledVector(n, hasBarrierL ? 0.25 : 0.0);
+        const pBarrierMidLeft = pGrassFarLeft.clone().addScaledVector(n, hasBarrierL ? 0.65 : 0.0).addScaledVector(b, hasBarrierL ? -0.06 : 0.0);
+        const pBarrierTopLeft = pGrassFarLeft.clone().addScaledVector(n, barrierHL);
+        const pBarrierOuterBaseLeft = pGrassFarLeft.clone().addScaledVector(b, hasBarrierL ? -0.22 : 0.0);
 
-        const pBarrierLowerRight = pGrassFarRight.clone().addScaledVector(n, 0.25);
-        const pBarrierMidRight = pGrassFarRight.clone().addScaledVector(n, 0.65).addScaledVector(b, 0.06);
-        const pBarrierTopRight = pGrassFarRight.clone().addScaledVector(n, barrierH);
-        const pBarrierOuterBaseRight = pGrassFarRight.clone().addScaledVector(b, 0.22);
+        const barrierHR = hasBarrierR ? barrierH : 0.0;
+        const pBarrierLowerRight = pGrassFarRight.clone().addScaledVector(n, hasBarrierR ? 0.25 : 0.0);
+        const pBarrierMidRight = pGrassFarRight.clone().addScaledVector(n, hasBarrierR ? 0.65 : 0.0).addScaledVector(b, hasBarrierR ? 0.06 : 0.0);
+        const pBarrierTopRight = pGrassFarRight.clone().addScaledVector(n, barrierHR);
+        const pBarrierOuterBaseRight = pGrassFarRight.clone().addScaledVector(b, hasBarrierR ? 0.22 : 0.0);
 
         // Outward-sloping Eifel mountain forest embankments
-        // Uses horizontal lateral vector hRight (y=0), Voronoi bisector clamping (dMaxL/dMaxR),
-        // and nearby track floor clamping so embankments on adjacent hairpin legs never overlap or cover a lower road
+        // Seamlessly welded directly to the underlying 3D SRTM DEM terrain surface (zero gaps or elevated bridge cliffs)
         const dMaxL = Math.max(
           0.25,
           Math.min(35.0, embL0 * h00 + mEmbL0 * h10 + embL1 * h01 + mEmbL1 * h11)
@@ -391,22 +422,56 @@ export class TrackMeshGenerator {
         const scaleL = dMaxL / 35.0;
         const scaleR = dMaxR / 35.0;
 
-        const pEmbankNearLeft = pGrassFarLeft.clone().addScaledVector(hRight, -4.0 * scaleL);
-        pEmbankNearLeft.y = Math.min(pEmbankNearLeft.y - 0.35, floorYL - 0.80);
-        const pEmbankMidLeft = pGrassFarLeft.clone().addScaledVector(hRight, -14.0 * scaleL);
-        pEmbankMidLeft.y = Math.min(pEmbankMidLeft.y - 1.10, floorYL - 1.20);
         const pEmbankOuterLeft = pGrassFarLeft.clone().addScaledVector(hRight, -35.0 * scaleL);
-        pEmbankOuterLeft.y = Math.min(pEmbankOuterLeft.y - 2.60, floorYL - 1.80);
+        const terrainOuterY_L = getTerrainElevation(pEmbankOuterLeft.x, pEmbankOuterLeft.z);
+        pEmbankOuterLeft.y = Math.min(terrainOuterY_L, floorYL - 0.80);
 
-        const pEmbankNearRight = pGrassFarRight.clone().addScaledVector(hRight, 4.0 * scaleR);
-        pEmbankNearRight.y = Math.min(pEmbankNearRight.y - 0.35, floorYR - 0.80);
-        const pEmbankMidRight = pGrassFarRight.clone().addScaledVector(hRight, 14.0 * scaleR);
-        pEmbankMidRight.y = Math.min(pEmbankMidRight.y - 1.10, floorYR - 1.20);
+        const pEmbankMidLeft = pGrassFarLeft.clone().addScaledVector(hRight, -14.0 * scaleL);
+        pEmbankMidLeft.y = THREE.MathUtils.lerp(pGrassFarLeft.y, pEmbankOuterLeft.y, 0.65);
+        const pEmbankNearLeft = pGrassFarLeft.clone().addScaledVector(hRight, -4.0 * scaleL);
+        pEmbankNearLeft.y = THREE.MathUtils.lerp(pGrassFarLeft.y, pEmbankOuterLeft.y, 0.30);
+
         const pEmbankOuterRight = pGrassFarRight.clone().addScaledVector(hRight, 35.0 * scaleR);
-        pEmbankOuterRight.y = Math.min(pEmbankOuterRight.y - 2.60, floorYR - 1.80);
+        const terrainOuterY_R = getTerrainElevation(pEmbankOuterRight.x, pEmbankOuterRight.z);
+        pEmbankOuterRight.y = Math.min(terrainOuterY_R, floorYR - 0.80);
+
+        const pEmbankMidRight = pGrassFarRight.clone().addScaledVector(hRight, 14.0 * scaleR);
+        pEmbankMidRight.y = THREE.MathUtils.lerp(pGrassFarRight.y, pEmbankOuterRight.y, 0.65);
+        const pEmbankNearRight = pGrassFarRight.clone().addScaledVector(hRight, 4.0 * scaleR);
+        pEmbankNearRight.y = THREE.MathUtils.lerp(pGrassFarRight.y, pEmbankOuterRight.y, 0.30);
 
         // Authentic FIA Start/Finish line transverse stripe at grid origin
         const isStartFinishLine = dist < 0.80 || dist > (samples[totalSamples - 1].distance - 0.80);
+
+        // Staggered 2x2 FIA Starting Grid Boxes (P1 to P24 on Start/Finish straight: s = 14m to 195m)
+        let isGridLineLeft = false;
+        let isGridLineRight = false;
+        let isPoleMarker = false;
+
+        if (dist >= 14.0 && dist <= 195.0) {
+          const gridSlotIdx = Math.floor((dist - 14.0) / 8.0);
+          const slotDist = (dist - 14.0) % 8.0;
+          if (gridSlotIdx < 24 && slotDist < 0.38) {
+            if (gridSlotIdx % 2 === 0) {
+              isGridLineLeft = true;
+              if (gridSlotIdx === 0) isPoleMarker = true;
+            } else {
+              isGridLineRight = true;
+            }
+          }
+        }
+
+        // Sector Split Timing Lines (Sector 1, Sector 2)
+        const totalCircuitLen = samples[totalSamples - 1].distance;
+        const isSectorLine = Math.abs(dist - totalCircuitLen / 3.0) < 0.50 ||
+                             Math.abs(dist - (totalCircuitLen * 2.0) / 3.0) < 0.50;
+
+        // Pit Exit Blend Line (driver right on first 160m): solid white line separating pit exit lane
+        const isPitExitBlend = dist >= 0.0 && dist <= 160.0;
+
+        // Pit Entrance Chevrons (hazard V-lines on driver right before Start/Finish)
+        const isPitEntry = dist > (totalCircuitLen - 180.0);
+        const isChevronBar = isPitEntry && ((dist % 3.0 + 3.0) % 3.0) < 0.50;
 
         // Concrete patches and Karussell concrete slab seams
         const isConcretePatch = isConcretePatchZone(dist);
@@ -414,16 +479,16 @@ export class TrackMeshGenerator {
         const isConcreteSeam = isConcretePatch && ((dist % 4.0 + 4.0) % 4.0) < 0.18;
 
         // Base Road Color
-        let cRoad = isStartFinishLine
-          ? [0.95, 0.95, 0.95]
+        let cRoad = (isStartFinishLine || isSectorLine)
+          ? [0.98, 0.98, 0.98]
           : isKarussell
           ? (isKarussellSeam ? [0.28, 0.28, 0.26] : [0.68, 0.68, 0.65])
           : isConcretePatch
           ? (isConcreteSeam ? [0.24, 0.24, 0.24] : [0.60, 0.60, 0.57])
           : [0.18, 0.18, 0.20]; // Clean dark asphalt
 
-        let cGroove = isStartFinishLine
-          ? [0.95, 0.95, 0.95]
+        let cGroove = (isStartFinishLine || isSectorLine)
+          ? [0.98, 0.98, 0.98]
           : isKarussell
           ? [0.65, 0.65, 0.62]
           : isConcretePatch
@@ -435,11 +500,25 @@ export class TrackMeshGenerator {
         const cGraffitiLeft = getGraffitiColor(dist, -0.5);
         const cGraffitiRight = getGraffitiColor(dist, 0.5);
 
-        const cRoadCenter = cGraffitiCenter ?? cRoad;
-        const cGrooveLeft = cGraffitiLeft ?? cGroove;
-        const cGrooveRight = cGraffitiRight ?? cGroove;
-        const cRoadLeft = cGraffitiLeft ? [0.35, 0.35, 0.38] : cRoad;
-        const cRoadRight = cGraffitiRight ? [0.35, 0.35, 0.38] : cRoad;
+        let cRoadCenter = isSectorLine ? [0.98, 0.98, 0.98] : (cGraffitiCenter ?? cRoad);
+        let cGrooveLeft = isSectorLine ? [0.98, 0.98, 0.98] : (cGraffitiLeft ?? cGroove);
+        let cGrooveRight = isSectorLine ? [0.98, 0.98, 0.98] : (cGraffitiRight ?? cGroove);
+        let cRoadLeft = isSectorLine ? [0.98, 0.98, 0.98] : (cGraffitiLeft ? [0.35, 0.35, 0.38] : cRoad);
+        let cRoadRight = isSectorLine ? [0.98, 0.98, 0.98] : (cGraffitiRight ? [0.35, 0.35, 0.38] : cRoad);
+
+        // Apply Starting Grid Box Markings
+        if (isGridLineLeft) {
+          const gridColor = isPoleMarker ? [0.96, 0.82, 0.10] : [0.98, 0.98, 0.98];
+          cRoadLeft = gridColor;
+          cGrooveLeft = gridColor;
+        }
+        if (isGridLineRight) {
+          cRoadRight = [0.98, 0.98, 0.98];
+          cGrooveRight = [0.98, 0.98, 0.98];
+        }
+
+        // Apply Pit Exit Blend Line (solid white line along right asphalt edge)
+        let cRoadEdgeR = isPitExitBlend ? [0.98, 0.98, 0.98] : cRoadRight;
 
         const cWhiteLine = [0.98, 0.98, 0.98]; // Continuous reflective white boundary line
 
@@ -456,8 +535,8 @@ export class TrackMeshGenerator {
 
         const cVergeNearL = isGravelL ? cGravelNear : cGrassNear;
         const cVergeFarL = isGravelL ? cGravelFar : cGrassFar;
-        const cVergeNearR = isGravelR ? cGravelNear : cGrassNear;
-        const cVergeFarR = isGravelR ? cGravelFar : cGrassFar;
+        const cVergeNearR = isChevronBar ? [0.98, 0.98, 0.98] : (isGravelR ? cGravelNear : cGrassNear);
+        const cVergeFarR = isChevronBar ? [0.98, 0.98, 0.98] : (isGravelR ? cGravelFar : cGrassFar);
 
         const cKerb = isCornerApex
           ? isSeam
@@ -473,20 +552,30 @@ export class TrackMeshGenerator {
         const cBarrierLower = [0.74, 0.76, 0.80];   // Bottom rail
         const cBarrierBaseColor = [0.48, 0.50, 0.54]; // Post mount base
 
-        // Embankments
-        const cEmbankNear = [0.15, 0.32, 0.12]; // Hillside turf
-        const cEmbankMid = [0.13, 0.27, 0.10];  // Evergreen hillside grass
-        const cEmbankOuter = [0.10, 0.22, 0.08]; // Deep Eifel pine forest floor
+        const cBarrierTopL = hasBarrierL ? cBarrierTop : cVergeFarL;
+        const cBarrierMidL = hasBarrierL ? cBarrierMid : cVergeFarL;
+        const cBarrierLowerL = hasBarrierL ? cBarrierLower : cVergeFarL;
+        const cBarrierBaseColorL = hasBarrierL ? cBarrierBaseColor : cVergeFarL;
+
+        const cBarrierTopR = hasBarrierR ? cBarrierTop : cVergeFarR;
+        const cBarrierMidR = hasBarrierR ? cBarrierMid : cVergeFarR;
+        const cBarrierLowerR = hasBarrierR ? cBarrierLower : cVergeFarR;
+        const cBarrierBaseColorR = hasBarrierR ? cBarrierBaseColor : cVergeFarR;
+
+        // Embankments seamlessly matching Eifel mountain terrain colors
+        const cEmbankNear = [0.18, 0.40, 0.16];
+        const cEmbankMid = [0.16, 0.36, 0.14];
+        const cEmbankOuter = [0.14, 0.32, 0.12];
 
         // 32 Cross-Section Nodes strictly ordered Left-to-Right (-b to +b):
         const section = [
           { p: pEmbankOuterLeft, u: 0.00, c: cEmbankOuter },
           { p: pEmbankMidLeft, u: 0.04, c: cEmbankMid },
           { p: pEmbankNearLeft, u: 0.08, c: cEmbankNear },
-          { p: pBarrierOuterBaseLeft, u: 0.10, c: cBarrierBaseColor },
-          { p: pBarrierTopLeft, u: 0.12, c: cBarrierTop },
-          { p: pBarrierMidLeft, u: 0.14, c: cBarrierMid },
-          { p: pBarrierLowerLeft, u: 0.16, c: cBarrierLower },
+          { p: pBarrierOuterBaseLeft, u: 0.10, c: cBarrierBaseColorL },
+          { p: pBarrierTopLeft, u: 0.12, c: cBarrierTopL },
+          { p: pBarrierMidLeft, u: 0.14, c: cBarrierMidL },
+          { p: pBarrierLowerLeft, u: 0.16, c: cBarrierLowerL },
           { p: pGrassFarLeft, u: 0.19, c: cVergeFarL },
           { p: pGrassNearLeft, u: 0.23, c: cVergeNearL },
           { p: pKerbOuterLeft, u: 0.26, c: cKerb },
@@ -498,17 +587,17 @@ export class TrackMeshGenerator {
           { p: pRoadCenterLeft, u: 0.48, c: cRoadCenter }, // Center left asphalt / graffiti
           { p: pRoadCenterRight, u: 0.52, c: cRoadCenter }, // Center right asphalt / graffiti
           { p: pRoadGrooveRight, u: 0.58, c: cGrooveRight }, // Right rubber racing groove / graffiti
-          { p: pRoadEdgeRight, u: 0.64, c: cRoadRight }, // Right asphalt edge
+          { p: pRoadEdgeRight, u: 0.64, c: cRoadEdgeR }, // Right asphalt edge (with pit blend line)
           { p: pWhiteLineInnerRight, u: 0.67, c: cWhiteLine }, // Right white line inner
           { p: pRoadRight, u: 0.69, c: cWhiteLine }, // Right white line outer
           { p: pKerbInnerRight, u: 0.71, c: cKerb },
           { p: pKerbOuterRight, u: 0.74, c: cKerb },
           { p: pGrassNearRight, u: 0.77, c: cVergeNearR },
           { p: pGrassFarRight, u: 0.81, c: cVergeFarR },
-          { p: pBarrierLowerRight, u: 0.84, c: cBarrierLower },
-          { p: pBarrierMidRight, u: 0.86, c: cBarrierMid },
-          { p: pBarrierTopRight, u: 0.88, c: cBarrierTop },
-          { p: pBarrierOuterBaseRight, u: 0.90, c: cBarrierBaseColor },
+          { p: pBarrierLowerRight, u: 0.84, c: cBarrierLowerR },
+          { p: pBarrierMidRight, u: 0.86, c: cBarrierMidR },
+          { p: pBarrierTopRight, u: 0.88, c: cBarrierTopR },
+          { p: pBarrierOuterBaseRight, u: 0.90, c: cBarrierBaseColorR },
           { p: pEmbankNearRight, u: 0.92, c: cEmbankNear },
           { p: pEmbankMidRight, u: 0.96, c: cEmbankMid },
           { p: pEmbankOuterRight, u: 1.00, c: cEmbankOuter },
@@ -628,7 +717,6 @@ export class TrackMeshGenerator {
 
         const halfW = trackWidth / 2;
         const kerbW = 1.25; // 1:1 match with visual 1.25m FIA kerb
-        const barrierH = 1.15;
 
         // Dynamic verge runoff matching visual mesh: gravel runoff zones are 5.50m wide, grass 3.80m
         const isGravelL = isGravelRunoff(dist, true);
@@ -649,19 +737,31 @@ export class TrackMeshGenerator {
         const pGrassLeft = pRoadLeft.clone().addScaledVector(b, -kerbW - vergeWidthL);
         const pGrassRight = pRoadRight.clone().addScaledVector(b, kerbW + vergeWidthR);
 
-        const pBarrierTopLeft = pGrassLeft.clone().addScaledVector(n, barrierH);
-        const pBarrierTopRight = pGrassRight.clone().addScaledVector(n, barrierH);
+        // Continuous basic Armco steel safety guardrails lining both flanks of the track
+        const hasBarrierL = true;
+        const hasBarrierR = true;
 
-        // Phase 5 Step 5.4: Thickened Safety Barriers (depth >= 0.50m behind barrier face)
-        // Volumetric 3D collision envelope prevents tunneling & noclipping during 300+ km/h impacts
+        // Heavy-impact impenetrable safety barrier: 4.00m collision wall height
+        // Completely eliminates ramp-over noclipping on high-speed 300+ km/h impacts
+        const colBarrierHL = hasBarrierL ? 4.00 : 0.0;
+        const colBarrierHR = hasBarrierR ? 4.00 : 0.0;
+
         const barrierDepth = 0.60;
+        const pBarrierTopLeft = pGrassLeft.clone().addScaledVector(n, colBarrierHL);
         const pBarrierBackTopLeft = pBarrierTopLeft.clone().addScaledVector(b, -barrierDepth);
-        const pGrassBackLeft = pGrassLeft.clone().addScaledVector(b, -barrierDepth);
+        const pGrassBackLeft = pGrassLeft.clone().addScaledVector(b, -barrierDepth).addScaledVector(n, hasBarrierL ? -1.0 : 0.0);
 
+        const pBarrierTopRight = pGrassRight.clone().addScaledVector(n, colBarrierHR);
         const pBarrierBackTopRight = pBarrierTopRight.clone().addScaledVector(b, barrierDepth);
-        const pGrassBackRight = pGrassRight.clone().addScaledVector(b, barrierDepth);
+        const pGrassBackRight = pGrassRight.clone().addScaledVector(b, barrierDepth).addScaledVector(n, hasBarrierR ? -1.0 : 0.0);
+
+        const pEmbankOuterLeft = pGrassLeft.clone().addScaledVector(hRight, -25.0);
+        pEmbankOuterLeft.y = Math.min(getTerrainElevation(pEmbankOuterLeft.x, pEmbankOuterLeft.z), pGrassLeft.y - 0.80);
+        const pEmbankOuterRight = pGrassRight.clone().addScaledVector(hRight, 25.0);
+        pEmbankOuterRight.y = Math.min(getTerrainElevation(pEmbankOuterRight.x, pEmbankOuterRight.z), pGrassRight.y - 0.80);
 
         const colSection = [
+          pEmbankOuterLeft,
           pGrassBackLeft,
           pBarrierBackTopLeft,
           pBarrierTopLeft,
@@ -677,6 +777,7 @@ export class TrackMeshGenerator {
           pBarrierTopRight,
           pBarrierBackTopRight,
           pGrassBackRight,
+          pEmbankOuterRight,
         ];
 
         for (const p of colSection) {
@@ -686,7 +787,7 @@ export class TrackMeshGenerator {
       }
     }
 
-    const colVertsPerSection = 15;
+    const colVertsPerSection = 17;
     for (let i = 0; i < colSliceCount - 1; i++) {
       const row1 = i * colVertsPerSection;
       const row2 = (i + 1) * colVertsPerSection;

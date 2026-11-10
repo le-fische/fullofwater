@@ -1,6 +1,6 @@
 {
   "trackName": "Nürburgring Nordschleife",
-  "lengthMeters": 20832,
+  "lengthMeters": 20710,
   "chunkCount": 11,
   "landmarks": [
     {
@@ -212,9 +212,9 @@
       "index": 0,
       "name": "chunk_00",
       "startDistanceM": 0,
-      "endDistanceM": 1893.8181818181818,
+      "endDistanceM": 1882.7272727272727,
       "collisionStartDistanceM": 0,
-      "collisionEndDistanceM": 1993.8181818181818,
+      "collisionEndDistanceM": 1982.7272727272727,
       "bounds": {
         "min": [
           -2000,
@@ -233,10 +233,10 @@
     {
       "index": 1,
       "name": "chunk_01",
-      "startDistanceM": 1893.8181818181818,
-      "endDistanceM": 3787.6363636363635,
-      "collisionStartDistanceM": 1793.8181818181818,
-      "collisionEndDistanceM": 3887.6363636363635,
+      "startDistanceM": 1882.7272727272727,
+      "endDistanceM": 3765.4545454545455,
+      "collisionStartDistanceM": 1782.7272727272727,
+      "collisionEndDistanceM": 3865.4545454545455,
       "bounds": {
         "min": [
           -2000,
@@ -255,10 +255,10 @@
     {
       "index": 2,
       "name": "chunk_02",
-      "startDistanceM": 3787.6363636363635,
-      "endDistanceM": 5681.454545454545,
-      "collisionStartDistanceM": 3687.6363636363635,
-      "collisionEndDistanceM": 5781.454545454545,
+      "startDistanceM": 3765.4545454545455,
+      "endDistanceM": 5648.181818181818,
+      "collisionStartDistanceM": 3665.4545454545455,
+      "collisionEndDistanceM": 5748.181818181818,
       "bounds": {
         "min": [
           -2000,
@@ -277,10 +277,10 @@
     {
       "index": 3,
       "name": "chunk_03",
-      "startDistanceM": 5681.454545454545,
-      "endDistanceM": 7575.272727272727,
-      "collisionStartDistanceM": 5581.454545454545,
-      "collisionEndDistanceM": 7675.272727272727,
+      "startDistanceM": 5648.181818181818,
+      "endDistanceM": 7530.909090909091,
+      "collisionStartDistanceM": 5548.181818181818,
+      "collisionEndDistanceM": 7630.909090909091,
       "bounds": {
         "min": [
           -2000,
@@ -299,10 +299,10 @@
     {
       "index": 4,
       "name": "chunk_04",
-      "startDistanceM": 7575.272727272727,
-      "endDistanceM": 9469.090909090908,
-      "collisionStartDistanceM": 7475.272727272727,
-      "collisionEndDistanceM": 9569.090909090908,
+      "startDistanceM": 7530.909090909091,
+      "endDistanceM": 9413.636363636364,
+      "collisionStartDistanceM": 7430.909090909091,
+      "collisionEndDistanceM": 9513.636363636364,
       "bounds": {
         "min": [
           -2000,
@@ -321,10 +321,10 @@
     {
       "index": 5,
       "name": "chunk_05",
-      "startDistanceM": 9469.090909090908,
-      "endDistanceM": 11362.90909090909,
-      "collisionStartDistanceM": 9369.090909090908,
-      "collisionEndDistanceM": 11462.90909090909,
+      "startDistanceM": 9413.636363636364,
+      "endDistanceM": 11296.363636363636,
+      "collisionStartDistanceM": 9313.636363636364,
+      "collisionEndDistanceM": 11396.363636363636,
       "bounds": {
         "min": [
           -2000,
@@ -343,10 +343,10 @@
     {
       "index": 6,
       "name": "chunk_06",
-      "startDistanceM": 11362.90909090909,
-      "endDistanceM": 13256.727272727272,
-      "collisionStartDistanceM": 11262.90909090909,
-      "collisionEndDistanceM": 13356.727272727272,
+      "startDistanceM": 11296.363636363636,
+      "endDistanceM": 13179.09090909091,
+      "collisionStartDistanceM": 11196.363636363636,
+      "collisionEndDistanceM": 13279.09090909091,
       "bounds": {
         "min": [
           -2000,
@@ -365,10 +365,10 @@
     {
       "index": 7,
       "name": "chunk_07",
-      "startDistanceM": 13256.727272727272,
-      "endDistanceM": 15150.545454545454,
-      "collisionStartDistanceM": 13156.727272727272,
-      "collisionEndDistanceM": 15250.545454545454,
+      "startDistanceM": 13179.09090909091,
+      "endDistanceM": 15061.818181818182,
+      "collisionStartDistanceM": 13079.09090909091,
+      "collisionEndDistanceM": 15161.818181818182,
       "bounds": {
         "min": [
           -2000,
@@ -387,10 +387,10 @@
     {
       "index": 8,
       "name": "chunk_08",
-      "startDistanceM": 15150.545454545454,
-      "endDistanceM": 17044.363636363636,
-      "collisionStartDistanceM": 15050.545454545454,
-      "collisionEndDistanceM": 17144.363636363636,
+      "startDistanceM": 15061.818181818182,
+      "endDistanceM": 16944.545454545456,
+      "collisionStartDistanceM": 14961.818181818182,
+      "collisionEndDistanceM": 17044.545454545456,
       "bounds": {
         "min": [
           -2000,
@@ -409,10 +409,10 @@
     {
       "index": 9,
       "name": "chunk_09",
-      "startDistanceM": 17044.363636363636,
-      "endDistanceM": 18938.181818181816,
-      "collisionStartDistanceM": 16944.363636363636,
-      "collisionEndDistanceM": 19038.181818181816,
+      "startDistanceM": 16944.545454545456,
+      "endDistanceM": 18827.272727272728,
+      "collisionStartDistanceM": 16844.545454545456,
+      "collisionEndDistanceM": 18927.272727272728,
       "bounds": {
         "min": [
           -2000,
@@ -431,10 +431,10 @@
     {
       "index": 10,
       "name": "chunk_10",
-      "startDistanceM": 18938.181818181816,
-      "endDistanceM": 20832,
-      "collisionStartDistanceM": 18838.181818181816,
-      "collisionEndDistanceM": 20832,
+      "startDistanceM": 18827.272727272728,
+      "endDistanceM": 20710,
+      "collisionStartDistanceM": 18727.272727272728,
+      "collisionEndDistanceM": 20710,
       "bounds": {
         "min": [
           -2000,

@@ -4,8 +4,8 @@
 > Technical review, spec sheet and open questions are in [spec.md](spec.md).
 > Implementation roadmap and agent prompts are in [implementation.md](implementation.md).
 
-**Status:** Phase 1 Complete; Phase 2 Authentic Surveyed Nürburgring Nordschleife & 24h Layout Live; Phase 3 Paused (physics merged into Phase 5); Phase 4 Paused (moved to Phase 6); Phase 5 Nürburgring & Car Ultra-Realism (Assetto Corsa Competizione Level) Complete & Validated; Phase 6 Private Multiplayer Planned; Phase 7 Multi-Class & Global Tracks Roadmap.
-**Last updated:** 2026-11-09 (Git Commit Hash Traceability Registry & Version Control Protocol in docs/skills.md; Live Vercel Production)
+**Status:** Phase 1 Complete; Phase 2 Authentic Surveyed Nürburgring Nordschleife & 24h Layout Live; Phase 3 Paused (physics merged into Phase 5); Phase 4 Paused (moved to Phase 6); Phase 5 Nürburgring & Car Ultra-Realism (Assetto Corsa Competizione Level) Complete & Validated; Phase 6 Private Multiplayer Planned; Phase 7 Multi-Class & Global Tracks Roadmap. **Roman Numeral Track:** Phase I (Driver Accounts, Player Database & Global Hotlap Leaderboards) Complete & Validated; Phase II (Cloud-Relayed WebRTC Multiplayer) Planned.
+**Last updated:** 2026-11-09 (Continuous Armco Steel Guardrails Restored, Towering 24m-38m Lush Ardennes/Eifel Forest Canopy, 12,000 Mountain Ridge Trees & Anti-Noclip Terrain Sculpting)
 
 ---
 
@@ -382,13 +382,23 @@ User request: *"can we now get a better steering wheel. this is the official 911
   - Replicated the official GRID Engineering / Sim-Lab Porsche 911 RSR GT/GTE competition steering wheel (285mm diameter).
   - Contoured carbon fiber faceplate extruded with rounded bevel edges, upper $45^\circ$ angled chamfers, and lower chin.
   - Ergonomically molded polyurethane/Alcantara side grips with palm swells and sculpted thumb rest ledges.
-  - Arched top rev counter housing containing 15 curved shift LEDs (5 green, 5 red, 5 blue, with high-RPM redline flash).
+  - Arched top rev counter housing containing 15 curved shift LEDs with authentic Porsche Motorsport outside-in convergence: 4 Green on outer flanks, 4 Yellow in mid-range, and 7 Red converging toward center; meeting in middle at max red before shift point; all 15 LEDs strobe flash bright electric blue at optimal shift point (>= 8,800 RPM or `isShiftLightActive`).
   - "PORSCHE" laser-etched silver wordmark across the top faceplate above the display.
   - CNC anodized aluminum rotary thumb encoders: red `TCI` (top left), purple `TCO` (top right), gold dial (inner left), blue dial (inner right).
   - 10 motorsport pushbuttons with black anodized collar bezels.
   - 4 lower fluted rotary selector switches with index pointers and labels: `TC/CON`, `TC/R`, `MAP`, `WIPER`.
   - Porsche golden shield crest emblem centered on the lower chin.
   - Rear carbon fiber magnetic paddle shifters and red anodized quick-release collar.
+- **Authentic Porsche Motorsport Outside-In Shift Light Convergence:**
+  - User request: *"I have a request for steering wheel, the porsche one in race has the led light up not like f1 but instead they go from both sides in the proper colour schema nad meet in the middle and reght before shift at max red all of the leds flash blue i think. research and implement please"*
+  - **Symmetrical Convergence Sequence (6,600 to 8,800 RPM):**
+    - Flanks: 4 Green LEDs (Pairs 0 & 1, LEDs 0, 14 & 1, 13) activate from 6,600–7,150 RPM.
+    - Mid-Range: 4 Amber/Yellow LEDs (Pairs 2 & 3, LEDs 2, 12 & 3, 11) activate from 7,150–7,700 RPM.
+    - Inward Red Progression: 6 Red LEDs (Pairs 4, 5, 6, LEDs 4, 10 & 5, 9 & 6, 8) activate from 7,700–8,525 RPM.
+    - Center Red Apex: Center LED 7 illuminates at 8,525–8,799 RPM, meeting in the middle at "max red".
+  - **Optimal Shift Point Flash (>= 8,800 RPM or `isShiftLightActive`):**
+    - All 15 LEDs synchronously strobe flash electric blue (`#38bdf8` / `0x38bdf8`) at 10 Hz (~50ms duty cycle).
+    - Synchronized with LCD telemetry screen border flashing in matching electric blue and mobile controller circle LEDs.
 - **1-to-1 Porsche 911 RSR LCD Telemetry Display ($1024 \times 600$ Canvas Pipeline):**
   - Top Status Bar: `[TC C | 1]`, `[TC R | 1]`, `000` (live speed km/h), `[AC | 11]`, `[Map | 1]`.
   - Left Telemetry Cluster: `Water Temp` (85°C), `Oil Temp` (92°C), `Water Press` (1.90 bar), `Oil Press` (3.73 bar).
@@ -892,9 +902,298 @@ User request & feedback:
   - With session conditions (track, laps, weather, time) pre-configured in the wizard, in-race runtime controls (`WEATHER [U]`, `TIME [T]`, `LIGHTS [H]`, `GHOST [K]`, `MULTIPLAYER [O]`) are removed from the in-game display.
   - Top-left HUD is streamlined into an authentic, uncluttered professional motorsport timing cluster: Delta split, Lap time, Best lap, Sector status bar (S1–S9), and Landmark name.
 
+### 7.5 Official Championship Series & Class Taxonomy
+
+User request:
+> "https://www.fiawec.com/en/page/grid
+> https://www.imsa.com/weathertech/standings
+> https://www.gt-world-challenge-europe.com/cars
+> for same spec like carrera cup we just need one good model and liveries.
+> For f1 we can get one generic model and livery changes but we do need to fine tune all the different teams cars
+> what about lemans? so european lemans series? other minilemans series?
+> we will need all the tracks for all the series with all the cars. please check and do research, if cars are cross compatible thats good cause we want modular, however if stuff like tuning, bop is different we will need to make separate version with different tunings cause we are a sim"
+
+#### 7.5.1 Series Roster & Class Structures
+
+1. **FIA World Endurance Championship (WEC):**
+   - **Official Grid Reference:** `https://www.fiawec.com/en/page/grid`
+   - **Format:** Top-tier world championship endurance racing. 6-hour, 8-hour, and 24-hour races with multi-class traffic, night stints, and stint energy limits.
+   - **Classes Racing Simultaneously:**
+     - **Hypercar (LMH & LMDh):**
+       - Porsche 963 (4.6L Twin-Turbo V8 Hybrid, 680 HP, 1,030 kg)
+       - Ferrari 499P (3.0L Twin-Turbo V6 Hybrid AWD, 680 HP, 1,030 kg)
+       - Toyota GR010 Hybrid (3.5L Twin-Turbo V6 Hybrid AWD, 680 HP, 1,040 kg)
+       - Cadillac V-Series.R (5.5L NA V8 Hybrid, 670 HP, 1,030 kg)
+       - BMW M Hybrid V8 (4.0L Twin-Turbo V8 Hybrid, 680 HP, 1,030 kg)
+       - Alpine A424 (3.4L Single Turbo V6 Hybrid, 675 HP, 1,030 kg)
+       - Peugeot 9X8 2024 (2.6L Twin-Turbo V6 Hybrid AWD, 680 HP, 1,030 kg)
+       - Lamborghini SC63 (3.8L Twin-Turbo V8 Hybrid, 680 HP, 1,030 kg)
+       - Isotta Fraschini Tipo 6-C (3.0L Single Turbo V6 Hybrid AWD, 680 HP, 1,030 kg)
+     - **LMGT3:**
+       - Porsche 911 GT3 R (992) *(Active in repo)*
+       - Ferrari 296 GT3
+       - BMW M4 GT3
+       - Chevrolet Corvette Z06 GT3.R
+       - Aston Martin Vantage AMR GT3 Evo
+       - Ford Mustang GT3
+       - McLaren 720S GT3 Evo
+       - Lamborghini Huracán GT3 Evo 2
+       - Lexus RC F GT3
+   - **Circuits / Maps:** Circuit de la Sarthe (24 Hours of Le Mans), Spa-Francorchamps, Autodromo Enzo e Dino Ferrari (Imola), Circuit of the Americas (COTA), Interlagos, Fuji Speedway, Bahrain International Circuit, Lusail International Circuit.
+
+2. **IMSA WeatherTech SportsCar Championship:**
+   - **Official Grid Reference:** `https://www.imsa.com/weathertech/standings`
+   - **Format:** North American endurance and sprint series featuring legendary rough-surface circuits, 36+ car multi-class fields, and strict safety car wave-arounds.
+   - **Classes Racing Simultaneously:**
+     - **Grand Touring Prototype (GTP / LMDh):**
+       - Acura ARX-06 (2.4L Twin-Turbo V6 Hybrid, 670 HP, 1,030 kg)
+       - Porsche 963
+       - Cadillac V-Series.R
+       - BMW M Hybrid V8
+       - Lamborghini SC63 (Endurance Cup)
+     - **Le Mans Prototype 2 (LMP2):**
+       - Oreca 07 Gibson (Gibson GK428 4.2L NA V8 spec engine, 540–600 HP, 950 kg)
+     - **GTD PRO & GTD (FIA GT3 Platform):**
+       - Corvette Z06 GT3.R
+       - Porsche 911 GT3 R (992)
+       - Ferrari 296 GT3
+       - BMW M4 GT3
+       - Ford Mustang GT3
+       - Lexus RC F GT3
+       - Aston Martin Vantage AMR GT3 Evo
+       - McLaren 720S GT3 Evo
+       - Mercedes-AMG GT3 Evo
+       - Acura NSX GT3 Evo22
+       - Lamborghini Huracán GT3 Evo 2
+   - **Circuits / Maps:** Daytona International Speedway Road Course (Rolex 24), Sebring International Raceway (12 Hours), Long Beach Street Circuit, Laguna Seca, Watkins Glen International, Canadian Tire Motorsport Park (Mosport), Road America, Virginia International Raceway (VIR), Indianapolis Motor Speedway Road Course, Michelin Raceway Road Atlanta (Petit Le Mans).
+
+3. **GT World Challenge Europe (SRO / Fanatec):**
+   - **Official Grid Reference:** `https://www.gt-world-challenge-europe.com/cars`
+   - **Format:** Dedicated FIA GT3 championship divided into Endurance Cup (including 24 Hours of Spa) and Sprint Cup (two 60-minute sprint races per weekend with driver changes).
+   - **Class:**
+     - **GT3 (FIA Homologated):**
+       - Aston Martin Vantage AMR GT3 Evo
+       - Audi R8 LMS GT3 Evo II
+       - BMW M4 GT3
+       - Ferrari 296 GT3
+       - Ford Mustang GT3
+       - Lamborghini Huracán GT3 Evo 2
+       - McLaren 720S GT3 Evo
+       - Mercedes-AMG GT3 Evo
+       - Porsche 911 GT3 R (992) *(Active in repo)*
+   - **Circuits / Maps:** Circuit Paul Ricard, Brands Hatch (GP & Indy), Misano World Circuit, Circuit de Spa-Francorchamps (24h of Spa), Hockenheimring, Nürburgring GP-Strecke *(Active in repo)*, Circuit de Nevers Magny-Cours, Circuit Ricardo Tormo (Valencia), Circuit de Barcelona-Catalunya, Jeddah Corniche Circuit.
+
+4. **European Le Mans Series (ELMS) & "Mini-Le Mans" Series:**
+   - **Formats:**
+     - **ELMS:** European continental endurance championship with 4-hour races.
+     - **Asian Le Mans Series:** Winter endurance championship across the Middle East and Southeast Asia.
+     - **Michelin Le Mans Cup ("Mini-Le Mans"):** Support sprint series racing directly on Circuit de la Sarthe during 24 Hours of Le Mans week.
+   - **Classes:**
+     - **LMP2 & LMP2 Pro/Am:** Oreca 07 Gibson (full unrestricted 600 HP V8 in ELMS).
+     - **LMP3:** Ligier JS P320 & Duqueine M30 - D08 (Nissan VK56 5.6L NA V8, 460 HP, 950 kg).
+     - **LMGT3:** Aston Martin, Ferrari 296, Lamborghini Huracán, Porsche 911 GT3 R.
+   - **Circuits / Maps:** Circuit de Barcelona-Catalunya, Circuit Paul Ricard (Le Castellet), Autodromo Enzo e Dino Ferrari (Imola), Circuit de Spa-Francorchamps, Autodromo Internazionale del Mugello, Autódromo Internacional do Algarve (Portimão), Sepang International Circuit, Dubai Autodrome, Yas Marina Circuit.
+
+5. **Porsche Carrera Cup (Single-Make Spec Championship):**
+   - **Architecture Directive:** Single high-fidelity 3D model with team liveries. Zero Balance of Performance adjustments; analog racing with ABS and Traction Control electronically disabled.
+   - **Class:**
+     - **Porsche 911 GT3 Cup (Type 992 Spec):**
+       - Chassis: 992 lightweight body in white with carbon doors, hood, and rear wing.
+       - Powertrain: 4.0L Water-Cooled Naturally Aspirated Flat-Six, 510 PS (375 kW) @ 8,400 RPM.
+       - Transmission: 6-speed sequential dog-ring gearbox with paddle shifters.
+       - Electronics: Pure analog motorsport spec (NO ABS, NO Traction Control).
+   - **Circuits / Maps:** Nürburgring GP-Strecke *(Active in repo)*, Circuit de Spa-Francorchamps, Autodromo Nazionale Monza, Circuit de Monaco, Red Bull Ring, Circuit Zandvoort, Hungaroring.
+
+6. **Grand Prix World Championship (Formula 1 Single-Seater):**
+   - **Architecture Directive:** Single generic modern ground-effect base 3D model with team liveries, but distinct mathematical physics and tuning profiles for each team.
+   - **Team-Specific Physics Tuning Profiles:**
+     - **Aero Polar Variations:** Distinct lift-to-drag ratios ($L/D$) and ground-effect tunnel sensitivities. Red Bull Racing spec features higher aerodynamic efficiency and low drag at speed; McLaren spec features high-downforce mid-speed cornering bite; Ferrari spec features low straight-line drag.
+     - **Power Unit & ERS Mapping:** 1.6L V6 Turbo Hybrid (1,000 HP total). Honda RBPT, Ferrari 066/12, Mercedes M15, and Renault E-Tech power units receive distinct torque curves, turbo spool lag, and MGU-K electrical deployment/harvesting efficiency profiles.
+     - **Mechanical Geometry:** Tailored anti-dive, anti-squat suspension kinematics, spring rates, and weight distributions ($798\text{ kg}$ FIA baseline).
+   - **Circuits / Maps:** Full 24-race global circuit roster: Bahrain, Jeddah, Melbourne (Albert Park), Suzuka, Shanghai, Miami, Imola, Monaco, Montreal, Barcelona, Red Bull Ring, Silverstone, Hungaroring, Spa, Zandvoort, Monza, Baku, Singapore (Marina Bay), Austin (COTA), Mexico City, Interlagos, Las Vegas Strip, Lusail, Yas Marina.
+
 ---
 
-## 8. Idea Parking Lot
+### 7.6 Modular 3D Ingestion Architecture vs. Series-Specific BoP & Tuning
+
+User directive: *"if cars are cross compatible thats good cause we want modular, however if stuff like tuning, bop is different we will need to make separate version with different tunings cause we are a sim"*
+
+To maximize rendering performance and storage efficiency while preserving simulation rigor:
+* **Decoupled Asset Architecture:**
+  - **Shared Visual 3D Rig (glTF/GLB):** One master 3D mesh model per physical vehicle chassis (e.g. `porsche_963.glb`, `porsche_911_gt3_r_992.glb`, `ferrari_296_gt3.glb`, `oreca_07.glb`) loaded once into memory with Draco compression.
+  - **Series-Specific Homologation & BoP Configuration Layer (`*.bop.json`):**
+    Each vehicle directory contains dedicated regulatory profiles that configure mass, air restrictors, boost maps, torque ceilings, ballast, and tire models based on the active series.
+
+```
+public/assets/cars/porsche_911_gt3_r/
+├── model.glb                      <- Shared 3D chassis, wheels, cockpit geometry
+├── wraps/                         <- High-res 1024x1024 wraps and liveries
+├── sro_gt3.bop.json               <- GT World Challenge Europe (Pirelli DHF, SRO ballast, ride height)
+├── wec_lmgt3.bop.json             <- FIA WEC (Goodyear Eagle, driveshaft torque limits, Le Mans trim)
+└── imsa_gtd.bop.json              <- IMSA WeatherTech (Michelin Pilot Sport, VP fuel, restrictor)
+```
+
+#### Real-World Cross-Series BoP & Tuning Variations
+
+| Shared Vehicle 3D Model | Series Regulatory Context | Series-Specific Physics & BoP Tuning Variations |
+| :--- | :--- | :--- |
+| **Porsche 963 LMDh**<br>**Cadillac V-Series.R**<br>**BMW M Hybrid V8** | **FIA WEC (Hypercar)** | • Driveshaft torque sensors strictly enforce FIA 500–520 kW power curve.<br>• Virtual Energy Tank (MJ stint allocation) cutoffs.<br>• Michelin WEC slick tire compound & cold tire pressure regulations.<br>• FIA homologated low-drag aerodynamic wing trim. |
+| **Porsche 963 LMDh**<br>**Cadillac V-Series.R**<br>**BMW M Hybrid V8** | **IMSA (GTP)** | • IMSA torque curve calibration & VP Racing E85 fuel density.<br>• Michelin IMSA medium/soft tire carcass.<br>• IMSA-mandated dive-plane angles and rear diffuser gurney flaps. |
+| **Porsche 911 GT3 R (992)**<br>**Ferrari 296 GT3**<br>**BMW M4 GT3**<br>**Aston Martin Vantage**<br>**Corvette Z06 GT3.R** | **GT World Challenge (SRO)** | • SRO engine restrictor plates and turbo boost pressure curves.<br>• Spec Pirelli P Zero DHF tire model.<br>• SRO minimum ride height (70mm front, 85mm rear) and success ballast ($+0\dots +60\text{ kg}$). |
+| **Porsche 911 GT3 R (992)**<br>**Ferrari 296 GT3**<br>**BMW M4 GT3**<br>**Aston Martin Vantage**<br>**Corvette Z06 GT3.R** | **FIA WEC (LMGT3)** | • Driveshaft torque sensor caps power to $< 400\text{ kW}$.<br>• Spec Goodyear Eagle slick tire model.<br>• FIA fuel flow meter limits ($1.8\text{ kg/min}$).<br>• Le Mans long-straight low-drag wing setup. |
+| **Porsche 911 GT3 R (992)**<br>**Ferrari 296 GT3**<br>**BMW M4 GT3**<br>**Aston Martin Vantage**<br>**Corvette Z06 GT3.R** | **IMSA (GTD / GTD PRO)** | • IMSA air restrictor tables and balance ballast (baseline $1,300\text{ kg}$).<br>• Spec Michelin Pilot Sport S9M compound.<br>• Pro-Am setup restrictions in GTD vs unrestricted pro setups in GTD PRO. |
+| **Oreca 07 Gibson** | **European Le Mans (ELMS)** | • Unrestricted Gibson GK428 4.2L V8 producing full 600 HP.<br>• High-downforce sprint aero kit with standard front dive planes.<br>• Minimum weight $950\text{ kg}$. |
+| **Oreca 07 Gibson** | **WEC / 24 Hours of Le Mans** | • De-tuned Gibson V8 (540–560 HP) with lower rev limiter.<br>• Mandatory Le Mans low-drag bodywork kit.<br>• $+20\text{ kg}$ ballast weight ($970\text{ kg}$ total) to preserve speed buffer below Hypercar. |
+| **Oreca 07 Gibson** | **IMSA (LMP2)** | • IMSA spec Gibson engine calibration and Michelin IMSA tire carcass.<br>• IMSA telemetry logger integration. |
+
+---
+
+### 7.7 Master Vehicle Acquisition Roster for Phase 7
+
+Consolidated list of unique 3D vehicle models to acquire, adapt, and rig:
+
+| # | Master Vehicle Model | Physical Class | Target Series Deployments | Powertrain DNA | Base Weight | Status / Asset Source |
+|---|---|---|---|---|---|---|
+| 1 | **Porsche 911 GT3 R (992) / RSR-19** | GT3 / GTE | WEC, IMSA, GT World Ch., ELMS | 4.2L NA Flat-6, 515–565 HP | 1,245 kg | **Active in Repo** (`model.glb`, CC-BY Karol Miklas) |
+| 2 | **Porsche 963 LMDh** | Hypercar / GTP | WEC Hypercar, IMSA GTP | 4.6L TT V8 Hybrid, 680 HP | 1,030 kg | Candidate CAD / glTF |
+| 3 | **Ferrari 499P LMH** | Hypercar | WEC Hypercar | 3.0L TT V6 Hybrid AWD, 680 HP | 1,030 kg | Candidate CAD / glTF |
+| 4 | **Toyota GR010 Hybrid** | Hypercar | WEC Hypercar | 3.5L TT V6 Hybrid AWD, 680 HP | 1,040 kg | Candidate CAD / glTF |
+| 5 | **Cadillac V-Series.R** | Hypercar / GTP | WEC Hypercar, IMSA GTP | 5.5L NA V8 Hybrid, 670 HP | 1,030 kg | Candidate CAD / glTF |
+| 6 | **BMW M Hybrid V8** | Hypercar / GTP | WEC Hypercar, IMSA GTP | 4.0L TT V8 Hybrid, 680 HP | 1,030 kg | Candidate CAD / glTF |
+| 7 | **Acura ARX-06** | GTP | IMSA GTP | 2.4L TT V6 Hybrid, 670 HP | 1,030 kg | Candidate CAD / glTF |
+| 8 | **Alpine A424** | Hypercar | WEC Hypercar | 3.4L Single Turbo V6 Hybrid, 675 HP | 1,030 kg | Candidate CAD / glTF |
+| 9 | **Peugeot 9X8 2024** | Hypercar | WEC Hypercar | 2.6L TT V6 Hybrid AWD, 680 HP | 1,030 kg | Candidate CAD / glTF |
+| 10 | **Lamborghini SC63** | Hypercar / GTP | WEC Hypercar, IMSA GTP | 3.8L TT V8 Hybrid, 680 HP | 1,030 kg | Candidate CAD / glTF |
+| 11 | **Oreca 07 Gibson** | LMP2 | ELMS, WEC Le Mans, IMSA, Asian LMS | Gibson GK428 4.2L NA V8, 540–600 HP | 950–970 kg | Candidate CAD / glTF |
+| 12 | **Ligier JS P320** | LMP3 | ELMS LMP3, Le Mans Cup, Asian LMS | Nissan VK56 5.6L NA V8, 460 HP | 950 kg | Candidate CAD / glTF |
+| 13 | **Ferrari 296 GT3** | GT3 | WEC, IMSA, GT World Ch., ELMS | 3.0L TT 120° V6, 600 HP | 1,265 kg | Candidate CAD / glTF |
+| 14 | **BMW M4 GT3** | GT3 | WEC, IMSA, GT World Ch. | 3.0L TT Inline-6, 590 HP | 1,265 kg | Candidate CAD / glTF |
+| 15 | **Corvette Z06 GT3.R** | GT3 | WEC, IMSA GTD PRO / GTD | 5.5L Flat-Plane V8, 600 HP | 1,250 kg | Candidate CAD / glTF |
+| 16 | **Aston Martin Vantage GT3 Evo** | GT3 | WEC, IMSA, GT World Ch., ELMS | 4.0L TT V8, 540 HP | 1,260 kg | Candidate CAD / glTF |
+| 17 | **Ford Mustang GT3** | GT3 | WEC, IMSA, GT World Ch. | 5.4L NA Coyote V8, 550 HP | 1,280 kg | Candidate CAD / glTF |
+| 18 | **Mercedes-AMG GT3 Evo** | GT3 | IMSA GTD, GT World Ch. | 6.2L NA V8, 550 HP | 1,285 kg | Candidate CAD / glTF |
+| 19 | **Audi R8 LMS GT3 Evo II** | GT3 | GT World Challenge Europe | 5.2L NA V10, 585 HP | 1,260 kg | Candidate CAD / glTF |
+| 20 | **McLaren 720S GT3 Evo** | GT3 | WEC, IMSA, GT World Ch. | 4.0L TT V8, 580 HP | 1,250 kg | Candidate CAD / glTF |
+| 21 | **Porsche 911 GT3 Cup (992)** | Cup (Spec) | Porsche Carrera Cup | 4.0L NA Flat-6, 510 HP, No ABS/TC | 1,260 kg | Derived from 992 chassis |
+| 22 | **Grand Prix Concept 2026** | Formula 1 | Formula 1 World Championship | 1.6L V6 Turbo Hybrid, 1,000 HP (10 team tunes) | 798 kg | Candidate CAD / glTF |
+| 23 | **Porsche 718 Cayman GT4 RS** | GT4 | GT4 Clubsport Trophy | 4.0L NA Flat-6, 500 HP | 1,330 kg | Candidate CAD / glTF |
+| 24 | **Toyota GR Supra GT4 EVO** | GT4 | GT4 Clubsport Trophy | 3.0L Turbo Inline-6, 430 HP | 1,350 kg | Candidate CAD / glTF |
+
+---
+
+### 7.8 Master Circuit Roster Across All Series
+
+Complete inventory of surveyed racing circuits required across all 6 motorsport disciplines:
+
+| # | Circuit Name | Country | Length | Turns | Key Landmark Sectors | Hosting Series | Status in Repository |
+|---|---|---|---|---|---|---|---|
+| 1 | **Nürburgring Nordschleife** | Germany | 20.710 km | 73 | Karussell, Flugplatz, Fuchsröhre, Döttinger Höhe | GT3, GT4, NLS / VLN | **Active** (Surveyed OSM + SRTM DEM) |
+| 2 | **Nürburgring 24h Gesamtkurs** | Germany | 25.378 km | 89 | Full GP + Nordschleife transition loops | 24h Nürburgring, WEC | **Active** (Surveyed OSM + SRTM DEM) |
+| 3 | **Nürburgring GP-Strecke** | Germany | 5.148 km | 16 | Mercedes-Arena, Dunlop-Kehre, Schumacher-S | GT3 Sprint, Carrera Cup, GT4 | **Active** (Surveyed OSM + SRTM DEM) |
+| 4 | **High-Speed Proving Ground** | Germany | 6.000 km | 2 | Runway launch box, concentric skidpads | Testing, Acceleration, Top Speed | **Active** (Procedural Rapier arena) |
+| 5 | **Circuit de la Sarthe (Le Mans)** | France | 13.626 km | 38 | Mulsanne, Indianapolis, Arnage, Porsche Curves | 24 Hours of Le Mans, WEC, Le Mans Cup | Planned (OSM spline + DEM) |
+| 6 | **Circuit de Spa-Francorchamps** | Belgium | 7.004 km | 19 | Eau Rouge, Raidillon, Kemmel, Pouhon, Blanchimont | WEC, GT World Ch., F1, ELMS, Carrera Cup | Planned (OSM spline + DEM) |
+| 7 | **Autodromo Nazionale Monza** | Italy | 5.793 km | 11 | Variante del Rettifilo, Curva Grande, Ascari, Parabolica | WEC, GT World Ch., F1, Carrera Cup | Planned (OSM spline + DEM) |
+| 8 | **Autodromo Enzo e Dino Ferrari (Imola)** | Italy | 4.909 km | 19 | Tamburello, Villeneuve, Tosa, Piratella, Acque Minerali | WEC, ELMS, F1 | Planned (OSM spline + DEM) |
+| 9 | **Circuit Paul Ricard (Le Castellet)** | France | 5.771 km | 15 | Mistral Straight, Signes, Double Droite du Beausset | GT World Ch., ELMS | Planned (OSM spline + DEM) |
+| 10 | **Circuit de Barcelona-Catalunya** | Spain | 4.675 km | 14 | Elf chicane, Repsol, Campsa, New sweeping final corner | GT World Ch., ELMS, F1 | Planned (OSM spline + DEM) |
+| 11 | **Brands Hatch (GP & Indy)** | UK | 3.908 km | 9 | Paddock Hill Bend, Druids hairpin, Dingle Dell | GT World Ch., GT4 | Planned (OSM spline + DEM) |
+| 12 | **Silverstone Circuit** | UK | 5.891 km | 18 | Copse, Maggotts-Becketts-Chapel, Stowe, Club | Formula 1, WEC, GT3 | Planned (OSM spline + DEM) |
+| 13 | **Circuit de Monaco (Monte Carlo)** | Monaco | 3.337 km | 19 | Sainte-Dévote, Casino Square, Hairpin, Rascasse | Formula 1, Carrera Cup | Planned (OSM spline + DEM) |
+| 14 | **Suzuka International Racing Course** | Japan | 5.807 km | 18 | Figure-eight overpass, Esses, Degner, 130R | Formula 1, Super GT | Planned (OSM spline + DEM) |
+| 15 | **Fuji Speedway** | Japan | 4.563 km | 16 | 1.5 km front straight, 100R, Dunlop Corner, Netro | WEC | Planned (OSM spline + DEM) |
+| 16 | **Mount Panorama (Bathurst)** | Australia | 6.213 km | 23 | Mountain Straight, The Cutting, Skyline, The Dipper | Bathurst 12 Hour, Supercars | Planned (OSM spline + DEM) |
+| 17 | **Daytona International Speedway Road Course** | USA | 5.729 km | 12 | Tri-oval 31° banking, International Horseshoe, Bus Stop | IMSA (Rolex 24 at Daytona) | Planned (OSM spline + DEM) |
+| 18 | **Sebring International Raceway** | USA | 6.019 km | 17 | Sunset Bend, Ullman Straight, bumpy concrete runway | IMSA (12 Hours of Sebring) | Planned (OSM spline + DEM) |
+| 19 | **Watkins Glen International** | USA | 5.470 km | 11 | The Esses, Inner Loop Bus Stop, The Carousel, The Boot | IMSA (Six Hours of The Glen) | Planned (OSM spline + DEM) |
+| 20 | **WeatherTech Raceway Laguna Seca** | USA | 3.602 km | 11 | Andretti Hairpin, Rahal Straight, The Corkscrew | IMSA | Planned (OSM spline + DEM) |
+| 21 | **Road America** | USA | 6.515 km | 14 | Moraine Sweep, Carousel, The Kink, Canada Corner | IMSA | Planned (OSM spline + DEM) |
+| 22 | **Michelin Raceway Road Atlanta** | USA | 4.088 km | 12 | Esses, downhill esses, Turn 10 chicane, Turn 12 bridge | IMSA (Petit Le Mans) | Planned (OSM spline + DEM) |
+| 23 | **Circuit of the Americas (COTA)** | USA | 5.513 km | 20 | Turn 1 blind uphill apex, Esses, Triple-apex carousel | WEC, F1, IMSA | Planned (OSM spline + DEM) |
+| 24 | **Autódromo José Carlos Pace (Interlagos)** | Brazil | 4.309 km | 15 | Senna S, Curva do Sol, Descida do Lago, Junção | WEC, F1 | Planned (OSM spline + DEM) |
+| 25 | **Bahrain International Circuit** | Bahrain | 5.412 km | 15 | Turn 1 hairpin, high-speed Esses, Turn 10 downhill | WEC, F1 | Planned (OSM spline + DEM) |
+| 26 | **Lusail International Circuit** | Qatar | 5.419 km | 16 | 1.0 km straight, continuous high-speed flowing sweeps | WEC, F1 | Planned (OSM spline + DEM) |
+| 27 | **Yas Marina Circuit** | UAE | 5.281 km | 16 | Hotel hairpin, marina sweep, North hairpin | Asian LMS, F1 | Planned (OSM spline + DEM) |
+
+---
+
+## 8. Roman Numeral Architecture: Online Services, Driver Accounts & Cloud Infrastructure
+
+User request:
+> "while we are at it why dont we create a phase I, roman numeral, this is a separate development branch not realted to gameplay but for online and features, So I'm thinkgon account making would be nice to play so that we can solve our issue. a database of players would be nice, we can log stats, like km's driven etc, favourite car. but most important is like leaderboard i think to motivate people online to play. so leaderboard/map/category. what else do you think we need for phase I and future development for roman numeral branch?"
+
+### 8.1 Dual-Track Architecture Philosophy
+The Full of Water roadmap is bifurcated into two parallel, complementary development tracks:
+- **Arabic Numeral Track (Phases 1–7):** Simulation, vehicle homologation, surveyed circuit geometry, physical modeling, sound synthesis, and local/P2P client gameplay.
+- **Roman Numeral Track (Phases I–V):** Online platform infrastructure, driver identity, database persistence, global hotlap leaderboards, rating systems, and cloud matchmaking services.
+
+#### 8.1.1 Parallel Development Compatibility
+User inquiry: *"are roman numeral branches okay to work in parallel to regular branch?"*
+
+- **Independent Velocity:** Roman Numeral branches are fully compatible with and designed for concurrent development alongside regular Arabic numeral simulation branches.
+- **Architectural Isolation:** Roman Numeral online features reside in dedicated cloud, serverless, and authentication boundaries (`api/`, `src/common/auth/`, serverless database migrations). They connect to the host simulation solely via decoupled hooks:
+  - Consuming completed lap and sector timestamps from `LapTimer`.
+  - Supplying driver session pairing tokens to `HostNetworkBridge`.
+  - Fetching top-tier 30 Hz ghost trajectory arrays for `GhostCarManager`.
+- **Zero Simulation Contention:** Because Roman Numeral work does not modify Rapier 3D 240 Hz rigid body loops, Three.js rendering pipelines, or Web Audio DSP filters, agents can build Phase I driver accounts, database persistence, and leaderboards without merge conflicts or risk to client simulation stability. Each track maintains its own isolated validation suites (`npm run test:phase5` vs `npm run test:phase-I`).
+
+### 8.2 Phase I: Driver Identity, Cloud Persistence & Global Hotlap Leaderboards (Completed & Validated)
+
+#### 8.2.1 Driver Authentication & Session Pairing
+- **Driver Profiles & Frictionless Onboarding:**
+  - Fast driver registration with a unique, permanent Driver Tag (e.g., `SPEED_KING_99`), country code, avatar color, preferred units (`km/h` vs `mph`), and email/passkey or password.
+  - Zero-barrier Guest Mode: Players can drive immediately without an account. A prominent *"Claim Driver License"* modal and banner in the menu allows one-click conversion of guest hotlaps and stats into a permanent account with 100% data preservation.
+- **Automated Phone Controller Device Pairing:**
+  - Solves the identical URL problem on Vercel without manual PIN codes.
+  - Generates 6-digit session pairing tokens matching desktop host and mobile controller via URL parameters (`?pairToken=...&driverTag=...`) and WebSocket handshake.
+  - Ephemeral 4-digit PIN fallback remains available for guests and friends.
+
+#### 8.2.2 Player Statistics & Activity Database
+- **Schema & Cloud Storage:**
+  - Persisted via serverless architecture (`/api/auth/*`, `/api/stats/*`) with Vercel serverless function entry points (`api/[...route].ts`) and local dev middleware:
+    - `users`: ID, driver_tag, email, password_hash / passkey credentials, preferred_units, created_at.
+    - `driver_profiles`: Driver tag, display name, avatar color, country/region badge, preferred telemetry units (`km/h` vs `mph`).
+    - `driver_stats`: Lifetime distance driven ($km$), total completed laps, clean lap ratio ($\%$), favorite vehicle model, favorite livery swatch, total on-track flight time, maximum top speed recorded.
+    - `personal_records`: Indexed personal best hotlap time per track, vehicle class, and weather condition.
+
+#### 8.2.3 Global Verified Hotlap Leaderboard
+- **Multi-Dimensional Matrix Ranking:**
+  - Drivers can filter rankings dynamically in the Showroom and Post-Session screens:
+    - **Circuit Layout:** Nürburgring Nordschleife ($20.7\text{ km}$), 24h Gesamtkurs ($24.3\text{ km}$), Grand Prix ($5.1\text{ km}$), High-Speed Proving Ground ($6.0\text{ km}$).
+    - **Vehicle Class:** GT3 / GTE, Prototype / Hypercar, Cup / One-Make, Formula.
+    - **Track Condition:** Optimal Dry Asphalt vs Damp / Wet Groove.
+    - **Input Category:** Mobile Safari Gyro vs Desktop Keyboard vs Hardware Force-Feedback Wheel.
+- **Lap Verification & Anti-Cheat Protocol:**
+  - Serverless API verification checks before committing a record to the public leaderboard:
+    - Sector monotonic validation: Total lap time must equal the exact sum of all sector splits within $\pm 50\text{ ms}$.
+    - Clean lap integrity: `isLapValid` must be strictly true (no wall clipping, no short-cuts, no off-track boundary violations).
+    - Physical boundary check: Average and top speeds must fall within homologated physical envelope for the selected vehicle.
+- **World Record Ghost Retrieval:**
+  - The database stores 30 Hz compressed trajectory keyframes for top global records.
+  - Any player can download the #1 World Record ghost directly into `GhostCarManager` to race against the golden holographic world record ghost.
+
+#### 8.2.4 Verification & Test Pass Gate
+- Validated via `scripts/test-phase-I.ts` (`npm run test:phase-I`) with 100% pass across all 6 test suites:
+  1. Permanent driver registration, duplicate tag guard, password auth, guest initialization, and "Claim Driver License" migration.
+  2. Automated 6-digit phone pairing with expiration and driver tag binding guards.
+  3. Player activity telemetry database updates (km, clean ratio, top speed, flight time, favorite car/livery).
+  4. Serverless anti-cheat monotonic sector timing verification, clean lap rule, and homologation boundaries.
+  5. Multi-dimensional leaderboard queries (filtered by circuit, class, weather, and input device).
+  6. World Record 30 Hz ghost trajectory generation, retrieval, and `GhostCarManager` interpolation.
+
+### 8.3 Future Roman Numeral Roadmap (Phases II–V)
+
+| Phase | Milestone | Core Capabilities | Status |
+| :--- | :--- | :--- | :--- |
+| **Phase I** | **Driver Identity & Leaderboards** | Accounts, player stats database ($km$, top speed, favorite car), global hotlap leaderboard by track/category, verified lap validation, and account-based phone pairing. | **Completed & Validated** |
+| **Phase II** | **Cloud-Relayed WebRTC Multiplayer** | Serverless WebRTC signaling broker (PartyKit / Cloudflare Durable Objects) replacing local Node sockets, public paddock lobby browser, and private room sharing. | Planned |
+| **Phase III** | **Driver Rating & Safety Rating (Elo / SR)** | Skill-based matchmaking: Driver Rating (DR: Bronze to Alien) and Safety Rating (SR: tracking clean overtakes vs incident points per corner). |
+| **Phase IV** | **Cloud Telemetry & MoTeC-Style Analysis** | Store complete lap telemetry in cloud; in-browser graph overlay comparing speed, throttle, brake, and G-forces against the world record lap trace. |
+| **Phase V** | **Cloud Livery Workshop & Social Showcase** | Design custom liveries using the `StandardWrapMapper` canvas pipeline and publish them to a global public livery gallery with one-click equip and community upvotes. |
+
+---
+
+## 9. Idea Parking Lot
 
 Agent suggestions. **None of these are accepted yet.** Move an item into the main sections above once decided, or delete it.
 
@@ -912,10 +1211,11 @@ Agent suggestions. **None of these are accepted yet.** Move an item into the mai
 | P17 | **Manual DRS and Hybrid ERS/Push-to-Pass Boost** | Triggerable via controller buttons and bounded by track marker zones like real racecars. |
 | P18 | **High-polygon animated driver arms with racing gloves** | Ultra-detailed 3D driver arms with Alpinestars/Sparco competition gloves wrapped around the steering wheel, animated with inverse kinematics or skeletal skinning matching wheel rotation (deferred per user request). |
 | P19 | **Client-Sided Multi-Tenant Controller Pairing on Vercel** | Ephemeral 4-digit PIN / query parameter (`?session=XXXX`) encoded in the host QR code paired via direct WebRTC DataChannels, allowing unlimited simultaneous players on Vercel without session collisions or backend logins. |
+| P20 | **Phase 7 Full Championship Series & Vehicle Acquisition Matrix** | Proposed expansion package: 5 motorsport championships (Endurance WEC/IMSA, GT3 Sprint World Challenge, Porsche Carrera Cup, Grand Prix F1, GT4 Clubsport Trophy), 13 homologated vehicles across 5 classes, and 11 surveyed international circuits. Candidate roster pending user confirmation. |
 
 ---
 
-## 9. Decision Log
+## 10. Decision Log
 
 Answers to project design questions.
 
@@ -942,6 +1242,7 @@ Answers to project design questions.
 | 2026-11-06 | High-Speed Bumpiness & Vibration Resolution | Removed artificial 200+ km/h random camera jitter. Added driver neck shock absorption damping. Added pneumatic contact patch compliance filter to raycast suspension, and elevated chassis collider (+0.15m bottom) so chassis never clips asphalt under 1,000 kg aero downforce. Track smoothed with sigma=25 (max d2y < 0.009m). |
 | 2026-11-06 | Authentic Start/Finish Line per Circuit Format | Nordschleife start/finish rotated to T13 (facing Hatzenbach, ending from Hohenrain). 24h Gesamtkurs rotated to GP Start-Ziel straight facing Turn 1 (racing GP loop first, then Nordschleife, then GP finish line). GP-Strecke aligned to GP straight facing Turn 1. Proving Ground starts at Runway Z=0. Added 3m high-visibility painted white finish stripe and enabled lap timer/streamer across all formats. |
 | 2026-11-06 | Critical Suspension Damping & Zero-Lag Cockpit | Cockpit camera position rigidly locked to driver eye in car space (zero world-space lag or pulling back at speed). Suspension upgraded to critical/overdamped damping (14,000–18,000 Ns/m) and angular damping 2.0 to eliminate all pogo bouncing. Flattened standard corners (bankingRad=0) to eliminate cross-camber waviness and roll wobble when turning. Enhanced track elevation smoothing to sigma=60 (Döttinger Höhe long straight d2y < 0.002m, max drop 268.5m). |
+| 2026-11-09 | Camera Shake, Barriers, Track Dips, Trees, & Noclip Eradication | User directives: *"there is still camera shake and you never got rid of the barriers, the terrain is bad, there are still some dips /terrain changes unaccounted for in the track, trees, etc on track. my car can noclip into the terrain on hard crashes still"*. Resolved: 1) Cockpit camera rigidly locked to chassis driver eye position with zero lerp lag, completely eliminating screen shake; 2) Removed tire barriers and catch fences, retained clean 3-tier Armco guardrail, suppressed guardrails on GP stadium gravel runoffs and pit straight; 3) Smoothed 24h Ford-Kurve corner cut dip with Cubic Hermite Spline (1.15% max grade change, zero dips); 4) Enforced 55m clearance in terrain.ts across all 3 tracks and widened tree setback in forest-foliage.ts (0 trees on track); 5) Added full lower chassis cuboid collider in RaycastVehicle, 4.0m barrier collision walls with underground skirts, and instant anti-noclip terrain breach recovery in main.ts. |
 | 2026-11-06 | Filled Eifel Mountain Terrain & Grounded Embankments | Ingested 8.0 km x 6.6 km SRTM DEM elevation data into rolling 3D mountain landscape mesh (EifelTerrain, 24,442 triangles) with altitude/gradient vertex shading. Sculpted DEM within 45m corridor along all 9,714 circuit centerline points to prevent road clipping. Extended visual track cross-section 35 meters outward beyond Armco barriers with green Eifel turf geometry so the track ribbon rests naturally on the landscape with zero floating appearance. |
 | 2026-11-06 | Authentic Porsche 911 3D Model & Dynamic Wheel Rig | Ingested Karol Miklas Porsche 911 (992 generation) 3D model (Draco GLB, 3.5 MB) into `CarMeshRig`, scaling to 1:1 wheelbase (2.51m) and width (1.98m). Separated 4 animated wheels with fixed brake calipers and rolling rims/discs/tires. Mounted RSR carbon swan-neck wing and tuned PBR materials with 7-color paint switcher (`[P]` key / HUD button). |
 | 2026-11-06 | Trackside Visual Overhaul & Zero-Noclip Terrain Sculpting | Clamped DEM terrain within 65m corridor across all 9,714 circuit nodes to <= Y_track - 4.0m (0 of 9,714 points clipping; max terrain relative to road = -3.99m), completely eliminating noclipping. Upgraded track mesh to 30-node cross section with 1.25m sub-sampling: razor-sharp 20cm continuous brilliant white boundary lines, 20cm centerline white dashes (5m dash / 5m gap), dark textured asphalt with rubbered grooves, alternating 2.0m FIA red/white kerbs on all corner complexes, non-blurry multi-tone grass verges and outward-sloping mountain forest embankments down to -35m. Added 16x anisotropic procedural aggregate detail texture via pure DataTexture. |
@@ -994,10 +1295,77 @@ Answers to project design questions.
 | 2026-11-09 | Project Re-Branding to "Full of Water" | User directive: *"change name to something cool though not dual screen web racer"*. Renamed the platform to **Full of Water** (`fullofwater`) across all metadata, UI headers, titles, and documentation. |
 | 2026-11-09 | Phase 5 Implementation & Verification | Completed and validated all 11 Phase 5 subsystems: 301.6m surveyed elevation drop, multi-tier dense Eifel forest (1,379 trees/chunk with spatial hash anti-encroachment), 923 trackside assets (FIA catch fencing, tire barriers, overhead sponsor bridges), thickened volumetric barriers (0.60m) with Rapier CCD, drivable pit lane (7.5m apron, concrete pit wall, 10 team stalls, 60 km/h limiter), HUD fake AI dot cleanup retaining player PB ghost, slip-energy tyre wear, dynamic fuel burn, 3-zone brake thermal curve, diffuse rear taillights, 88% VOR anti-nausea horizon lock cockpit camera, non-jagged C2 spline with multi-band bump dynamics, and headphone-safe audio DSP (3.2 kHz Butterworth low-pass, 3.5 kHz notch, torque attenuation). 100% test pass on npm run test:phase5. |
 | 2026-11-09 | Git Commit Hash Traceability & Agent Protocol | User directive: *"can you add to skills.md so every major change an agent made has a hash code so we can easily track back and reference eaisly for version control"*. Added Section 5 (Engineering Change & Git Commit Traceability Registry) indexing all major architectural milestones by short and full SHA commit hashes, affected files, and test commands; added inline `[Commit: <hash>]` badges throughout Sections 1–4; added Section 6 establishing a strict agent commit registry protocol. |
+| 2026-11-09 | Authentic Porsche Outside-In Shift Lights & Blue Flash | User directive: *"the porsche one in race has the led light up not like f1 but instead they go from both sides in the proper colour schema nad meet in the middle and reght before shift at max red all of the leds flash blue i think. research and implement please"*. Researched official Porsche 911 GT3 R / RSR-19 motorsport shift light logic: 15 arched LEDs light up symmetrically from outside flanks toward center (4 Green -> 4 Yellow -> 7 Red meeting in middle at max red from 6,600 to 8,799 RPM). At optimal shift point (>= 8,800 RPM or `isShiftLightActive`), ALL 15 LEDs strobe flash bright electric blue (`0x38bdf8`), synchronized with matching electric blue LCD border flash and phone controller LEDs. |
+| 2026-11-09 | Roman Numeral Online Architecture & Phase I Plan | User directive: *"why dont we create a phase I, roman numeral, this is a separate development branch not realted to gameplay but for online and features, So I'm thinkgon account making would be nice to play so that we can solve our issue. a database of players would be nice, we can log stats, like km's driven etc, favourite car. but most important is like leaderboard i think to motivate people online to play. so leaderboard/map/category"*. Formally established parallel Roman Numeral track (Phases I–V) dedicated to online features, driver authentication, stats database, global hotlap leaderboards, and cloud matchmaking. Phase I specifies Driver Accounts, automated phone pairing, activity tracking ($km$, favorite car, clean lap ratio), and multi-dimensional hotlap leaderboards with anti-cheat verification. |
+| 2026-11-09 | Track Environment, Terrain Welding, 24h Shortcut, Markings & Clean Cockpit | User directives: *"the barriers look horrible, get rid of them lets stick with the basic guardraile and some parts dont even have them like on the grand prix circuit. forget the camera shake, get rid of that. hard crashes noclip me into the terrain. right now with proper terrain the track is like on eelevated landmass bridge that can be disconnected from the surrounding terrain, should not be the case, also all my greenery dissapeared, i can see bare mountains and side of the track profile. also can you verify the layout for the 24 hour n24 layout i think its a bit different to the gp one in the gp section, theres a corner cut section. and also the start and finish section isnt accurate, pit lane should also be accurate on all tracks please. also make sure can you go back over all the markings on track and make them accurate, etc proper white lines, pit entrance, pit exit, starting grid boxes, sector lines, etc. there are also floating texts on the steering, get rid of them."*. Removed catch fences, tire barriers, and floating steering text; locked cockpit camera rigidly to car roof with zero shake; welded track embankments seamlessly to 3D DEM terrain elevations with zero air gaps; populated 1,800 mountain forest trees across Eifel terrain hillsides; rebuilt authentic 24.23 km 24h Gesamtkurs featuring the `Variante 24h-Rennen` corner cut shortcut bypassing the Mercedes-Benz Arena; implemented dynamic pit lanes across all circuits with 60 km/h limiter; added staggered starting grid boxes, sector lines, pit chevrons, and pit exit blend lines; elevated barrier collision height to 3.50m and added out-of-bounds safety auto-recovery. |
+| 2026-11-09 | Terrain Spill Eradication, 24h GP Straight Alignment & Rear Lettering Removal | User directives: *"terrain is spilling onto track. the start position is not correct for 24 h, it should be the start straight of the gp track, also get rid of floating words in back of car (porsche)"*. Rebuilt 24h Gesamtkurs (25.20 km, 5,040 points) inheriting surveyed elevations from Nordschleife and GP circuits, with point 0 aligned to the exact GP Start-Ziel straight ([-1043.71, 615.351, 3134.76]); clamped outer embankments (visual and collision) with minimum 0.80m drop below road grade; fully sculpted dem.json across GP stadium bowl and all track corridors guaranteeing >= 4.34m clearance (zero spills across all circuits); and updated VehicleModelAdapter.sanitizeModel to strip 3D rear badges and floating chrome "P O R S C H E" lettering (Badge_Rear_Lettering and Exterior_Badges) from the car body. |
+| 2026-11-09 | Parallel Roman Numeral Development | Confirmed that Roman Numeral online development tracks (driver accounts, stats database, leaderboards, WebRTC signaling) operate fully in parallel with Arabic numeral simulation branches with decoupled interfaces and zero merge conflicts. |
+| 2026-11-09 | Phase 7 Master Championship Series Inventory | Documented master inventory of 5 motorsport series (Endurance WEC/IMSA, GT3 Sprint, Carrera Cup, Grand Prix F1, GT4 Clubsport), 13 homologated vehicles across 5 classes, and 11 international circuits. |
+| 2026-11-09 | Carrera Cup Spec Model Architecture | For identical-spec championships like Porsche Carrera Cup, utilize a single high-fidelity 992 GT3 Cup 3D model with team liveries and zero Balance of Performance variation, preserving analog non-assisted driving feel. |
+| 2026-11-09 | Formula 1 Base Chassis & Team Tuning Profiles | For Grand Prix single-seaters, utilize a single generic modern ground-effect 3D base mesh with team liveries, but configure separate mathematical physics profiles for each team (aerodynamic drag/downforce polars, ERS deployment curves, engine torque curves, and suspension kinematics). |
+| 2026-11-09 | Modular 3D Ingestion vs. Series BoP Tuning | Decouple 3D vehicle geometry from series-specific Balance of Performance (BoP). A single shared 3D model (e.g. Porsche 963, 911 GT3 R, Oreca 07) loads once in memory, while dedicated regulatory JSON files (`*.bop.json`) configure distinct power curves, restrictors, ballast, and tire models per championship (WEC vs IMSA vs SRO GT World Challenge vs ELMS). |
+| 2026-11-09 | Le Mans Ecosystem & Mini-Le Mans Integration | Incorporated European Le Mans Series (ELMS), Asian Le Mans Series, and Michelin Le Mans Cup into Phase 7, adding LMP2 (Oreca 07 unrestricted), LMP3 (Ligier JS P320), and continental endurance circuits. |
 
 ---
 
-## 10. Changelog
+## 11. Changelog
+
+- **2026-11-09** - Phase I (Roman Numeral) Driver Identity, Cloud Persistence & Global Hotlap Leaderboards (Completed & Validated):
+  - **Driver Accounts & Frictionless Onboarding (MI.1):** Built permanent driver registration (`UserAccount`, `DriverProfile`) with unique alphanumeric driver tags, country codes, display names, avatar colors, preferred units (`km/h` vs `mph`), and password/token authentication. Built zero-barrier Guest Mode with one-click "Claim Driver License" modal converting guest driving records into permanent accounts with 100% data retention.
+  - **Automated Phone Device Pairing (MI.1):** Implemented session-based device pairing tokens (6-digit numeric PINs) matching desktop host and mobile phone controller via URL parameters (`?pairToken=...&driverTag=...`) and WebSocket handshake, eliminating manual IP and port configuration on Vercel.
+  - **Player Activity & Lifetime Stats Database (MI.2):** Implemented relational activity database schema (`users`, `driver_profiles`, `driver_stats`, `personal_records`) tracking lifetime distance driven ($km$), total completed laps, clean lap ratio ($\%$), maximum top speed recorded ($km/h$), airborne flight time ($s$), favorite vehicle model, and favorite livery.
+  - **Serverless Anti-Cheat Monotonic Sector Validation (MI.4):** Built serverless anti-cheat validation protocol in `/api/laps/submit` verifying: 1) Strict clean lap integrity (`isLapValid === true`); 2) Monotonic sector splits timing ($\left|\sum \text{sectors} - \text{total}\right| \le 50\text{ ms}$); 3) Physical homologation envelope checks (minimum plausible lap time and maximum average speed per circuit); 4) Vehicle top speed boundaries ($\le 350\text{ km/h}$); 5) Strictly increasing 30 Hz keyframe timestamps.
+  - **Multi-Dimensional Global Hotlap Leaderboard (MI.3):** Built multi-dimensional matrix leaderboard query engine and desktop UI modal filterable across 4 circuits (Nordschleife, 24h Gesamtkurs, GP-Strecke, Proving Ground), vehicle classes (GTE, Hypercar, etc.), weather (Dry vs Wet), and input categories (Phone Gyro vs Keyboard vs Hardware Wheel), displaying ranks, driver tags, country badges, lap times, and delta splits.
+  - **World Record 30 Hz Ghost Retrieval (MI.4):** Persisted compressed 30 Hz trajectory keyframes for top global records; enabled one-click "⚡ RACE WR GHOST" downloading and loading world record ghosts directly into `GhostCarManager` with golden holographic materials.
+  - **Complete Validation Suite:** Created `scripts/test-phase-I.ts` (`npm run test:phase-I`) with all 6 validation tests passing at 100%.
+
+- **2026-11-09** - Complete Camera Shake Eradication, Clean Armco Guardrails, 24h Dip Smoothing, Tree Clearance Overhaul & Multi-Tier Anti-Noclip Armor:
+  - **Zero Camera Shake:** Rigidly locked Cockpit camera to chassis driver eye position (`eyeWorld`) with zero lerp filtering, zero lag, and zero independent displacement, eliminating high-frequency screen vibration and keeping the steering wheel, dash, and pillars completely rock-solid on screen. Refined Chase camera damping to snap responsive tracking.
+  - **Clean Armco Guardrails & GP Suppressions:** Eradicated tire barrier stacks and catch fence meshes. Retained clean, authentic 3-tier galvanized Armco steel guardrails along the Nordschleife. Configured intelligent guardrail suppression on the Grand Prix circuit: wide open runoffs at Mercedes-Benz Arena, Dunlop-Kehre, and the GP Pit Straight have no guardrails bordering the tarmac edge, replicating real FIA Grade 1 circuits.
+  - **24h Ford-Kurve Dip Smoothing:** Applied Cubic Hermite Spline fairing across the 99.5m `Variante 24h-Rennen` corner cut (indices 235–255), reducing max grade change to 1.15% with smooth $C^1$ transition from the GP loop into the Nordschleife with zero abrupt elevation dips.
+  - **Tree Clearance Overhaul:** Updated `terrain.ts` to register centerlines of all 3 tracks (Nordschleife, GP, and 24h) with strict 55m spatial hash exclusion, and increased roadside tree setback in `forest-foliage.ts` to $\ge 8.0\text{m}$ behind road edge (14m spatial clearance), guaranteeing 0 trees on or overhanging the tarmac.
+  - **Multi-Tier Anti-Noclip Armor:** Added a full-perimeter lower underbody/bumper cuboid collider (`0.85m x 0.18m x 2.05m` at `y = 0.35m`) in `RaycastVehicle`, heightened collision barrier walls to 4.0m with 1.0m underground collision skirts, and wired real-time DEM elevation breach detection in `main.ts` (`carPos.y < terrainY - 0.25m || carPos.y < proj.y - 3.2m || lateralOffset > 28m`) to instantly recover any vehicle before it can enter the terrain void.
+
+- **2026-11-09** - Official Motorsport Grids, Modular BoP Architecture & Global Track Calendar:
+  - **Official Grid Ingestion (Section 7.5):** Ingested official manufacturer grids from FIA WEC (Hypercar & LMGT3), IMSA WeatherTech (GTP, LMP2, GTD PRO, GTD), GT World Challenge Europe (pure GT3), and ELMS / Mini-Le Mans series (LMP2, LMP3, LMGT3).
+  - **Carrera Cup & Formula 1 Architecture (Section 7.5):** Codified single-spec model rule for Porsche Carrera Cup (one 992 GT3 Cup model with team liveries) and single base mesh with team-specific mathematical tuning profiles for Formula 1 (individual aero polars, ERS recovery maps, and engine torque curves).
+  - **Modular 3D Ingestion vs. Series BoP Tuning (Section 7.6):** Designed decoupled asset pipeline where single shared 3D models (Porsche 963, 911 GT3 R, Ferrari 296, Oreca 07) instantiate series-specific physics files (`*.bop.json`) for WEC, IMSA, SRO GT World Challenge, and ELMS regulations.
+  - **Global 27-Circuit Master Calendar (Section 7.8):** Cataloged all 27 surveyed international racing circuits required across all 6 motorsport disciplines.
+
+- **2026-11-09** - Parallel Roman Numeral Development Architecture & Phase 7 Master Inventory:
+  - **Parallel Development Architecture (Section 8.1.1):** Confirmed and documented that Roman Numeral online infrastructure branches operate in parallel with regular simulation branches through decoupled telemetry and session bridges.
+  - **Master Championship Series Inventory (Section 7.5):** Detailed 5 formal motorsport series (Endurance World Championship, GT3 Sprint World Challenge, Porsche Carrera Cup, Grand Prix World Championship, GT4 Clubsport Trophy), complete vehicle acquisition lists (13 models across 5 classes), and 11 international circuit geometries.
+  - **Logged Candidate Packages in Parking Lot (P20):** Added Phase 7 master vehicle and track packages to Section 9.
+
+- **2026-11-09** - Terrain Spill Eradication, 24h GP Straight Spawn Alignment & Rear Lettering Removal:
+  - **Zero Terrain Spilling & Sculpted DEM:** Eliminated mountain terrain breaching the track ribbon by clamping outer track embankments to always slope at least 0.80m below road grade in visual and collision meshes (`TrackMeshGenerator`); sculpted `dem.json` across all track corridors and the GP stadium bowl with a 65m inner corridor and 110m smooth envelope. Verified 0 spill violations across all 3 circuits (min clearance: 4.34m below road).
+  - **24h GP Start-Ziel Alignment:** Aligned 24h Gesamtkurs point 0 directly to the GP Start-Ziel straight (`[-1043.71, 615.351, 3134.76]`, identical to `osm_gp.json`), facing Turn 1 (Castrol-S) with 24 staggered starting grid boxes and the main grandstand gantry.
+  - **Accurate 24h Topography & Corner Cut:** Seamlessly connects GP straight $\to$ Castrol-S $\to$ `Variante 24h-Rennen` corner cut $\to$ Ford-Kurve $\to$ GP mid loop $\to$ NGK-Schikane $\to$ branch onto `Anbindung zur Nordschleife` $\to$ full 20.8 km Nordschleife $\to$ Hohenrain $\to$ `Anbindung zum GP-Kurs` $\to$ GP straight crossing finish line ($25.20\text{ km}$, 5,040 points).
+  - **Rear 3D Badges & Floating "PORSCHE" Words Removed:** Updated `VehicleModelAdapter.sanitizeModel` to automatically detect and strip `Badge_Rear_Lettering` (node 23) and `Exterior_Badges` (node 27), removing floating chrome lettering and badges from the back bumper and engine deck.
+
+- **2026-11-09** - Track Environment, Terrain Welding, 24h Variante Shortcut, Markings & Clean Cockpit Overhaul:
+  - **Basic Guardrails & Clutter Removal:** Removed intrusive FIA debris catch fencing and red/white tire stacks per user directive (*"the barriers look horrible, get rid of them lets stick with the basic guardraile and some parts dont even have them like on the grand prix circuit"*); reverted to clean galvanized steel Armco barriers; suppressed barriers along GP pit straight to open the pit apron.
+  - **Camera Shake & Vibration Elimination:** Completely removed camera shake, horizon lock, and interior bump micro-vibrations per user directive (*"forget the camera shake, get rid of that"*); locked camera rigidly to chassis roof normal (`camera.up.copy(carUp)`) and chassis translation with zero artificial shake.
+  - **Terrain Welding & Gap Elimination:** Sampled 3D SRTM DEM elevations (`getTerrainElevation`) at outer track embankments, welding the road edges seamlessly to the mountain terrain surface with zero elevation gaps or "elevated landmass bridge" cliffs.
+  - **Greenery & Mountain Forest Canopy:** Planted 1,800 evergreen mountain trees across visible Eifel mountain ridges and slopes in `EifelTerrain`; removed over-aggressive tree suppression in chunk 0/T13/Hatzenbach; rooted all chunk trees directly into terrain surface.
+  - **Authentic N24 Layout (Variante 24h-Rennen):** Rebuilt 24h Gesamtkurs (24.23 km, 4,847 points) including the authentic `31010602 Variante 24h-Rennen` corner cut shortcut bypassing the Mercedes-Benz Arena directly from Castrol-S into the Ford-Kurve.
+  - **Accurate Pit Lanes & Track Markings:** Dynamic pit lane entry/exit across all tracks with 60 km/h limiter, 10 team stalls, and concrete dividing pit wall; 20cm continuous reflective white boundary lines, 24 staggered 2x2 starting grid boxes with pole position marker, pit entry hazard chevrons, pit exit solid blend line, and FIA sector timing split lines.
+  - **Hard Crash Safety & Noclip Prevention:** Elevated collision barrier height to 3.50m (impossible to ramp over at 300+ km/h), added outer embankment collision mesh, and added instant safety recovery if vehicle breaches road boundary.
+  - **Steering Wheel Cleanup:** Removed all floating text canvas planes and billboards (`P O R S C H E` wordmark, `TCI`, `TCO`, `TC/CON`, `TC/R`, `MAP`, `WIPER`) from the steering wheel faceplate, preserving clean anodized rotary dials, tactile pushbuttons, and the integrated 1:1 color telemetry LCD display.
+
+- **2026-11-09** - Roman Numeral Architecture (Phases I–V) Specification & Phase I Platform Planning:
+  - **Dual-Track Development Roadmap (Section 8):** Established parallel Roman Numeral development track separating online cloud infrastructure and social competition from client-side simulation physics.
+  - **Phase I Specification:** Outlined Driver Accounts & Authentication, Automated Multi-Tenant Phone Device Pairing, Relational Database Schema (`users`, `driver_profiles`, `driver_stats`, `personal_records`), and Multi-Dimensional Global Hotlap Leaderboard (filtered by track, category, weather, and input device) with serverless monotonic sector validation and World Record ghost retrieval.
+  - **Future Roman Numeral Roadmap:** Documented Phase II (Cloud-Relayed WebRTC Multiplayer via PartyKit / Cloudflare Durable Objects), Phase III (Driver Rating & Safety Rating Elo/SR system), Phase IV (MoTeC-style Cloud Telemetry Trace Overlays), and Phase V (Cloud Livery Workshop).
+
+- **2026-11-09** - Authentic Porsche Motorsport Outside-In Shift Lights & Electric Blue Shift Flash:
+  - **Outside-to-Inside Symmetrical Convergence:** Overhauled the 15-LED shift light cluster across the top of the Porsche 911 RSR steering wheel (`PorscheRsrSteeringWheel`) and phone controller display (`F1DashDisplay`). Replaced generic sequential left-to-right F1 pattern with authentic Porsche GT/GTE outside-in logic:
+    - Flanks (6,600–7,150 RPM): 4 Green LEDs (Pairs 0 & 1).
+    - Mid-Range (7,150–7,700 RPM): 4 Amber/Yellow LEDs (Pairs 2 & 3).
+    - Center Ingress (7,700–8,525 RPM): 6 Red LEDs (Pairs 4, 5, 6).
+    - Max Red Apex (8,525–8,799 RPM): Center Red LED 7 illuminates, completing 15-LED convergence meeting in the middle.
+  - **Electric Blue Shift Strobe Flash:** Right at optimal upshift RPM (>= 8,800 RPM or `isShiftLightActive`), all 15 LEDs simultaneously strobe flash electric blue (`#38bdf8` / `0x38bdf8`) at 10 Hz (~50ms duty cycle).
+  - **Synchronized Telemetry Displays:** Updated the 1:1 LCD screen border alert on the steering wheel, HUD RPM bar (`.rpm-shift-flash`), and mobile controller circles to flash in matching electric blue.
 
 - **2026-11-09** [Commit: `ee31b16`] - Git Commit Hash Traceability & Agent Version Control Protocol in `docs/skills.md`:
   - **Traceability Registry (Section 5):** Added git commit registry mapping every major platform milestone to short and full commit hashes (`821bad7`, `7ec4d17`, `7dbf059`, `c0a93cf`, `9f09850`, `3657d77`), dates, scope, implemented subsystems, primary files modified, and verification test commands.
@@ -1466,6 +1834,21 @@ Answers to project design questions.
   - Revamped HUD Circuit Radar: dynamically computes bounding boxes, rendering the canonical Nürburgring silhouette with West $\to$ Left, East $\to$ Right, North $\to$ Up, and South $\to$ Down, plus real-time directional vehicle heading arrow and landmark beacons.
   - Updated Track Mesh Generator: removed duplicate banking application, constrained kerbs strictly to corner apexes and exits (straights have clean asphalt and grass), and kept collision kerb step at flush 0.0m with 1.2m barrier enclosures to prevent vehicle flips.
   - Verified with 100% test pass on `npm run test:phase2`, clean `npm test`, and zero-error `npm run build`. Live on local dev server.
+
+- **2026-11-09** - Continuous Armco Guardrails Restored, Towering Lush Ardennes Forest & Terrain Anti-Noclip:
+  - Restored continuous 3-tier galvanized Armco steel safety guardrails on both sides of the track across all circuits (Nordschleife, 24h Gesamtkurs, and GP-Strecke) with heightened 4.0m collision walls and 1.0m underground collision skirts.
+  - Revamped forest foliage into towering 24m–38m multi-tiered Ardennes/Eifel pines and spruce trees with deep 5.0m subterranean root skirts, eliminating sunken trees in DEM ditches by planting directly on the embankment surface.
+  - Densely populated trackside flanks with over 2,230 towering trees per chunk (~24,500 trees lining the circuit) starting immediately behind the Armco guardrails to create the authentic dense "Green Hell" canopy tunnel.
+  - Blanketed mountainsides, ridges, and valleys with 12,000 instanced 26m-tall evergreen mountain trees, eliminating bare mountain horizons.
+  - Clamped DEM terrain vertices within 52m of ANY circuit to guarantee they remain at least 2.2m below the road surface with smooth 90m boundary transitions, preventing terrain from ever noclipping through the road or kerbs.
+
+- **2026-11-09** - Dev Server Plain HTTP-to-HTTPS Redirect, Steering Wheel Clean-up, Model Badge Sanitization & Stability:
+  - Fixed localhost black screen caused by unencrypted HTTP requests reaching the HTTPS dev server by adding a dedicated `tlsClientError` / `clientError` interceptor in `vite.config.ts` returning HTTP 302 Found and HTML meta refresh to `https://localhost:5173/`.
+  - Removed all floating text billboards and labels (`P O R S C H E` wordmark, `TCI`, `TCO`, `TC/CON`, `TC/R`, `MAP`, `WIPER`) from the RSR steering wheel faceplate, keeping pure tactile pushbuttons and the 1:1 LCD dashboard screen.
+  - Hardened GLTF vehicle model sanitization in `VehicleModelAdapter` (`src/host/render/livery-system.ts`) to strip rear deck lettering (`Badge_Rear_Lettering`), exterior badges, emblems, and civilian plates across both multi-material and single-material submeshes.
+  - Eliminated cockpit camera shake and smoothing lag, rigidly locking eye camera to vehicle chassis.
+  - Implemented lower underbody collision skirts and out-of-bounds safety catch in physics loop preventing hard crash terrain noclip.
+  - Smoothed 24h Ford-Kurve elevation profile with Hermite spline (down to 1.15% grade change) and enforced 55m tree/terrain setback across all track centerlines.
 
 - **2026-11-06** - Open-Source 3D Map Models, Live Minimap HUD, Nürburgring 24h Layout & Track Menu:
   - Transitioned track modeling direction from purely synthetic procedural spline sweeps to ingesting and adapting open-source/CC 3D circuit models (glTF/GLB).

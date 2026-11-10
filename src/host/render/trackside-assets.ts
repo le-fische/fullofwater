@@ -96,8 +96,7 @@ export class TracksideAssetsManager {
 
     if (samples && samples.length > 0) {
       this.buildSponsorBridges(samples);
-      this.buildCatchFences(samples);
-      this.buildTireBarriers(samples);
+      // Catch fences and tire barriers removed per user directive (clean basic Armco guardrails only)
       this.buildDedicatedPitLane(samples);
     }
   }
@@ -206,7 +205,7 @@ export class TracksideAssetsManager {
    * Builds FIA debris catch fences with galvanized steel vertical posts and wire mesh netting
    * mounted directly along high-speed spectator zones.
    */
-  private buildCatchFences(samples: SplinePoint[]): void {
+  public buildCatchFences(samples: SplinePoint[]): void {
     const totalSamples = samples.length;
 
     // High-tensile steel wire mesh material
@@ -283,7 +282,7 @@ export class TracksideAssetsManager {
   /**
    * Places high-impact red-and-white tire barrier stacks and Tecpro blocks at acute runoffs.
    */
-  private buildTireBarriers(samples: SplinePoint[]): void {
+  public buildTireBarriers(samples: SplinePoint[]): void {
     const runoffDistances: { distM: number; side: -1 | 1 }[] = [
       { distM: 3950, side: -1 },  // Aremberg outside left
       { distM: 5180, side: 1 },   // Adenauer Forst outside right
@@ -339,8 +338,14 @@ export class TracksideAssetsManager {
    */
   private buildDedicatedPitLane(samples: SplinePoint[]): void {
     const totalSamples = samples.length;
-    const pitStartSample = Math.floor((this.pitEntryDistanceM / (samples[totalSamples - 1].distance || 20832)) * totalSamples);
-    const pitSpanSamples = 60; // Spans ~300m parallel to straight
+    const totalLengthM = samples[totalSamples - 1].distance || 20832.0;
+
+    // Dynamically calculate authentic pit entrance and exit along the Start-Ziel straight
+    this.pitEntryDistanceM = Math.max(0, totalLengthM - 260.0);
+    this.pitExitDistanceM = Math.min(totalLengthM, 240.0);
+
+    const pitStartSample = Math.floor((this.pitEntryDistanceM / totalLengthM) * totalSamples);
+    const pitSpanSamples = Math.min(100, Math.floor((500.0 / totalLengthM) * totalSamples)); // ~500m pit straight span
 
     const pitApronMat = new THREE.MeshStandardMaterial({
       color: 0x3f3f46,

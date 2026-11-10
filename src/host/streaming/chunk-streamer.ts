@@ -71,6 +71,7 @@ export class NordschleifeChunkStreamer {
   public currentChunkIndex = -1;
   public totalChunks = TrackSweeper.CHUNK_COUNT; // 11 chunks
 
+  private chunkCache = new Map<number, ActiveChunk>();
   private trackMaterial: THREE.MeshStandardMaterial;
 
   constructor(
@@ -110,32 +111,65 @@ export class NordschleifeChunkStreamer {
   }
 
   /**
-   * Reconciles active chunks so only [K-1, K, K+1] are kept in memory.
+   * Reconciles active chunks so only [K-1, K, K+1] are kept active in the scene.
+   * Chunks are cached so crossing chunk boundaries is instant (zero GC, zero BVH rebuild).
    */
   private reconcileChunks(center: number): void {
     const prev = (center - 1 + this.totalChunks) % this.totalChunks;
     const next = (center + 1) % this.totalChunks;
     const targetChunks = new Set<number>([prev, center, next]);
 
-    // 1. Unload expired chunks
+    // 1. Deactivate chunks that moved outside the 3-chunk window
     for (const [idx, chunk] of this.activeChunks.entries()) {
       if (!targetChunks.has(idx)) {
-        this.unloadChunk(idx, chunk);
+        this.deactivateChunk(idx, chunk);
       }
     }
 
-    // 2. Load missing chunks
+    // 2. Activate target chunks (retrieved from cache or generated once)
     for (const idx of targetChunks) {
       if (!this.activeChunks.has(idx)) {
-        this.loadChunk(idx);
+        this.activateChunk(idx);
       }
     }
   }
 
   /**
-   * Loads a chunk: builds visual Three.js mesh & Rapier trimesh collider.
+   * Activates a chunk in the 3D scene and Rapier physics world.
+   * If already generated, pulls from chunkCache instantly (< 0.05ms).
    */
-  public loadChunk(index: number): void {
+  public activateChunk(index: number): void {
+    let chunk = this.chunkCache.get(index);
+    if (!chunk) {
+      chunk = this.buildChunk(index);
+      this.chunkCache.set(index, chunk);
+    }
+
+    this.scene.add(chunk.visualMesh);
+    if (chunk.foliageMesh) {
+      this.scene.add(chunk.foliageMesh);
+    }
+    chunk.collisionCollider.setEnabled(true);
+    this.activeChunks.set(index, chunk);
+  }
+
+  /**
+   * Deactivates a chunk from the 3D scene and disables its Rapier collider,
+   * retaining geometry and BVH structures in chunkCache to prevent runtime hitches.
+   */
+  private deactivateChunk(index: number, chunk: ActiveChunk): void {
+    this.scene.remove(chunk.visualMesh);
+    if (chunk.foliageMesh) {
+      this.scene.remove(chunk.foliageMesh);
+    }
+    chunk.collisionCollider.setEnabled(false);
+    this.activeChunks.delete(index);
+  }
+
+  /**
+   * Builds visual Three.js mesh, dense Eifel foliage, and Rapier trimesh collider once.
+   */
+  private buildChunk(index: number): ActiveChunk {
     const totalSamples = this.centerline.samples.length;
     const samplesPerChunk = Math.floor(totalSamples / this.totalChunks);
 
@@ -154,7 +188,6 @@ export class NordschleifeChunkStreamer {
     visualMesh.name = `nordschleife_chunk_${index}`;
     visualMesh.receiveShadow = true;
     visualMesh.castShadow = false; // Optimize shadow map draw calls
-    this.scene.add(visualMesh);
 
     // Dense 3D Eifel mountain forest foliage (InstancedMesh)
     let foliageMesh: THREE.InstancedMesh | undefined;
@@ -165,7 +198,6 @@ export class NordschleifeChunkStreamer {
         endIdx,
         index
       );
-      this.scene.add(foliageMesh);
     } catch (err) {
       console.warn(`[ChunkStreamer] Foliage creation skipped for chunk ${index}:`, err);
     }
@@ -179,43 +211,38 @@ export class NordschleifeChunkStreamer {
     colliderDesc.setRestitution(0.0);
     const collider = this.world.createCollider(colliderDesc);
 
-    this.activeChunks.set(index, {
+    return {
       index,
       visualMesh,
       foliageMesh,
       collisionCollider: collider,
       startDistanceM: data.startDistanceM,
       endDistanceM: data.endDistanceM,
-    });
+    };
   }
 
   /**
-   * Unloads and disposes a chunk from Three.js and Rapier.
+   * Backward compatibility alias for loadChunk.
    */
-  private unloadChunk(index: number, chunk: ActiveChunk): void {
-    // Remove track visual mesh & dispose GPU buffers
-    this.scene.remove(chunk.visualMesh);
-    chunk.visualMesh.geometry.dispose();
-
-    // Remove foliage instanced mesh
-    if (chunk.foliageMesh) {
-      this.scene.remove(chunk.foliageMesh);
-      chunk.foliageMesh.dispose();
-    }
-
-    // Remove Rapier collider
-    this.world.removeCollider(chunk.collisionCollider, false);
-
-    this.activeChunks.delete(index);
+  public loadChunk(index: number): void {
+    this.activateChunk(index);
   }
 
   /**
-   * Force unloads all chunks (e.g. when exiting Phase 2).
+   * Force unloads all chunks and completely disposes GPU geometries and Rapier colliders.
    */
   public dispose(): void {
     for (const [idx, chunk] of this.activeChunks.entries()) {
-      this.unloadChunk(idx, chunk);
+      this.deactivateChunk(idx, chunk);
     }
+    for (const chunk of this.chunkCache.values()) {
+      chunk.visualMesh.geometry.dispose();
+      if (chunk.foliageMesh) {
+        chunk.foliageMesh.dispose();
+      }
+      this.world.removeCollider(chunk.collisionCollider, false);
+    }
+    this.chunkCache.clear();
     this.trackMaterial.dispose();
   }
 }

@@ -27,7 +27,6 @@ export class DynamicCameraController {
   // Heavily filters pitch and roll against world horizontal plane so driver sightlines
   // onto apexes remain smooth and stable, eliminating simulator motion sickness.
   public readonly vorHorizonLockFactor = 0.88; // 88% horizon lock
-  private smoothedCarPitch = 0;
   private currentCameraPos = new THREE.Vector3();
   private currentCameraLookAt = new THREE.Vector3();
 
@@ -86,16 +85,15 @@ export class DynamicCameraController {
   }
 
   private updateCockpitView(
-    dt: number,
+    _dt: number,
     carPos: THREE.Vector3,
     carQuat: THREE.Quaternion,
     _longG: number,
     _speedKmh: number
   ): void {
-    // 1. World position of driver eye (strictly anchored inside cockpit, zero position lag)
+    // 1. World position of driver eye inside cockpit
     const eyeLocal = this.driverEyeOffset.clone().applyQuaternion(carQuat);
     const eyeWorld = carPos.clone().add(eyeLocal);
-    this.camera.position.copy(eyeWorld);
 
     if (this.isRearViewActive) {
       // Rear exterior camera mode looking backward -Z
@@ -110,33 +108,21 @@ export class DynamicCameraController {
       const targetLookAt = rearCamPos.clone().add(rearLookVec);
       this.camera.lookAt(targetLookAt);
     } else {
-      // Phase 5 Step 5.10: 88% VOR Horizon Lock
-      // 1. Blend Camera Up Vector towards World Horizontal Vertical (0, 1, 0)
+      // Direct rigid chassis lock: zero lag, zero lerp, zero relative displacement.
+      // Cockpit interior (steering wheel, dashboard, frame) is 100% rock-solid on screen.
+      this.currentCameraPos.copy(eyeWorld);
+      this.camera.position.copy(this.currentCameraPos);
+
       const carUp = new THREE.Vector3(0, 1, 0).applyQuaternion(carQuat);
-      const worldUp = new THREE.Vector3(0, 1, 0);
-      const stabilizedUp = new THREE.Vector3().lerpVectors(carUp, worldUp, this.vorHorizonLockFactor).normalize();
-      this.camera.up.copy(stabilizedUp);
+      this.camera.up.copy(carUp);
 
-      // 2. Extract forward racing heading in horizontal plane
       const carFwd = new THREE.Vector3(0, 0, 1).applyQuaternion(carQuat);
-      const horizFwd = new THREE.Vector3(carFwd.x, 0, carFwd.z).normalize();
-      if (horizFwd.lengthSq() < 0.001) horizFwd.set(0, 0, 1);
-
-      // 3. Low-pass filter car pitch against world horizon
-      const carPitch = Math.asin(Math.max(-0.99, Math.min(0.99, carFwd.y)));
-      const filterRate = 1 - Math.exp(-8.0 * (dt || 0.016));
-      this.smoothedCarPitch += (carPitch - this.smoothedCarPitch) * filterRate;
-
-      // Blend car pitch with horizon-stabilized pitch
-      const effectivePitch = carPitch * (1.0 - this.vorHorizonLockFactor) + this.smoothedCarPitch * this.vorHorizonLockFactor;
-
-      const lookAheadM = 32.0;
-      const eyeLookPitchDown = -3.4; // Downward road sightline angle
       const forwardTarget = eyeWorld.clone()
-        .addScaledVector(horizFwd, lookAheadM * Math.cos(effectivePitch))
-        .addScaledVector(worldUp, eyeLookPitchDown + lookAheadM * Math.sin(effectivePitch));
+        .addScaledVector(carFwd, 40.0)
+        .addScaledVector(carUp, -1.5);
 
-      this.camera.lookAt(forwardTarget);
+      this.currentCameraLookAt.copy(forwardTarget);
+      this.camera.lookAt(this.currentCameraLookAt);
     }
   }
 
@@ -163,9 +149,9 @@ export class DynamicCameraController {
       this.currentCameraPos.copy(targetPos);
       this.currentCameraLookAt.copy(targetLook);
     } else {
-      // Smooth camera damping
-      this.currentCameraPos.lerp(targetPos, 1 - Math.exp(-10 * dt));
-      this.currentCameraLookAt.lerp(targetLook, 1 - Math.exp(-12 * dt));
+      // Snappy camera damping: eliminates loose bobbing and wobble
+      this.currentCameraPos.lerp(targetPos, 1 - Math.exp(-18 * Math.min(dt, 0.05)));
+      this.currentCameraLookAt.lerp(targetLook, 1 - Math.exp(-20 * Math.min(dt, 0.05)));
     }
 
     const carUp = new THREE.Vector3(0, 1, 0).applyQuaternion(carQuat);

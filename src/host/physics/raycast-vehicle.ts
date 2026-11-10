@@ -142,15 +142,21 @@ export class RaycastVehicle {
     );
 
     // Box collider approximating upper cabin/chassis dimensions for barrier and obstacle collisions.
-    // Elevated to translation (0, 0.72, 0) with half-height 0.22 so the bottom edge is at +0.50m (+0.85m world),
-    // guaranteeing the chassis cuboid NEVER scrapes or snags on road or banked bowl triangles under heavy
-    // braking pitch, compressions, or small-wheeled vehicles while still colliding with 1.15m Armco barriers.
     const colliderDesc = rapier.ColliderDesc.cuboid(0.82, 0.22, 1.98)
       .setTranslation(0, 0.72, 0)
       .setFriction(0.1)
       .setRestitution(0.0);
 
     this.chassisCollider = world.createCollider(colliderDesc, this.chassisBody);
+
+    // Full-perimeter lower chassis/bumper collider:
+    // Prevents vehicle nose, splitter, and side sills from wedging under barriers
+    // or noclipping into terrain during high-speed 300+ km/h crashes.
+    const lowerColliderDesc = rapier.ColliderDesc.cuboid(0.85, 0.18, 2.05)
+      .setTranslation(0, 0.35, 0)
+      .setFriction(0.1)
+      .setRestitution(0.0);
+    world.createCollider(lowerColliderDesc, this.chassisBody);
 
     // 2. Setup 4 wheels hardpoints
     const frontZ = (1.0 - frontWeightFraction) * wheelbaseM; // ~ +1.43m
@@ -606,11 +612,9 @@ export class RaycastVehicle {
         const surfaceName = (hitCollider?.userData as any)?.surface;
         const surfaceProp = getSurfaceProperties(surfaceName);
 
-        // Phase 5 Step 5.11: Procedural Multi-Band Road Surface Bump Dynamics
-        // Overlay continuous asphalt undulations & tar expansion seams onto wheel contact
-        const sMed = Math.sin(hpWorldX * 0.38 + hpWorldZ * 0.42) * Math.cos(hpWorldZ * 0.28) * 0.012;
-        const sShort = Math.sin(hpWorldX * 6.28 + hpWorldZ * 6.28) * 0.005;
-        const bumpOffset = sMed + sShort;
+        // Zero artificial procedural bump oscillation: asphalt is naturally smooth
+        // Eliminates artificial 60 Hz suspension excitation and camera shake
+        const bumpOffset = 0.0;
 
         // Compression: deflection from rest with tactile road micro-undulations
         const currentLength = (hitDist - bumpOffset) - w.radius;

@@ -19,6 +19,13 @@ Full of Water decouples the user interface across two physical devices:
 - **Phase 6 (Private Multiplayer & Dynamic Race Procedures):** Paused (formerly Phase 4). 4-digit code private lobbies, universal FIA 5-red-light standing starts, and near-crash track recovery.
 - **Phase 7 (Multi-Class Motorsport Ecosystem & Dynamic Series):** Scheduled roadmap (formerly Phase 5). Multi-class vehicle homologation, international circuits, and dynamic series championship menu hub.
 
+### Roman Numeral Track (Online Cloud Infrastructure & Community Competition)
+- **Phase I (Driver Identity, Cloud Persistence & Global Hotlap Leaderboards):** Complete and validated. Introduces Driver Accounts, automated pairing between Desktop Host and Phone Controller via 6-digit session tokens, serverless player stats database (lifetime km driven, favorite car, clean lap ratio, top speeds, airborne flight time), and multi-dimensional hotlap leaderboards (by circuit, car category, weather, input device) with monotonic sector validation and World Record 30 Hz ghost retrieval.
+- **Phase II (Cloud-Relayed WebRTC Multiplayer):** Serverless WebRTC signaling broker (PartyKit / Cloudflare Durable Objects), public paddock lobby browser, and private room sharing.
+- **Phase III (Driver Rating & Safety Rating - Elo/SR):** Skill-based matchmaking (DR: Bronze to Alien) and incident tracking (SR: clean overtakes vs incident points).
+- **Phase IV (Cloud Telemetry & MoTeC-Style Analysis):** Cloud storage of complete lap telemetry with in-browser multi-channel trace overlay.
+- **Phase V (Cloud Livery Workshop & Social Showcase):** Community custom livery workshop using `StandardWrapMapper` with global publishing and upvoting.
+
 ---
 
 # PART I: PHASE 1 SPECIFICATION — PROVING GROUND & SKIDPAD
@@ -508,7 +515,7 @@ Phase 2 replaces the flat proving ground with the full, topologically verified 2
   - Replicates the official GRID Engineering / Sim-Lab Porsche 911 RSR GT/GTE wheel (285mm diameter).
   - Contoured carbon fiber faceplate extruded with 3-segment rounded bevels, upper $45^\circ$ shoulder chamfers, and lower chin.
   - Molded ergonomic polyurethane/Alcantara side grips with palm swells and thumb rest ledges.
-  - Arched top housing holding 15 curved shift rev LEDs (5 green, 5 red, 5 blue) with 8,800+ RPM strobe.
+  - Arched top housing holding 15 curved shift rev LEDs with authentic Porsche Motorsport outside-in convergence: 4 Green on outer flanks, 4 Yellow in mid-range, and 7 Red meeting in the center at max red, with all 15 LEDs strobe-flashing electric blue at optimal shift point (>= 8,800 RPM or isShiftLightActive).
   - Laser-etched silver "PORSCHE" wide typography wordmark across the top plate.
   - CNC anodized aluminum rotary thumb encoders: red `TCI` (top left), purple `TCO` (top right), gold dial (inner left), blue dial (inner right).
   - 10 tactile motorsport pushbuttons with black anodized collar bezels.
@@ -684,15 +691,12 @@ Phase 5 elevates the Nürburgring Nordschleife circuit and vehicle dynamics to s
 
 ---
 
-### 5.10 Anti-Nausea Cockpit Camera Horizon Stabilization & Chassis Bump Vibration
-- **Biomechanical Principle (Vestibulo-Ocular Reflex - VOR):**
-  - In real racing cars over rough surfaces like the Nordschleife, human neck muscles and ocular tracking keep the driver's gaze locked to the horizon and road vanishing point.
-  - Rapid, unrestrained camera pitch and roll swings relative to the horizon trigger severe simulator sickness and nausea.
-- **Decoupled Camera vs. Chassis Motion:**
-  - **Internal Cockpit Camera:** Anchored at the driver's eye position, but its angular orientation applies an $85\text{–}90\%$ horizon lock. Pitch and roll rotations are heavily low-pass filtered, keeping the central horizon and road sightlines smooth and stable.
-  - **Chassis & Interior Vibration:** The physical car chassis, dashboard, steering column, A-pillars, and roll cage receive high-frequency vertical and angular displacement driven by suspension deflection $\Delta z$ and kerb strikes.
-  - **Visual Result:** The driver sees the cockpit bouncing and vibrating vigorously in their peripheral vision—delivering the visceral bumpiness of the Nordschleife—while their central focal point remains stable, completely eliminating motion sickness.
-  - High-frequency micro-displacement is clamped to $\le 2.5\text{ mm}$ to prevent unnatural clipping.
+### 5.10 Locked Cockpit Camera Stability & Zero Camera Shake
+- **User Directive (2026-11-09):** *"forget the camera shake, get rid of that."*
+- **Strict Rigid Body Locking:**
+  - Completely eliminated artificial camera shake, horizon lock low-pass filtering, and interior bump micro-vibration offsets.
+  - The internal cockpit camera is rigidly locked to the driver eye position and vehicle roof normal vector (`this.camera.up.copy(carUp)`).
+  - The chassis, dashboard, windshield, and steering wheel remain strictly stable relative to the camera with exact zero drift, wobble, or interior vibration, ensuring a rock-solid cockpit sightline at all speeds while Rapier 240 Hz suspension dynamics handle physical vehicle movement.
 
 ---
 
@@ -858,42 +862,36 @@ Phase 7 scales the platform into a multi-class international racing ecosystem wi
 
 ---
 
-### 7.1 Homologated Vehicle Classes & Physics Profiles
-- **LMH / LMDh (Hypercar / Prototype):**
-  - 700 HP hybrid powertrain (twin-turbo V6/V8 + front electric MGU-K).
-  - High downforce ($1,200\text{ kg}$ at $250\text{ km/h}$), carbon monocoque, $1,030\text{ kg}$ minimum weight.
-  - Top speed: $340+\text{ km/h}$.
-- **GT3 / GTE (Production Racing):**
-  - Porsche 911 GT3 R / RSR-19, Ferrari 296 GT3, BMW M4 GT3, Corvette Z06 GT3.R.
-  - 515–540 HP naturally aspirated and turbocharged engines, swan-neck wings, $1,250\text{ kg}$ weight.
-- **Formula / Single-Seater:**
-  - 1,000 HP hybrid 1.6L turbo V6, halo cockpit protection, open wheels.
-  - Extreme aerodynamic cornering grip ($3.5+\text{ G}$ lateral), ultra-light $798\text{ kg}$ chassis.
-- **Porsche Cup (One-Make):**
-  - Porsche 911 GT3 Cup (992). 510 HP, naturally aspirated flat-six, sequential manual dog-ring gearbox.
-  - Optional TC/ABS defeat for raw analogue driver skill.
-- **GT4 / Clubsport:**
-  - Production-adjacent GT racecars with moderate downforce and approachable weight distribution.
+### 7.1 Homologated Vehicle Classes & Modular BoP Layers
+- **Modular 3D Ingestion vs Series BoP:**
+  - One shared 3D geometry model per chassis (Draco-compressed glTF) loaded once into memory.
+  - Series-specific regulatory JSON files (`*.bop.json`) configure distinct power limits, ballast, air restrictors, torque sensors, and tire models.
+  - *Example:* Porsche 963 instantiates `wec_hypercar.bop.json` (FIA torque limits, MJ virtual energy tank, Michelin WEC slicks) vs `imsa_gtp.bop.json` (IMSA torque curve, VP fuel, Michelin IMSA compound).
+  - *Example:* Porsche 911 GT3 R (992) instantiates `sro_gt3.bop.json` (Pirelli DHF tires, ballast, restrictor) vs `wec_lmgt3.bop.json` (driveshaft torque meters, Goodyear tires) vs `imsa_gtd.bop.json` (Michelin Pilot Sport).
+- **Porsche Carrera Cup Spec Rule:**
+  - Single high-fidelity Porsche 911 GT3 Cup (Type 992) model with authentic competition liveries.
+  - Zero BoP variation. Strictly identical mechanics (510 HP, 4.0L Boxer, 6-speed dog-ring sequential, NO ABS, NO TC) for pure driver competition.
+- **Formula 1 Base Chassis & Team Tuning Rule:**
+  - Single modern ground-effect 3D base mesh with official team liveries.
+  - Team-specific mathematical tuning profiles: aerodynamic drag/downforce polars (high-efficiency Red Bull spec vs high-downforce McLaren spec), power unit torque curves, and ERS electrical harvest/deploy mappings.
 
 ---
 
-### 7.2 International Circuit Roster Expansion
-1. **Circuit de Spa-Francorchamps (Belgium):** $7.004\text{ km}$. Eau Rouge, Raidillon, Blanchimont, La Source hairpin, Kemmel Straight.
-2. **Autodromo Nazionale Monza (Italy):** $5.793\text{ km}$. "Temple of Speed", Variante del Rettifilo, Curva Grande, Lesmo 1 & 2, Ascari chicane, Curva Parabolica.
-3. **Circuit de la Sarthe / Le Mans (France):** $13.626\text{ km}$. 24 Hours of Le Mans, Mulsanne Straight, Indianapolis, Arnage, Porsche Curves.
-4. **Suzuka International Racing Course (Japan):** $5.807\text{ km}$. Figure-eight overpass crossover, S-Curves, Degner 1 & 2, Hairpin, Spoon Curve, 130R.
-5. **Mount Panorama / Bathurst (Australia):** $6.213\text{ km}$. Dramatic $174\text{ m}$ mountain climb/descent bounded by vertical concrete walls, The Cutting, Skyline, The Dipper, Conrod Straight.
+### 7.2 Championship Series & Feeder Systems
+1. **FIA World Endurance Championship (WEC):** Hypercar (9 manufacturers) + LMGT3 (9 manufacturers).
+2. **IMSA WeatherTech SportsCar Championship:** GTP, LMP2 (Oreca 07 Gibson spec), GTD PRO, GTD.
+3. **GT World Challenge Europe:** Pure FIA GT3 (Sprint & Endurance Cups).
+4. **European Le Mans Series (ELMS) & Mini-Le Mans:** LMP2 (full 600 HP V8), LMP3 (Ligier/Duqueine Nissan V8), LMGT3, Asian Le Mans, Michelin Le Mans Cup.
+5. **Porsche Carrera Cup:** Single-make spec 992 GT3 Cup.
+6. **Formula 1 World Championship:** 10 team-tuned single-seaters across 24 global circuits.
 
 ---
 
-### 7.3 Dynamic Series Hub & Menu Architecture
-- **Series Selection Hierarchy:**
-  - `Endurance World Championship` (Multi-class LMH + GT3).
-  - `Grand Prix Formula Championship` (Formula single-seaters).
-  - `Porsche Carrera Cup` (Identical 911 GT3 Cup machinery).
-  - `GT3 Sprint Challenge` (GT3 sports cars).
-- **Homologation Filter:** Selecting a series restricts vehicle selection and tuning parameters strictly to compliant homologated cars.
-- **Dynamic Race Calendar:** Series schedules with authentic qualifying sessions, sprint/endurance race lengths, and environmental presets.
+### 7.3 Master Circuit Calendar Across All Series
+Complete roster of 27 surveyed international circuits:
+- **Europe:** Nürburgring Nordschleife (20.7 km, Active), 24h Gesamtkurs (25.4 km, Active), GP-Strecke (5.1 km, Active), Circuit de la Sarthe / Le Mans (13.6 km), Spa-Francorchamps (7.0 km), Monza (5.8 km), Imola (4.9 km), Paul Ricard (5.8 km), Barcelona-Catalunya (4.7 km), Brands Hatch (3.9 km), Silverstone (5.9 km), Monaco (3.3 km), Hockenheimring (4.6 km), Zandvoort (4.3 km), Red Bull Ring (4.3 km), Hungaroring (4.4 km), Mugello (5.2 km), Portimão (4.7 km).
+- **North America:** Daytona Road Course (5.7 km), Sebring (6.0 km), Watkins Glen (5.5 km), Laguna Seca (3.6 km), Road America (6.5 km), Road Atlanta (4.1 km), COTA (5.5 km), Long Beach (3.2 km), Mosport (4.0 km), VIR (5.3 km), Indianapolis (3.9 km), Montreal (4.4 km).
+- **Asia / Middle East / Oceania:** Suzuka (5.8 km), Fuji (4.6 km), Mount Panorama / Bathurst (6.2 km), Interlagos (4.3 km), Bahrain (5.4 km), Lusail (5.4 km), Yas Marina (5.3 km), Dubai Autodrome (5.4 km), Sepang (5.5 km).
 
 ---
 
@@ -953,7 +951,26 @@ Phase 7: Multi-Class Motorsport Ecosystem & Dynamic Series (Roadmap Outlined)
 ├── M7.1: Multi-class vehicle physics homologation (LMH, GT3, Formula 1, Cup, GT4)
 ├── M7.2: International circuit expansion (Spa, Monza, Le Mans, Suzuka, Mount Panorama)
 └── M7.3: Dynamic multi-tier championship series hub & career menu evolution
+
+Roman Numeral Track: Online Cloud Infrastructure & Community Competition
+├── Phase I: Driver Identity, Cloud Persistence & Global Hotlap Leaderboard (Completed & Validated)
+│   ├── MI.1: Driver accounts, passkey/auth, and session pairing [DONE]
+│   ├── MI.2: Player activity & lifetime stats database (km, top speed, favorite car) [DONE]
+│   ├── MI.3: Multi-dimensional global hotlap leaderboard (track/category/weather/device) [DONE]
+│   └── MI.4: Serverless anti-cheat monotonic sector validation & WR ghost downloads [DONE]
+├── Phase II: Cloud-Relayed WebRTC Multiplayer (PartyKit / Durable Objects)
+├── Phase III: Driver Rating & Safety Rating (Elo / SR matchmaking)
+├── Phase IV: Cloud Telemetry & MoTeC-Style Analysis (in-browser trace overlays)
+└── Phase V: Cloud Livery Workshop & Social Showcase (gallery & community upvotes)
 ```
 
+### Roman Numeral Track Feasibility Analysis
+1. **Serverless Database & Connection Pool:** Leaderboard writes and player stat telemetry run on edge/serverless endpoints (`/api/laps`, `/api/profile`). To prevent cold-start latency and connection exhaustion under concurrent drivers, utilize serverless Postgres (Neon / Supabase) with HTTP/WebSocket connection pooling.
+2. **Anti-Cheat Validation for Client-Side Physics:** Because Rapier 3D simulation executes client-side, hotlap submissions require strict cryptographic and physical boundary checks:
+   - Sector monotonic timing: Total lap time must exactly equal the sum of intermediate sector checkpoint splits.
+   - Homologation envelopes: Submissions must satisfy minimum sector duration and top speed constraints for the car class.
+   - Compressed trajectory payloads: Top 100 global records must submit 30 Hz compressed position and yaw keyframes for automated boundary sanity checking and public ghost download.
+3. **Multi-Tenant Controller Pairing on Serverless Hosting:** Vercel serverless functions cannot host persistent stateful WebSockets. Account-based pairing matches desktop and phone via authenticated session tokens, using WebRTC DataChannels with serverless signaling (PartyKit / Supabase Realtime) for sub-5ms low latency.
+
 ### Open Questions Status
-All architectural questions (Q1–Q21, Q-N1–Q-N6) are resolved and recorded in [idea.md](idea.md#9-decision-log). Phase 5 simulation realism requirements are codified with zero open blockers.
+All architectural questions (Q1–Q21, Q-N1–Q-N6) are resolved and recorded in [idea.md](idea.md#10-decision-log). Roman Numeral Phase I and Phase 5 simulation realism requirements are codified with zero open blockers.

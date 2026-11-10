@@ -237,22 +237,16 @@ export class DashDisplay {
     this.f1SpeedEl.textContent = `${safeSpeed}`;
     this.f1RpmEl.textContent = `${currentRpm}`;
 
-    // Update 15 Circular Rev LEDs (5 Green, 5 Red, 5 Blue)
-    // Authentic Porsche 911 RSR / Cosworth CCW powerband:
-    // Rev LEDs unlit below 6,600 RPM.
-    // 6,600 - 7,400 RPM: 5 Green LEDs
-    // 7,400 - 8,200 RPM: 5 Red LEDs
-    // 8,200 - 8,800 RPM: 5 Blue LEDs
-    // >= 8,800 RPM or shiftLight flag: Shift strobe flash across all 15 LEDs
-    let numActiveLeds = 0;
+    // Update 15 Circular Rev LEDs (Porsche Motorsport Outside-In Convergence)
+    // Symmetrical convergence from outer flanks toward center:
+    // Flanks: 4 Green (Pairs 0 & 1)
+    // Mid: 4 Yellow (Pairs 2 & 3)
+    // Center: 7 Red (Pairs 4, 5, 6 & Center 7)
+    // Max red meeting in middle right before shift (8,525 - 8,799 RPM)
+    // Shift point (>= 8,800 RPM or shiftLight flag): ALL 15 LEDs FLASH ELECTRIC BLUE
+    let activeStages = 0;
     if (currentRpm >= 6600) {
-      if (currentRpm < 7400) {
-        numActiveLeds = Math.min(5, Math.floor(((currentRpm - 6600) / 800) * 5) + 1);
-      } else if (currentRpm < 8200) {
-        numActiveLeds = 5 + Math.min(5, Math.floor(((currentRpm - 7400) / 800) * 5) + 1);
-      } else {
-        numActiveLeds = 10 + Math.min(5, Math.floor(((currentRpm - 8200) / 600) * 5) + 1);
-      }
+      activeStages = Math.min(8, Math.floor((currentRpm - 6600) / 275) + 1);
     }
     const isShiftStrobe = data.shiftLight || currentRpm >= 8800;
 
@@ -260,13 +254,14 @@ export class DashDisplay {
       const led = this.f1LedElements[i];
       if (!led) continue;
 
-      let baseColor = 'led-green';
-      if (i >= 10) baseColor = 'led-blue';
-      else if (i >= 5) baseColor = 'led-red';
+      const pairDist = i <= 7 ? i : 14 - i;
+      let baseColor = 'led-red';
+      if (pairDist < 2) baseColor = 'led-green';
+      else if (pairDist < 4) baseColor = 'led-yellow';
 
       if (isShiftStrobe) {
         led.className = 'f1-circle-led shift-strobe';
-      } else if (i < numActiveLeds) {
+      } else if (pairDist < activeStages) {
         led.className = `f1-circle-led ${baseColor} active`;
       } else {
         led.className = `f1-circle-led ${baseColor}`;

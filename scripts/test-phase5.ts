@@ -178,11 +178,11 @@ async function runPhase5ValidationSuite(): Promise<void> {
       'Rapier Continuous Collision Detection (CCD) enabled on vehicle rigid body (prevents 300+ km/h boundary tunneling)'
     );
 
-    // 2. Verify collision geometry has 3D thickened volumetric barrier backing (15 vertices per section)
+    // 2. Verify collision geometry has 3D thickened volumetric barrier backing (17 vertices per section including outer embankments)
     const centerline = new NordschleifeCenterline('nordschleife');
     const chunkData = TrackMeshGenerator.generateChunkMesh(centerline.samples, 0, 10, 5);
     const numVerts = chunkData.collisionVertices.length / 3;
-    const vertsPerSlice = 15;
+    const vertsPerSlice = 17;
     assert(
       numVerts % vertsPerSlice === 0,
       `Volumetric 3D collision barrier extruded with continuous >=0.50m depth envelope (${vertsPerSlice} vertices/section)`
@@ -336,37 +336,33 @@ async function runPhase5ValidationSuite(): Promise<void> {
   }
 
   // =========================================================================
-  // 5.10: ANTI-NAUSEA COCKPIT CAMERA VOR HORIZON LOCK & CHASSIS BUMP VIBRATION
+  // 5.10: LOCKED COCKPIT CAMERA & ZERO SHAKE STABILIZATION
   // =========================================================================
-  console.log('\n--- 5.10: Anti-Nausea Cockpit Camera VOR Horizon Lock & Bump Vibration ---');
+  console.log('\n--- 5.10: Locked Cockpit Camera & Zero Shake Stabilization ---');
   {
     const camera = new THREE.PerspectiveCamera(78, 16 / 9, 0.05, 1000);
     const cameraCtrl = new DynamicCameraController(camera, vehicle);
 
-    assert(
-      cameraCtrl.vorHorizonLockFactor >= 0.85 && cameraCtrl.vorHorizonLockFactor <= 0.90,
-      `Biomechanical Vestibulo-Ocular Reflex (VOR) horizon lock active: ${(cameraCtrl.vorHorizonLockFactor * 100).toFixed(0)}% horizon stabilization`
-    );
-
     // Pitch the car 15 degrees up
     const pitchQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(15), 0, 0, 'XYZ'));
+    const carUp = new THREE.Vector3(0, 1, 0).applyQuaternion(pitchQuat);
     (cameraCtrl as any).updateCockpitView(0.016, new THREE.Vector3(0, 0, 0), pitchQuat, 0, 100);
 
-    // Verify camera up vector is blended heavily toward world (0, 1, 0)
+    // Verify camera up vector is rigidly locked to chassis roof normal (zero drift, zero camera shake)
     assert(
-      camera.up.y >= 0.95,
-      `Camera up vector stabilized against world vertical: camera.up.y = ${camera.up.y.toFixed(3)} >= 0.95 (eliminates nausea)`
+      Math.abs(camera.up.y - carUp.y) < 0.01,
+      `Cockpit camera up vector rigidly locked to car roof normal (carUp.y = ${carUp.y.toFixed(3)}, camera.up.y = ${camera.up.y.toFixed(3)}) - zero camera shake`
     );
 
-    // Verify chassis bump vibration is clamped to <= 2.5 mm
+    // Verify chassis is strictly locked to physics translation with zero artificial vibration displacement
     const carRig = new CarMeshRig(scene, vehicle);
     vehicle.wheels[0].suspensionCompression = 0.06;
     vehicle.wheels[1].suspensionCompression = 0.06;
     carRig.update(0.016);
     const chassisYOffset = Math.abs(carRig.chassisGroup.position.y - vehicle.chassisBody.translation().y);
     assert(
-      chassisYOffset <= 0.00251,
-      `Chassis interior bump micro-vibration clamped to <= 2.5 mm (${(chassisYOffset * 1000).toFixed(2)} mm)`
+      chassisYOffset < 0.0001,
+      `Chassis position strictly locked to physics body with zero artificial displacement shake (${chassisYOffset.toFixed(4)} m)`
     );
   }
 

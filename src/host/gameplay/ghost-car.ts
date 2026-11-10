@@ -257,6 +257,35 @@ export class GhostCarManager {
     return this.commitLap(lapDurationMs, isValid);
   }
 
+  /**
+   * Phase I: Loads a cloud World Record or community ghost trajectory directly into playback.
+   */
+  public loadExternalGhost(lapDurationMs: number, frames: GhostKeyframe[], isWorldRecord = true): void {
+    if (!frames || frames.length < 2) return;
+    this.bestLapDurationMs = lapDurationMs;
+    this.bestLapRecording = frames;
+    this.isEnabled = true;
+    if (isWorldRecord) {
+      // Golden holographic shader styling for World Record ghost
+      if (this.ghostMaterials[0] instanceof THREE.MeshStandardMaterial) {
+        this.ghostMaterials[0].color.setHex(0xf59e0b); // Gold amber
+        this.ghostMaterials[0].emissive.setHex(0xb45309);
+        this.ghostMaterials[0].opacity = 0.42;
+      }
+      if (this.ghostMaterials[1] instanceof THREE.MeshBasicMaterial) {
+        this.ghostMaterials[1].color.setHex(0xfde047);
+      }
+    }
+  }
+
+  public getCurrentLapRecording(): GhostKeyframe[] {
+    return [...this.currentRecording];
+  }
+
+  public getBestRecording(): GhostKeyframe[] {
+    return [...this.bestLapRecording];
+  }
+
   public updatePlayback(lapTimeMs: number): void {
     this.sampleGhostAtTime(lapTimeMs);
   }

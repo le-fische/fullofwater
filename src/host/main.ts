@@ -20,6 +20,7 @@ import { FloatingOriginManager } from './streaming/floating-origin';
 import { EifelTerrain } from './render/terrain';
 import { ShowroomStage } from './render/showroom-stage';
 import { MainMenu } from './ui/main-menu';
+import { PRESET_LIVERIES } from './render/livery-system';
 import { StadiumAssets } from './render/stadium-assets';
 import { TracksideAssetsManager } from './render/trackside-assets';
 import { CompetitionField, RaceFlagStatus } from './gameplay/competition-field';
@@ -28,6 +29,28 @@ import { EnvironmentManager } from './render/environment-manager';
 import { GhostCarManager } from './gameplay/ghost-car';
 import { WebRTCMultiplayerLobby } from './net/webrtc-lobby';
 import { RaceProcedureDirector } from './gameplay/race-start';
+import { DriverManager } from './auth/driver-manager';
+import { LeaderboardModal } from './ui/leaderboard-modal';
+import { DriverProfileModal } from './ui/driver-profile-modal';
+import { InputCategory } from '../common/auth/driver-types';
+import demData from '../../tracks/nordschleife/dem.json';
+
+function getTerrainElevationAt(x: number, z: number): number {
+  const gx = (x - demData.x0) / demData.step;
+  const gz = (z - demData.z0) / demData.step;
+  if (gx < 0 || gx >= demData.nx - 1 || gz < 0 || gz >= demData.nz - 1) return 300.0;
+  const ix = Math.floor(gx);
+  const iz = Math.floor(gz);
+  const fx = gx - ix;
+  const fz = gz - iz;
+  const h = demData.h;
+  const nx = demData.nx;
+  const h00 = h[iz * nx + ix];
+  const h10 = h[iz * nx + (ix + 1)];
+  const h01 = h[(iz + 1) * nx + ix];
+  const h11 = h[(iz + 1) * nx + (ix + 1)];
+  return h00 * (1 - fx) * (1 - fz) + h10 * fx * (1 - fz) + h01 * (1 - fx) * fz + h11 * fx * fz;
+}
 
 export enum AppState {
   SHOWROOM = 'SHOWROOM',
@@ -83,6 +106,11 @@ class HostApplication {
   private sessionLapCount = 3;
   private sessionMode = 'standard';
   private ghostInvulnerableTimer = 0;
+
+  // Phase I Driver Identity, Leaderboard & Persistence Subsystems
+  public driverManager = new DriverManager();
+  public leaderboardModal!: LeaderboardModal;
+  public driverProfileModal!: DriverProfileModal;
   private rolloverTimer = 0;
   private offTrackStuckTimer = 0;
 
@@ -142,9 +170,33 @@ class HostApplication {
     this.showroomStage = new ShowroomStage(canvasContainer);
     this.showroomStage.setEnabled(true);
 
-    // 6. Initialize Dedicated Sim-Racing Main Menu UI
+    // 6. Initialize Phase I Online Modals & Dedicated Sim-Racing Main Menu UI
     const menuContainer = document.getElementById('menu-container');
     if (!menuContainer) throw new Error('Missing #menu-container');
+
+    this.leaderboardModal = new LeaderboardModal(menuContainer, {
+      driverManager: this.driverManager,
+      onRaceGhost: async (circuitId, vehicleClass, weather) => {
+        const ghostData = await this.driverManager.fetchWorldRecordGhost(circuitId, vehicleClass, weather);
+        if (ghostData && ghostData.keyframes && ghostData.keyframes.length > 1) {
+          this.ghostCarManager.loadExternalGhost(ghostData.lapTimeMs, ghostData.keyframes as any, true);
+          this.hud.showNotification(`⚡ WORLD RECORD GHOST LOADED: ${ghostData.driverTag} (${(ghostData.lapTimeMs / 1000).toFixed(3)}s)`);
+        }
+      },
+    });
+
+    this.driverProfileModal = new DriverProfileModal(menuContainer, {
+      driverManager: this.driverManager,
+    });
+
+    this.driverManager.onAuthChange = () => {
+      this.mainMenu.updateDriverUI();
+    };
+
+    this.driverManager.onPairingStatusChange = (_isPaired, pairToken) => {
+      console.log(`[Host] Phone paired via session token ${pairToken}`);
+      this.hud.showNotification(`PHONE CONTROLLER LINKED VIA SESSION TOKEN`);
+    };
 
     this.mainMenu = new MainMenu(menuContainer, {
       onStartRace: (trackId, liveryIdx, carNumber, weather, timeOfDay, lapCount, mode) =>
@@ -162,6 +214,13 @@ class HostApplication {
       onOpenMultiplayer: () => {
         this.webrtcLobby.openModal();
       },
+      onOpenLeaderboard: () => {
+        this.leaderboardModal.open(this.currentTrack);
+      },
+      onOpenDriverProfile: () => {
+        this.driverProfileModal.open();
+      },
+      driverManager: this.driverManager,
     });
 
     // 7. HUD with Minimap Radar (Hidden during Showroom mode)
@@ -442,6 +501,14 @@ class HostApplication {
     this.rolloverTimer = 0;
     this.offTrackStuckTimer = 0;
 
+    // Phase I: Flush pending telemetry stats to serverless database
+    this.driverManager.flushTelemetryStats(
+      false,
+      false,
+      this.carProfile?.id || 'porsche_911_rsr_19_992',
+      PRESET_LIVERIES[this.selectedLiveryIndex]?.name || 'Rexy Green #80'
+    );
+
     // 3. Dispose vehicle & visual mesh
     if (this.carMesh) {
       this.carMesh.dispose();
@@ -483,6 +550,16 @@ class HostApplication {
 
   private bindKeyboardEvents(): void {
     window.addEventListener('keydown', (e) => {
+      // Phase I Global Modals: [J] Leaderboards, [I] Driver Identity
+      if (e.code === 'KeyJ') {
+        this.leaderboardModal.toggle(this.currentTrack);
+        return;
+      }
+      if (e.code === 'KeyI') {
+        this.driverProfileModal.toggle();
+        return;
+      }
+
       // In Showroom mode: Enter launches race
       if (this.appState === AppState.SHOWROOM) {
         if (e.code === 'Enter') {
@@ -761,6 +838,11 @@ class HostApplication {
       this.sessionMaxSpeed = speed;
     }
 
+    // Phase I: Accumulate telemetry activity step (distance, flight time, max speed)
+    const stepDistanceM = (speed * (1000 / 3600)) * frameDelta;
+    const isAirborne = telemetry.suspensionCompression.every((c) => c < 0.005);
+    this.driverManager.accumulateSessionStep(stepDistanceM, speed, isAirborne, frameDelta);
+
     if (this.currentTrack !== TrackMode.PROVING_GROUND && this.centerline && this.streamer && this.lapTimer) {
       const carPos = new THREE.Vector3(chassisPos.x, chassisPos.y, chassisPos.z);
       const proj = this.centerline.projectPosition(carPos, this.lastSampleIndex);
@@ -773,6 +855,17 @@ class HostApplication {
           : -1;
       this.vehicle.currentTrackDistanceM = proj.distanceMeters;
       this.vehicle.currentLateralOffsetM = proj.distanceFromCenterlineMeters * latSign;
+
+      // Instant Safety Catch: If vehicle breached barrier/terrain or fell below road/terrain level
+      const terrainY = getTerrainElevationAt(carPos.x, carPos.z);
+      const isBreached =
+        carPos.y < terrainY - 0.25 ||
+        carPos.y < proj.projectedPosition.y - 3.2 ||
+        carPos.y < 285.0 ||
+        Math.abs(this.vehicle.currentLateralOffsetM) > 28.0;
+      if (isBreached) {
+        this.respawnCarNearCrash(false);
+      }
 
       // Dynamic 3-chunk window streaming
       this.streamer.update(proj.distanceMeters);
@@ -789,6 +882,50 @@ class HostApplication {
             this.latestLapTelemetry.lastLapTimeMs,
             this.latestLapTelemetry.isLapValid
           );
+
+          // Phase I: Submit verified lap to serverless anti-cheat database
+          const sectorSplits = this.latestLapTelemetry.currentSectorTimesMs.filter(
+            (s): s is number => s !== null && isFinite(s)
+          );
+          const inputCategory: InputCategory = this.netBridge.isPhoneConnected() ? 'gyro' : 'keyboard';
+          const ghostFrames = this.ghostCarManager.getBestRecording();
+
+          this.driverManager.submitLap(
+            this.currentTrack,
+            this.carProfile.id,
+            this.carProfile.class,
+            this.environmentManager.getState().weather,
+            inputCategory,
+            this.latestLapTelemetry.lastLapTimeMs,
+            sectorSplits,
+            this.sessionMaxSpeed,
+            this.latestLapTelemetry.isLapValid,
+            ghostFrames.map((f) => ({
+              timeMs: f.timeMs,
+              distanceM: f.distanceM,
+              x: f.x,
+              y: f.y,
+              z: f.z,
+              qx: f.qx,
+              qy: f.qy,
+              qz: f.qz,
+              qw: f.qw,
+              steerRad: f.steerRad,
+            }))
+          ).then((res) => {
+            if (res.accepted) {
+              if (res.newWorldRecord) {
+                this.hud.showNotification(`🏆 NEW WORLD RECORD! RANK #1 (${(this.latestLapTelemetry!.lastLapTimeMs! / 1000).toFixed(3)}s)`);
+              } else if (res.newPersonalBest) {
+                this.hud.showNotification(`⚡ PERSONAL BEST! RANK #${res.leaderboardRank} (${(this.latestLapTelemetry!.lastLapTimeMs! / 1000).toFixed(3)}s)`);
+              } else {
+                this.hud.showNotification(`LAP VERIFIED · RANK #${res.leaderboardRank}`);
+              }
+            } else if (res.reason) {
+              console.warn('[Anti-Cheat Reject]', res.reason);
+            }
+          });
+
           if (this.sessionMode === 'qualifying' && this.latestLapTelemetry.isLapValid) {
             this.webrtcLobby.broadcastQualiResult(
               this.latestLapTelemetry.lastLapTimeMs,

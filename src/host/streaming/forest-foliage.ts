@@ -1,5 +1,31 @@
 import * as THREE from 'three';
 import { SplinePoint } from './centerline';
+import demData from '../../../tracks/nordschleife/dem.json';
+
+/**
+ * Samples the 3D SRTM DEM terrain elevation at any (x, z) world coordinate.
+ * Plants tree roots securely on the terrain surface with zero floating.
+ */
+function getTerrainElevation(x: number, z: number): number {
+  const gx = (x - demData.x0) / demData.step;
+  const gz = (z - demData.z0) / demData.step;
+  if (gx < 0 || gx >= demData.nx - 1 || gz < 0 || gz >= demData.nz - 1) {
+    return 600.0;
+  }
+  const ix = Math.floor(gx);
+  const iz = Math.floor(gz);
+  const fx = gx - ix;
+  const fz = gz - iz;
+  const i00 = iz * demData.nx + ix;
+  const i10 = i00 + 1;
+  const i01 = i00 + demData.nx;
+  const i11 = i01 + 1;
+  const h00 = demData.h[i00];
+  const h10 = demData.h[i10];
+  const h01 = demData.h[i01];
+  const h11 = demData.h[i11];
+  return (h00 * (1 - fx) + h10 * fx) * (1 - fz) + (h01 * (1 - fx) + h11 * fx) * fz;
+}
 
 /**
  * Procedural Evergreen Pine / Spruce Tree Geometry.
@@ -52,26 +78,31 @@ function buildTreeGeometry(): THREE.BufferGeometry {
     vertexOffset += pos.count;
   }
 
-  // 1. Trunk: 6-sided tapered dark bark cylinder with deep 2.4m subterranean root
+  // 1. Trunk: 7-sided tapered dark bark cylinder with deep 5.0m subterranean root
   // Prevents trunk bottoms from ever showing an air gap on steep Eifel embankments
-  const trunkGeom = new THREE.CylinderGeometry(0.20, 0.42, 6.2, 6);
-  appendGeometry(trunkGeom, 0.22, 0.14, 0.08, 0.7); // Spans Y = -2.4m to +3.8m
+  const trunkGeom = new THREE.CylinderGeometry(0.35, 0.70, 14.0, 7);
+  appendGeometry(trunkGeom, 0.20, 0.13, 0.07, 2.0); // Spans Y = -5.0m to +9.0m
   trunkGeom.dispose();
 
-  // 2. Foliage Tier 1 (Bottom wide cone)
-  const cone1 = new THREE.ConeGeometry(2.4, 4.2, 7);
-  appendGeometry(cone1, 0.07, 0.18, 0.08, 4.8);
+  // 2. Foliage Tier 1 (Bottom expansive canopy)
+  const cone1 = new THREE.ConeGeometry(5.0, 7.5, 8);
+  appendGeometry(cone1, 0.05, 0.17, 0.07, 8.5);
   cone1.dispose();
 
-  // 3. Foliage Tier 2 (Middle cone)
-  const cone2 = new THREE.ConeGeometry(1.85, 3.8, 7);
-  appendGeometry(cone2, 0.09, 0.22, 0.09, 7.2);
+  // 3. Foliage Tier 2 (Middle canopy)
+  const cone2 = new THREE.ConeGeometry(4.0, 7.0, 8);
+  appendGeometry(cone2, 0.07, 0.22, 0.08, 13.0);
   cone2.dispose();
 
-  // 4. Foliage Tier 3 (Top crown cone)
-  const cone3 = new THREE.ConeGeometry(1.25, 3.4, 7);
-  appendGeometry(cone3, 0.11, 0.26, 0.11, 9.4);
+  // 4. Foliage Tier 3 (Upper crown)
+  const cone3 = new THREE.ConeGeometry(2.8, 6.0, 8);
+  appendGeometry(cone3, 0.09, 0.26, 0.10, 17.5);
   cone3.dispose();
+
+  // 5. Foliage Tier 4 (Spire apex)
+  const cone4 = new THREE.ConeGeometry(1.6, 4.5, 7);
+  appendGeometry(cone4, 0.11, 0.30, 0.12, 21.0);
+  cone4.dispose();
 
   const merged = new THREE.BufferGeometry();
   merged.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -152,7 +183,7 @@ class TrackSpatialGrid {
    * of ANY track centerline segment across the entire circuit, OR crosses the Voronoi
    * midpoint into another non-adjacent track segment's corridor.
    */
-  public isNearAnyTrackSegment(x: number, z: number, margin = 12.0, ownerIdx = -1): boolean {
+  public isNearAnyTrackSegment(x: number, z: number, margin = 5.2, ownerIdx = -1): boolean {
     const cx = Math.floor(x / this.cellSize);
     const cz = Math.floor(z / this.cellSize);
     const indices = this.grid.get(`${cx},${cz}`);
@@ -180,7 +211,7 @@ class TrackSpatialGrid {
       // Voronoi corridor ownership check: reject trees that cross closer to a non-adjacent track segment
       if (ownerIdx >= 0) {
         const idxDiff = Math.min(Math.abs(idx - ownerIdx), total - Math.abs(idx - ownerIdx));
-        if (idxDiff >= 18 && dSq < ownerDistSq + 15.0) {
+        if (idxDiff >= 32 && dSq < ownerDistSq * 0.75) {
           return true;
         }
       }
@@ -219,11 +250,11 @@ export class ForestFoliage {
 
     // Phase 5 Step 5.2: Multi-Layer Dense Forest Immersion ("The Green Hell")
     // 3-Tier Vegetation Hierarchy:
-    // Tier 1: Roadside undergrowth & shrubs immediately behind Armco (5.5m - 10.0m)
-    // Tier 2: Mature Scots pine & spruce with overhanging canopy (10.0m - 26.0m)
-    // Tier 3: Deep mountain forest backdrop up ridges and valleys (26.0m - 65.0m)
-    // Supports 600–900 trees per 2 km chunk within a single GPU draw call
-    const MAX_TREES = sampleCount * 3 + 250;
+    // Tier 1: Roadside canopy immediately behind Armco (20m - 28m tall)
+    // Tier 2: Mature towering canopy pines & spruce (24m - 36m tall)
+    // Tier 3: Deep mountain ridge forest giants (28m - 44m tall)
+    // Supports 1,500–2,200 towering trees per 2 km chunk within a single GPU draw call
+    const MAX_TREES = sampleCount * 4 + 400;
     const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_TREES);
     instancedMesh.name = `foliage_chunk_${chunkIndex}`;
     instancedMesh.receiveShadow = true;
@@ -234,7 +265,7 @@ export class ForestFoliage {
     const dummy = new THREE.Object3D();
     let instanceIdx = 0;
 
-    // Sample along chunk with 5m to 10m steps
+    // Sample along chunk with 5m steps
     for (let i = 0; i < sampleCount; i++) {
       const idx = ((startIndex + i) % totalSamples + totalSamples) % totalSamples;
       const sp = samples[idx];
@@ -243,83 +274,82 @@ export class ForestFoliage {
       // Use horizontal lateral vector (y = 0) so trees do not float in the sky on banked corners
       const hRight = new THREE.Vector3(sp.tangent.z, 0, -sp.tangent.x).normalize();
 
-      // Suppress wild mountain trees inside the modern Grand Prix Stadium Arena
-      // (X in [-2350, -700], Z in [2650, 4750]) where grandstands, pit facilities, and runoffs reside
-      const inStadiumCenterline = pos.x > -2350 && pos.x < -700 && pos.z > 2650 && pos.z < 4750;
-      if (inStadiumCenterline) {
+      // Only suppress trees directly over the modern GP pit building and concrete paddock
+      const onGpPaddockBuilding = pos.x > -1400 && pos.x < -1050 && pos.z > 3100 && pos.z < 3550;
+      if (onGpPaddockBuilding) {
         continue;
       }
 
-      // Skip trees directly on the high-speed Grand Prix pitlane / paddock straight
-      if (sp.landmark && sp.landmark.name.includes('GP Start-Ziel') && Math.abs(sp.turnRate) < 0.002) {
-        continue;
-      }
+      const barrierOffset = sp.trackWidth * 0.5 + 5.0; // edge of Armco guardrail
 
-      const barrierOffset = sp.trackWidth * 0.5 + 5.0;
+      // Helper to compute ground elevation on the embankment so trees are NEVER buried in trenches
+      const getGroundY = (tx: number, tz: number, latDist: number) => {
+        const latMag = Math.abs(latDist);
+        const embT = Math.min(1.0, Math.max(0.0, (latMag - barrierOffset) / 35.0));
+        const demY = getTerrainElevation(tx, tz);
+        const embSurfaceY = THREE.MathUtils.lerp(pos.y, demY, embT * 0.75);
+        return Math.max(demY, embSurfaceY);
+      };
 
-      // Populate both flanks with 3-tier dense vegetation
+      // Populate both flanks with 3-tier dense towering vegetation
       for (const side of [-1, 1] as const) {
         if (instanceIdx >= MAX_TREES) break;
 
-        // Tier 1: Roadside undergrowth & saplings (5.5m - 10.0m behind barrier)
-        if (rng() > 0.30) {
-          const lateralDist = side * (barrierOffset + 1.2 + rng() * 4.5);
+        // Tier 1: Roadside canopy immediately behind Armco (1.5m - 5.5m behind guardrail)
+        if (rng() > 0.15) {
+          const lateralDist = side * (barrierOffset + 1.5 + rng() * 4.0);
           const longJitter = (rng() - 0.5) * 4.0;
-          const scale = 0.55 + rng() * 0.35; // 4.5m to 8.5m compact roadside shrubs/spruce
+          const scale = 0.85 + rng() * 0.35; // 20m to 28m tall roadside trees
           const treePos = new THREE.Vector3(pos.x, pos.y, pos.z)
             .addScaledVector(hRight, lateralDist)
             .addScaledVector(sp.tangent, longJitter);
-          treePos.y -= 0.25;
+          treePos.y = getGroundY(treePos.x, treePos.z, lateralDist);
 
-          if (!grid.isNearAnyTrackSegment(treePos.x, treePos.z, 10.5, idx)) {
+          if (!grid.isNearAnyTrackSegment(treePos.x, treePos.z, 5.2, idx)) {
             dummy.position.copy(treePos);
-            dummy.rotation.set((rng() - 0.5) * 0.08, rng() * Math.PI * 2, (rng() - 0.5) * 0.08);
+            dummy.rotation.set((rng() - 0.5) * 0.06, rng() * Math.PI * 2, (rng() - 0.5) * 0.06);
             dummy.scale.set(scale, scale, scale);
             dummy.updateMatrix();
             instancedMesh.setMatrixAt(instanceIdx++, dummy.matrix);
           }
         }
 
-        // Tier 2: Mature canopy pines & spruce (10.0m - 26.0m behind barrier)
-        const numTier2 = rng() > 0.40 ? 1 : 2;
+        // Tier 2: Mature towering canopy pines & spruce (6.0m - 20.0m behind guardrail)
+        const numTier2 = rng() > 0.30 ? 2 : 1;
         for (let k = 0; k < numTier2; k++) {
           if (instanceIdx >= MAX_TREES) break;
-          const lateralDist = side * (barrierOffset + 6.0 + rng() * 16.0);
+          const lateralDist = side * (barrierOffset + 6.0 + rng() * 15.0);
           const longJitter = (rng() - 0.5) * 5.0;
-          const scale = 0.90 + rng() * 0.70; // 10.0m to 18.0m mature trees
-          const dFromBarrier = Math.max(0, Math.abs(lateralDist) - 10.05);
-          const yDrop = 0.35 + (dFromBarrier / 35.0) * 2.25;
+          const scale = 1.05 + rng() * 0.50; // 24m to 36m tall mature canopy
 
           const treePos = new THREE.Vector3(pos.x, pos.y, pos.z)
             .addScaledVector(hRight, lateralDist)
             .addScaledVector(sp.tangent, longJitter);
-          treePos.y -= yDrop;
+          treePos.y = getGroundY(treePos.x, treePos.z, lateralDist);
 
-          if (!grid.isNearAnyTrackSegment(treePos.x, treePos.z, 11.0, idx)) {
+          if (!grid.isNearAnyTrackSegment(treePos.x, treePos.z, 5.5, idx)) {
             dummy.position.copy(treePos);
-            dummy.rotation.set((rng() - 0.5) * 0.08, rng() * Math.PI * 2, (rng() - 0.5) * 0.08);
+            dummy.rotation.set((rng() - 0.5) * 0.06, rng() * Math.PI * 2, (rng() - 0.5) * 0.06);
             dummy.scale.set(scale, scale, scale);
             dummy.updateMatrix();
             instancedMesh.setMatrixAt(instanceIdx++, dummy.matrix);
           }
         }
 
-        // Tier 3: Deep mountain ridge forest backdrop (26.0m - 60.0m)
-        if (rng() > 0.25) {
-          const lateralDist = side * (barrierOffset + 22.0 + rng() * 34.0);
+        // Tier 3: Deep mountain ridge forest giants (20.0m - 55.0m behind guardrail)
+        if (rng() > 0.15) {
+          const lateralDist = side * (barrierOffset + 20.0 + rng() * 35.0);
           const longJitter = (rng() - 0.5) * 6.0;
-          const scale = 1.10 + rng() * 0.85; // 14.0m to 24.0m deep forest giants
-          const dFromBarrier = Math.max(0, Math.abs(lateralDist) - 10.05);
-          const yDrop = 0.65 + (dFromBarrier / 35.0) * 3.5;
+          const scale = 1.20 + rng() * 0.65; // 28m to 43m tall forest giants
 
           const treePos = new THREE.Vector3(pos.x, pos.y, pos.z)
             .addScaledVector(hRight, lateralDist)
             .addScaledVector(sp.tangent, longJitter);
-          treePos.y -= yDrop;
+          treePos.y = getGroundY(treePos.x, treePos.z, lateralDist);
 
-          if (!grid.isNearAnyTrackSegment(treePos.x, treePos.z, 12.0, idx)) {
+          if (!grid.isNearAnyTrackSegment(treePos.x, treePos.z, 5.8, idx)) {
             dummy.position.copy(treePos);
-            dummy.rotation.set((rng() - 0.5) * 0.08, rng() * Math.PI * 2, (rng() - 0.5) * 0.08);
+            dummy.rotation.set((rng() - 0.5) * 0.06, rng() * Math.PI * 2, (rng() - 0.5) * 0.06);
             dummy.scale.set(scale, scale, scale);
             dummy.updateMatrix();
             instancedMesh.setMatrixAt(instanceIdx++, dummy.matrix);

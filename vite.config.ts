@@ -4,6 +4,8 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 import { Socket } from 'net';
 import os from 'os';
+import { handleApiRequest } from './src/server/api-dispatcher';
+import { globalDriverDatabase } from './src/server/db/driver-database';
 
 function getLocalIpAddress(): string {
   const interfaces = os.networkInterfaces();
@@ -46,6 +48,43 @@ function webSocketBridgePlugin(): Plugin {
     name: 'websocket-bridge-plugin',
     configureServer(server) {
       if (!server.httpServer) return;
+
+      // Gracefully handle plain HTTP requests by redirecting them to HTTPS instead of dropping the connection
+      const redirectPlainHttp = (_err: any, socket: any) => {
+        const raw = socket?._parent || socket;
+        if (raw && !raw.destroyed && raw.writable) {
+          raw.end(
+            'HTTP/1.1 302 Found\r\n' +
+            'Location: https://localhost:5173/\r\n' +
+            'Content-Type: text/html\r\n' +
+            'Connection: close\r\n\r\n' +
+            '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=https://localhost:5173/"></head>' +
+            '<body style="background:#07080b;color:#38bdf8;font-family:sans-serif;padding:40px;text-align:center;">' +
+            '<h2>🏎️ Redirecting to Secure Connection...</h2>' +
+            '<p><a href="https://localhost:5173/" style="color:#38bdf8;">Click here if not redirected automatically: https://localhost:5173/</a></p>' +
+            '</body></html>'
+          );
+        }
+      };
+
+      server.httpServer.on('tlsClientError', redirectPlainHttp);
+      server.httpServer.on('clientError', redirectPlainHttp);
+
+      // Phase I: Driver Accounts, Database, Stats, Hotlap Leaderboard & Session Pairing API Dispatcher
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url && req.url.startsWith('/api/')) {
+          try {
+            const handled = await handleApiRequest(req, res);
+            if (handled) return;
+          } catch (err) {
+            console.error('[API Dispatcher Error]', err);
+            res.statusCode = 500;
+            res.end(JSON.stringify({ success: false, message: 'Internal Server Error' }));
+            return;
+          }
+        }
+        next();
+      });
 
       // Serve network info dynamically for Host HUD and QR code (updates when switching Wi-Fi/Hotspot)
       server.middlewares.use('/api/network-info', (_req, res) => {
@@ -118,6 +157,13 @@ function webSocketBridgePlugin(): Plugin {
             console.log(`[WebSocket Bridge] Host disconnected (${hostSockets.size} remaining)`);
           });
         } else if (role === 'controller') {
+          const pairToken = url.searchParams.get('pairToken');
+          const driverTag = url.searchParams.get('driverTag');
+          if (pairToken) {
+            globalDriverDatabase.verifyPairingSession(pairToken, driverTag || undefined);
+            console.log(`[WebSocket Bridge] Controller paired via session token: ${pairToken} (Driver: ${driverTag || 'unknown'})`);
+          }
+
           controllerSockets.add(ws);
           console.log(`[WebSocket Bridge] Controller connected (${controllerSockets.size} active)`);
 

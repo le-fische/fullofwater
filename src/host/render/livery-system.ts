@@ -941,14 +941,19 @@ export class VehicleModelAdapter {
     const toRemove: THREE.Object3D[] = [];
 
     model.traverse((child) => {
-      const name = child.name.toLowerCase();
-      // Plate removal: strip any civilian license plate nodes or meshes
+      const name = (child.name || '').toLowerCase();
+      // Plate & badge removal: strip any civilian license plate nodes, badges, rear lettering, logos, emblems
       // Also remove stock street-car steering wheel and column stalks (replaced by authentic RSR wheel)
+      let matches = false;
       if (
         name.includes('licence') ||
         name.includes('license') ||
         name.includes('plate') ||
         name.includes('tag') ||
+        name.includes('badge') ||
+        name.includes('lettering') ||
+        name.includes('emblem') ||
+        name.includes('logo') ||
         name.startsWith('hemi') ||
         name.startsWith('light') ||
         name.startsWith('camera') ||
@@ -957,18 +962,32 @@ export class VehicleModelAdapter {
         name.includes('steeringcolumn') ||
         name.includes('node_steering')
       ) {
-        child.visible = false;
-        toRemove.push(child);
+        matches = true;
       }
 
-      // Check materials for license plate textures
+      // Check materials for license plate and badge textures
       if (child instanceof THREE.Mesh) {
-        const mat = child.material;
-        const matName = (mat?.name || '').toLowerCase();
-        if (matName.includes('licence') || matName.includes('license') || matName.includes('plate')) {
-          child.visible = false;
-          toRemove.push(child);
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        for (const m of mats) {
+          const matName = (m?.name || '').toLowerCase();
+          if (
+            matName.includes('licence') ||
+            matName.includes('license') ||
+            matName.includes('plate') ||
+            matName.includes('badge') ||
+            matName.includes('lettering') ||
+            matName.includes('logo') ||
+            matName.includes('emblem')
+          ) {
+            matches = true;
+            break;
+          }
         }
+      }
+
+      if (matches) {
+        child.visible = false;
+        toRemove.push(child);
       }
     });
 

@@ -618,32 +618,9 @@ export class CarMeshRig {
     const chassisPos = this.vehicle.chassisBody.translation();
     const chassisRot = this.vehicle.chassisBody.rotation();
 
-    // 1. Phase 5 Step 5.10: Dynamic Cockpit Bump Vibration relative to stabilized camera
-    // Translates suspension deflection and road undulations into micro-displacement of the
-    // car interior and dashboard (clamped to <= 2.5 mm to prevent geometry clipping)
-    let bumpY = 0;
-    let bumpRotX = 0;
-    let bumpRotZ = 0;
-    if (this.vehicle && this.vehicle.wheels.length >= 4) {
-      const w0 = this.vehicle.wheels[0];
-      const w1 = this.vehicle.wheels[1];
-      const w2 = this.vehicle.wheels[2];
-      const w3 = this.vehicle.wheels[3];
-      const frontComp = (w0.suspensionCompression + w1.suspensionCompression) * 0.5;
-      const rearComp = (w2.suspensionCompression + w3.suspensionCompression) * 0.5;
-      const leftComp = (w0.suspensionCompression + w2.suspensionCompression) * 0.5;
-      const rightComp = (w1.suspensionCompression + w3.suspensionCompression) * 0.5;
-
-      bumpY = Math.max(-0.0025, Math.min(0.0025, (frontComp + rearComp) * 0.035));
-      bumpRotX = Math.max(-0.0035, Math.min(0.0035, (frontComp - rearComp) * 0.04));
-      bumpRotZ = Math.max(-0.0035, Math.min(0.0035, (leftComp - rightComp) * 0.04));
-    }
-
-    this.chassisGroup.position.set(chassisPos.x, chassisPos.y + bumpY, chassisPos.z);
-
-    const bumpQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(bumpRotX, 0, bumpRotZ, 'XYZ'));
-    const totalQuat = new THREE.Quaternion(chassisRot.x, chassisRot.y, chassisRot.z, chassisRot.w).multiply(bumpQuat);
-    this.chassisGroup.quaternion.copy(totalQuat);
+    // 1. Strictly align chassis group with Rapier physics rigid body (zero artificial displacement shake)
+    this.chassisGroup.position.set(chassisPos.x, chassisPos.y, chassisPos.z);
+    this.chassisGroup.quaternion.set(chassisRot.x, chassisRot.y, chassisRot.z, chassisRot.w);
 
     // 2. Update modular cockpit (steering wheel, gloved hands, LCD dash, shift LEDs)
     const telemetry = this.vehicle.getTelemetry();

@@ -165,6 +165,12 @@ html, body {
   box-shadow: 0 0 10px #22c55e, inset 0 0 3px #ffffff;
 }
 
+.f1-circle-led.led-yellow.active {
+  background: #eab308;
+  border-color: #fde047;
+  box-shadow: 0 0 10px #eab308, inset 0 0 3px #ffffff;
+}
+
 .f1-circle-led.led-red.active {
   background: #ef4444;
   border-color: #fca5a5;
@@ -172,16 +178,16 @@ html, body {
 }
 
 .f1-circle-led.led-blue.active {
-  background: #3b82f6;
+  background: #38bdf8;
   border-color: #93c5fd;
-  box-shadow: 0 0 12px #3b82f6, inset 0 0 3px #ffffff;
+  box-shadow: 0 0 12px #38bdf8, inset 0 0 3px #ffffff;
 }
 
 .f1-circle-led.shift-strobe {
-  background: #f43f5e !important;
+  background: #38bdf8 !important;
   border-color: #ffffff !important;
-  box-shadow: 0 0 16px #f43f5e !important;
-  animation: f1-flash 0.08s infinite alternate;
+  box-shadow: 0 0 18px #38bdf8, inset 0 0 4px #ffffff !important;
+  animation: f1-flash 0.06s infinite alternate;
 }
 
 @keyframes f1-flash {

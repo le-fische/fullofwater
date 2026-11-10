@@ -159,8 +159,21 @@ class MobileControllerApp {
       return;
     }
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const pairToken = urlParams.get('pairToken') || (typeof localStorage !== 'undefined' ? localStorage.getItem('fullofwater_pair_token') : null) || '';
+    const driverTag = urlParams.get('driverTag') || (typeof localStorage !== 'undefined' ? localStorage.getItem('fullofwater_driver_tag') : null) || '';
+
+    if (pairToken && typeof localStorage !== 'undefined') {
+      localStorage.setItem('fullofwater_pair_token', pairToken);
+    }
+    if (driverTag && typeof localStorage !== 'undefined') {
+      localStorage.setItem('fullofwater_driver_tag', driverTag);
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws?role=controller`;
+    let wsUrl = `${protocol}//${window.location.host}/ws?role=controller`;
+    if (pairToken) wsUrl += `&pairToken=${encodeURIComponent(pairToken)}`;
+    if (driverTag) wsUrl += `&driverTag=${encodeURIComponent(driverTag)}`;
 
     console.log(`Connecting to ${wsUrl}...`);
     this.ws = new WebSocket(wsUrl);
@@ -169,6 +182,15 @@ class MobileControllerApp {
     this.ws.onopen = () => {
       console.log('Controller WebSocket connected');
       this.isConnected = true;
+
+      // Also verify pairing session with serverless API
+      if (pairToken) {
+        fetch('/api/pair/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pairToken, driverTag: driverTag || undefined }),
+        }).catch(() => {});
+      }
     };
 
     this.ws.onclose = () => {
